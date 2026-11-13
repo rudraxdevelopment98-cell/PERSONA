@@ -3,12 +3,27 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { toOutputSchema } from "./output-schema";
 
-export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
+/**
+ * Provider selection (no code changes needed between environments):
+ *  1. ANTHROPIC_API_KEY set      -> Claude API directly.
+ *  2. Otherwise, on Vercel        -> Vercel AI Gateway, authenticated automatically
+ *                                    with the deployment's OIDC token (no API key).
+ *     AI_GATEWAY_API_KEY may be set instead to use the gateway from elsewhere.
+ */
+type Provider = { kind: "anthropic" | "gateway"; model: string };
 
-// Server-side refusal fallback: if a safety classifier declines, the API
-// re-runs the request on a suitable fallback model inside the same call.
+function provider(): Provider {
+  if (process.env.ANTHROPIC_API_KEY) return { kind: "anthropic", model: process.env.AI_MODEL || "claude-opus-5-5" };
+  return { kind: "gateway", model: process.env.AI_MODEL || "anthropic/claude-opus-5.5" };
+}
+
+export const AI_MODEL = provider().model;
+
+// Server-side refusal fallback (Claude API only): if a safety classifier
+// declines, the API re-runs the request on a suitable fallback model.
 const FALLBACK_MODELS = new Set(["claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-2", "claude-fable-5-1"]);
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+const GATEWAY_URL = process.env.AI_GATEWAY_URL || "https://ai-gateway.vercel.sh";
 
 export class AIError extends Error {
   constructor(
@@ -19,19 +34,39 @@ export class AIError extends Error {
   }
 }
 
-let client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new AIError("The AI service is not configured. Set ANTHROPIC_API_KEY on the server.", "not_configured");
+let directClient: Anthropic | null = null;
+
+async function getClient(): Promise<{ anthropic: Anthropic; p: Provider }> {
+  const p = provider();
+  if (p.kind === "anthropic") {
+    directClient ??= new Anthropic({ maxRetries: 2 });
+    return { anthropic: directClient, p };
   }
-  client ??= new Anthropic({ maxRetries: 2 });
-  return client;
+  let token = process.env.AI_GATEWAY_API_KEY;
+  if (!token) {
+    try {
+      const { getVercelOidcToken } = await import("@vercel/oidc");
+      token = await getVercelOidcToken();
+    } catch {
+      token = undefined;
+    }
+  }
+  if (!token) {
+    throw new AIError("The AI service is not configured. Deploy on Vercel (AI Gateway) or set ANTHROPIC_API_KEY.", "not_configured");
+  }
+  // OIDC tokens are short-lived, so build a client per request.
+  return { anthropic: new Anthropic({ apiKey: token, baseURL: GATEWAY_URL, maxRetries: 2 }), p };
 }
 
 type Effort = "low" | "medium" | "high";
+type StreamParams = Parameters<Anthropic["messages"]["stream"]>[0];
 
-function fallbackParams() {
-  return FALLBACK_MODELS.has(AI_MODEL) ? { betas: [FALLBACK_BETA], fallbacks: "default" as const } : {};
+/** Opens a stream; uses the beta endpoint only when the refusal-fallback beta applies. */
+function openStream(anthropic: Anthropic, p: Provider, params: StreamParams) {
+  if (p.kind === "anthropic" && FALLBACK_MODELS.has(p.model)) {
+    return anthropic.beta.messages.stream({ ...(params as object), betas: [FALLBACK_BETA], fallbacks: "default" } as Parameters<Anthropic["beta"]["messages"]["stream"]>[0]);
+  }
+  return anthropic.messages.stream(params);
 }
 
 function mapUpstreamError(err: unknown): never {
@@ -53,19 +88,18 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   effort?: Effort;
   maxTokens?: number;
 }): Promise<z.infer<S>> {
-  const anthropic = getClient();
+  const { anthropic, p } = await getClient();
   const jsonSchema = toOutputSchema(z.toJSONSchema(opts.schema, { io: "input" })) as Record<string, unknown>;
 
   try {
-    const stream = anthropic.beta.messages.stream({
-      model: AI_MODEL,
+    const stream = openStream(anthropic, p, {
+      model: p.model,
       max_tokens: opts.maxTokens ?? 16000,
       system: opts.system,
       messages: [{ role: "user", content: opts.prompt }],
       output_config: { effort: opts.effort ?? "medium", format: { type: "json_schema", schema: jsonSchema } },
-      ...fallbackParams(),
     });
-    const message = await stream.finalMessage();
+    const message = (await stream.finalMessage()) as { stop_reason: string | null; content: { type: string; text?: string }[] };
 
     if (message.stop_reason === "refusal") {
       throw new AIError("The AI declined to generate this content. Try rephrasing your input.", "refusal");
@@ -73,7 +107,7 @@ export async function generateStructured<S extends z.ZodType>(opts: {
     if (message.stop_reason === "max_tokens") {
       throw new AIError("The AI response was cut off. Please try again.", "truncated");
     }
-    const text = message.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+    const text = message.content.flatMap((b) => (b.type === "text" && b.text ? [b.text] : [])).join("");
     let raw: unknown;
     try {
       raw = JSON.parse(text);
@@ -97,15 +131,14 @@ export async function* streamText(opts: {
   effort?: Effort;
   maxTokens?: number;
 }): AsyncGenerator<string> {
-  const anthropic = getClient();
+  const { anthropic, p } = await getClient();
   try {
-    const stream = anthropic.beta.messages.stream({
-      model: AI_MODEL,
+    const stream = openStream(anthropic, p, {
+      model: p.model,
       max_tokens: opts.maxTokens ?? 8000,
       system: opts.system,
       messages: opts.messages,
       output_config: { effort: opts.effort ?? "medium" },
-      ...fallbackParams(),
     });
     for await (const event of stream) {
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
