@@ -13,13 +13,13 @@ const schema = z.object({
   difficulty: z.enum(DECISION_DIFFICULTIES.map((d) => d.id) as [string, ...string[]]),
 });
 
-export const POST = apiRoute(schema, async ({ category, difficulty }, { supabase, user, state }) => {
+export const POST = apiRoute(schema, async ({ category, difficulty }, { db, user, state }) => {
   requireBaseline(state);
-  await enforceHourlyLimit(supabase, user.id, "decision_logs", 12);
+  await enforceHourlyLimit(db, user.id, "decision_logs", 12);
 
-  const { data: recent } = await supabase.from("decision_logs").select("scenario").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+  const { data: recent } = await db.from("decision_logs").select("scenario").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
   const used = (recent ?? []).map((r) => `- ${r.scenario?.title}`).join("\n");
-  const context = await buildAIContext(supabase, state, { checkins: 2 });
+  const context = await buildAIContext(db, state, { checkins: 2 });
   const cat = DECISION_CATEGORIES.find((c) => c.id === category)!.label;
   const diff = DECISION_DIFFICULTIES.find((d) => d.id === difficulty)!.label;
 
@@ -33,7 +33,7 @@ export const POST = apiRoute(schema, async ({ category, difficulty }, { supabase
   scenario.options = scenario.options.slice(0, 4).map((o, i) => ({ ...o, id: ids[i] }));
   if (scenario.options.length < 2) throw new HttpError(502, "The scenario was incomplete. Please try again.");
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("decision_logs")
     .insert({ user_id: user.id, category, difficulty, scenario })
     .select("id")

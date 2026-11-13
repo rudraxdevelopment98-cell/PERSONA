@@ -1,5 +1,5 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/db/server";
 import { generateStructured } from "@/lib/ai/client";
 import { PROFILE_SYSTEM, userData } from "@/lib/ai/prompts";
 import { developmentProfileSchema } from "@/lib/ai/schemas";
@@ -7,7 +7,7 @@ import { DIMENSION_META, DIMENSIONS, type Dimension } from "@/lib/domain/dimensi
 import { dbError } from "./api";
 
 export async function generateDevelopmentProfile(
-  supabase: SupabaseClient,
+  db: Db,
   userId: string,
   scores: Record<Dimension, number>,
   reflections: { held_back: string; goal: string } | null,
@@ -24,7 +24,7 @@ export async function generateDevelopmentProfile(
   ].join("\n");
 
   const profile = await generateStructured({ system: PROFILE_SYSTEM, prompt, schema: developmentProfileSchema, effort: "medium" });
-  const { error } = await supabase
+  const { error } = await db
     .from("profiles")
     .update({ development_profile: profile, roadmap: profile.roadmap })
     .eq("id", userId);

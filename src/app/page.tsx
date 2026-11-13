@@ -4,18 +4,12 @@ import { ArrowRight, BookOpen, GitBranch, LineChart, MessageSquare } from "lucid
 import { Logo } from "@/components/logo";
 import { ButtonLink } from "@/components/ui";
 import { PHASES } from "@/lib/domain/programme";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/db/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function Landing() {
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) redirect("/dashboard");
-  }
+  if (process.env.DATABASE_URL && (await getSessionUser().catch(() => null))) redirect("/dashboard");
 
   const features = [
     { icon: BookOpen, title: "A 30-minute daily session", text: "An original story, interactive scenarios, a real-world challenge and a reflection, built from your own check-in answers." },

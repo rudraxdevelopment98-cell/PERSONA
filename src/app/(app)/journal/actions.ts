@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/db/server";
 
 const entrySchema = z.object({
   id: z.uuid().optional(),
@@ -18,15 +18,15 @@ export type JournalInput = z.infer<typeof entrySchema>;
 export async function saveJournalEntry(input: JournalInput): Promise<{ error?: string }> {
   const parsed = entrySchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid entry." };
-  const { supabase, user } = await requireUser();
+  const { db, user } = await requireUser();
   const { id, ...fields } = parsed.data;
   const { error } = id
-    ? await supabase.from("journal_entries").update(fields).eq("id", id).eq("user_id", user.id)
-    : await supabase.from("journal_entries").insert({ ...fields, user_id: user.id });
+    ? await db.from("journal_entries").update(fields).eq("id", id).eq("user_id", user.id)
+    : await db.from("journal_entries").insert({ ...fields, user_id: user.id });
   if (error) return { error: "Could not save the entry." };
   if (!id) {
     const { awardAchievements } = await import("@/lib/server/progress");
-    await awardAchievements(supabase, user.id);
+    await awardAchievements(db, user.id);
   }
   revalidatePath("/journal");
   return {};
@@ -34,8 +34,8 @@ export async function saveJournalEntry(input: JournalInput): Promise<{ error?: s
 
 export async function deleteJournalEntry(id: string): Promise<{ error?: string }> {
   if (!z.uuid().safeParse(id).success) return { error: "Invalid entry." };
-  const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("journal_entries").delete().eq("id", id).eq("user_id", user.id);
+  const { db, user } = await requireUser();
+  const { error } = await db.from("journal_entries").delete().eq("id", id).eq("user_id", user.id);
   if (error) return { error: "Could not delete the entry." };
   revalidatePath("/journal");
   return {};

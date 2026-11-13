@@ -1,48 +1,26 @@
-import { createServerClient } from "@supabase/ssr";
+import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/about"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/about", "/api/auth"];
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return response;
-  }
-
-  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+/**
+ * Fast, optimistic redirect based on the presence of a session cookie. Every
+ * page and API route still verifies the session against the database.
+ */
+export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic = path === "/" || PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+  const hasSession = Boolean(getSessionCookie(request));
 
-  if (!user && !isPublic) {
+  if (!hasSession && !isPublic) {
+    if (path.startsWith("/api/")) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.search = "";
     url.searchParams.set("next", path);
     return NextResponse.redirect(url);
   }
-  if (user && (path === "/login" || path === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

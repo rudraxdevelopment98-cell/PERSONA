@@ -9,11 +9,11 @@ const schema = z.object({
 });
 
 /** Challenge completion is recorded separately from the session and can be updated later. */
-export const POST = apiRoute(schema, async ({ session_id, status, notes }, { supabase, user }) => {
+export const POST = apiRoute(schema, async ({ session_id, status, notes }, { db, user }) => {
   if (status === "completed" && (!notes || notes.length < 10)) {
     throw new HttpError(400, "Describe briefly what you did and how it went.");
   }
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("daily_sessions")
     .update({ challenge_status: status, challenge_notes: notes, challenge_updated_at: new Date().toISOString() })
     .eq("id", session_id)
@@ -22,6 +22,6 @@ export const POST = apiRoute(schema, async ({ session_id, status, notes }, { sup
     .maybeSingle();
   dbError(error);
   if (!data) throw new HttpError(404, "Session not found.");
-  await recomputeScores(supabase, user.id, "challenge");
+  await recomputeScores(db, user.id, "challenge");
   return { ok: true };
 });

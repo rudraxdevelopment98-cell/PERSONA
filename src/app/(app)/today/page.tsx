@@ -10,7 +10,7 @@ export const metadata = { title: "Daily Development" };
 export const maxDuration = 300;
 
 export default async function TodayPage() {
-  const { supabase, user, state } = await getUserState();
+  const { db, user, state } = await getUserState();
   if (!state.baseline) {
     return (
       <>
@@ -22,8 +22,8 @@ export default async function TodayPage() {
 
   const focus = todaysFocus(state);
   const [{ data: checkinData }, { data: sessionData }] = await Promise.all([
-    supabase.from("daily_checkins").select("*").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle(),
-    supabase.from("daily_sessions").select("*").eq("user_id", user.id).eq("day_number", state.day).maybeSingle(),
+    db.from("daily_checkins").select("*").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle(),
+    db.from("daily_sessions").select("*").eq("user_id", user.id).eq("day_number", state.day).maybeSingle(),
   ]);
   const checkin = checkinData as CheckinRow | null;
   const session = sessionData as SessionRow | null;
@@ -32,8 +32,8 @@ export default async function TodayPage() {
   let responses: ScenarioResponseRow[] = [];
   if (session) {
     const [{ data: s }, { data: r }] = await Promise.all([
-      supabase.from("generated_stories").select("*").eq("session_id", session.id).maybeSingle(),
-      supabase.from("scenario_responses").select("*").eq("session_id", session.id),
+      db.from("generated_stories").select("*").eq("session_id", session.id).maybeSingle(),
+      db.from("scenario_responses").select("*").eq("session_id", session.id),
     ]);
     story = s as StoryRow | null;
     responses = (r ?? []) as ScenarioResponseRow[];

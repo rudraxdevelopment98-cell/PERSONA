@@ -15,14 +15,14 @@ const schema = z.object({
   response: z.string().trim().min(10, "Write what you would actually say.").max(3000),
 });
 
-export const POST = apiRoute(schema, async ({ id, response }, { supabase, user, state }) => {
-  const { data } = await supabase.from("exercise_completions").select("*").eq("id", id).eq("user_id", user.id).maybeSingle();
+export const POST = apiRoute(schema, async ({ id, response }, { db, user, state }) => {
+  const { data } = await db.from("exercise_completions").select("*").eq("id", id).eq("user_id", user.id).maybeSingle();
   const ex = data as ExerciseRow | null;
   if (!ex) throw new HttpError(404, "Exercise not found.");
   if (ex.completed_at) throw new HttpError(409, "You have already answered this exercise.");
   const meta = EXERCISE_BY_ID.get(ex.exercise_type);
 
-  const context = await buildAIContext(supabase, state, { checkins: 1 });
+  const context = await buildAIContext(db, state, { checkins: 1 });
   const evaluation = await generateStructured({
     system: COMMUNICATION_EVAL_SYSTEM,
     prompt: `${context}
@@ -41,11 +41,11 @@ Evaluate the reply.`,
   });
   const score = rubricTotal(evaluation.rubric);
 
-  const { error } = await supabase
+  const { error } = await db
     .from("exercise_completions")
     .update({ response, evaluation, score, completed_at: new Date().toISOString() })
     .eq("id", ex.id);
   dbError(error);
-  await recomputeScores(supabase, user.id, "communication_lab");
+  await recomputeScores(db, user.id, "communication_lab");
   return { evaluation, score };
 });

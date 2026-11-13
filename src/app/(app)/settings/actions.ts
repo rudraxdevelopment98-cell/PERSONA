@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireUser } from "@/lib/supabase/server";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { deleteUserAccount, requireUser } from "@/lib/db/server";
 
 const schema = z.object({
   display_name: z.string().trim().max(80),
@@ -21,8 +23,8 @@ const schema = z.object({
 export async function updateSettings(input: z.infer<typeof schema>): Promise<{ error?: string }> {
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid settings." };
-  const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("profiles").update(parsed.data).eq("id", user.id);
+  const { db, user } = await requireUser();
+  const { error } = await db.from("profiles").update(parsed.data).eq("id", user.id);
   if (error) return { error: "Could not save settings." };
   revalidatePath("/", "layout");
   return {};
@@ -30,9 +32,12 @@ export async function updateSettings(input: z.infer<typeof schema>): Promise<{ e
 
 export async function deleteAccount(confirmation: string): Promise<{ error?: string }> {
   if (confirmation !== "DELETE") return { error: 'Type "DELETE" to confirm.' };
-  const { supabase } = await requireUser();
-  const { error } = await supabase.rpc("delete_my_account");
-  if (error) return { error: "Could not delete your account. Please try again." };
-  await supabase.auth.signOut();
+  const { user } = await requireUser();
+  try {
+    await auth.api.signOut({ headers: await headers() }).catch(() => {});
+    await deleteUserAccount(user.id);
+  } catch {
+    return { error: "Could not delete your account. Please try again." };
+  }
   redirect("/");
 }

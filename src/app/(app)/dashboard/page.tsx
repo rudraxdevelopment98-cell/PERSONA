@@ -31,7 +31,7 @@ function Step({ done, active, label, detail }: { done: boolean; active: boolean;
 }
 
 export default async function Dashboard() {
-  const { supabase, user, state } = await getUserState();
+  const { db, user, state } = await getUserState();
   const name = state.profile.display_name || "there";
 
   if (!state.baseline) {
@@ -45,15 +45,15 @@ export default async function Dashboard() {
 
   const focus = todaysFocus(state);
   const [{ data: checkin }, { data: session }, { data: sessions }, { data: achievements }] = await Promise.all([
-    supabase.from("daily_checkins").select("completed_at, analysis").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle(),
-    supabase
+    db.from("daily_checkins").select("completed_at, analysis").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle(),
+    db
       .from("daily_sessions")
       .select("id, story_completed_at, scenarios_completed_at, challenge_status, completed_at, introduction")
       .eq("user_id", user.id)
       .eq("day_number", state.day)
       .maybeSingle(),
-    supabase.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", user.id),
-    supabase.from("achievements").select("code, title, description, earned_at").eq("user_id", user.id).order("earned_at", { ascending: false }).limit(4),
+    db.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", user.id),
+    db.from("achievements").select("code, title, description, earned_at").eq("user_id", user.id).order("earned_at", { ascending: false }).limit(4),
   ]);
 
   const c = checkin as Pick<CheckinRow, "completed_at" | "analysis"> | null;

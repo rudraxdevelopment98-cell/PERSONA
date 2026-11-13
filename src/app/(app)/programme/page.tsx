@@ -7,8 +7,8 @@ import { getUserState } from "@/lib/server/state";
 export const metadata = { title: "90-Day Programme" };
 
 export default async function ProgrammePage() {
-  const { supabase, user, state } = await getUserState();
-  const { data: sessions } = await supabase.from("daily_sessions").select("day_number, focus_skill, completed_at, challenge_status").eq("user_id", user.id);
+  const { db, user, state } = await getUserState();
+  const { data: sessions } = await db.from("daily_sessions").select("day_number, focus_skill, completed_at, challenge_status").eq("user_id", user.id);
   const byDay = new Map((sessions ?? []).map((s) => [s.day_number as number, s]));
   const roadmap = state.profile.development_profile?.roadmap ?? [];
 

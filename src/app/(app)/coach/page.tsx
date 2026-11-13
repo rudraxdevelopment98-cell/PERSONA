@@ -7,7 +7,7 @@ import { CoachChat } from "./chat";
 export const metadata = { title: "AI Coach" };
 
 export default async function CoachPage() {
-  const { supabase, user, state } = await getUserState();
+  const { db, user, state } = await getUserState();
   const header = (
     <PageHeader
       title="AI Coach"
@@ -22,7 +22,7 @@ export default async function CoachPage() {
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="Your coach" /></>);
 
-  const { data } = await supabase.from("coach_messages").select("id, role, content").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60);
+  const { data } = await db.from("coach_messages").select("id, role, content").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60);
   const history = (data ?? []).reverse() as { id: string; role: "user" | "assistant"; content: string }[];
 
   return (

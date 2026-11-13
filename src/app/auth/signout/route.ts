@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 
-export async function POST(request: Request) {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  return NextResponse.redirect(new URL("/login", request.url), { status: 303 });
+export async function POST() {
+  await auth.api.signOut({ headers: await headers() }).catch(() => {});
+  // Relative redirect keeps the user on the same host they signed out from.
+  return new Response(null, { status: 303, headers: { Location: "/login" } });
 }

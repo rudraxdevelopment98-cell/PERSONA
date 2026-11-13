@@ -12,8 +12,8 @@ const schema = z.object({
 const minReadingMs = (words: number) => Math.max(90_000, (words / 350) * 60_000);
 
 /** Tracks story reading progress; completion requires reaching the end and a plausible reading time. */
-export const POST = apiRoute(schema, async ({ session_id, progress, complete }, { supabase, user }) => {
-  const { data: session } = await supabase
+export const POST = apiRoute(schema, async ({ session_id, progress, complete }, { db, user }) => {
+  const { data: session } = await db
     .from("daily_sessions")
     .select("id, story_progress, story_completed_at, created_at")
     .eq("id", session_id)
@@ -24,7 +24,7 @@ export const POST = apiRoute(schema, async ({ session_id, progress, complete }, 
   const update: Record<string, unknown> = { story_progress: Math.max(session.story_progress, progress) };
   if (complete && !session.story_completed_at) {
     if (progress < 95) throw new HttpError(400, "Read to the end of the story first.");
-    const { data: story } = await supabase.from("generated_stories").select("word_count").eq("session_id", session_id).single();
+    const { data: story } = await db.from("generated_stories").select("word_count").eq("session_id", session_id).single();
     const elapsed = Date.now() - Date.parse(session.created_at);
     if (elapsed < minReadingMs(story?.word_count ?? 1000)) {
       throw new HttpError(400, "Take your time with the story - it is the core of today's session.");
@@ -32,7 +32,7 @@ export const POST = apiRoute(schema, async ({ session_id, progress, complete }, 
     update.story_progress = 100;
     update.story_completed_at = new Date().toISOString();
   }
-  const { error } = await supabase.from("daily_sessions").update(update).eq("id", session_id);
+  const { error } = await db.from("daily_sessions").update(update).eq("id", session_id);
   dbError(error);
   return { ok: true, story_completed: Boolean(update.story_completed_at ?? session.story_completed_at) };
 });

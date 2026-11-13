@@ -19,15 +19,15 @@ const schema = z.object({
   choice_changes: z.number().int().min(0).max(100),
 });
 
-export const POST = apiRoute(schema, async (body, { supabase, user, state }) => {
-  const { data } = await supabase.from("decision_logs").select("*").eq("id", body.id).eq("user_id", user.id).maybeSingle();
+export const POST = apiRoute(schema, async (body, { db, user, state }) => {
+  const { data } = await db.from("decision_logs").select("*").eq("id", body.id).eq("user_id", user.id).maybeSingle();
   const log = data as DecisionLogRow | null;
   if (!log) throw new HttpError(404, "Scenario not found.");
   if (log.completed_at) throw new HttpError(409, "You have already decided on this scenario.");
   const chosen = log.scenario.options.find((o) => o.id === body.chosen_option);
   if (!chosen) throw new HttpError(400, "Unknown option.");
 
-  const context = await buildAIContext(supabase, state, { checkins: 1 });
+  const context = await buildAIContext(db, state, { checkins: 1 });
   const prompt = `${context}
 
 ## Scenario (${log.category}, ${log.difficulty})
@@ -49,7 +49,7 @@ Evaluate how they decided.`;
   const evaluation = await generateStructured({ system: DECISION_EVAL_SYSTEM, prompt, schema: decisionEvaluationSchema, effort: "medium" });
   const score = rubricTotal(evaluation.rubric);
 
-  const { error } = await supabase
+  const { error } = await db
     .from("decision_logs")
     .update({
       chosen_option: chosen.id,
@@ -64,6 +64,6 @@ Evaluate how they decided.`;
     })
     .eq("id", log.id);
   dbError(error);
-  await recomputeScores(supabase, user.id, "decision_lab");
+  await recomputeScores(db, user.id, "decision_lab");
   return { evaluation, score };
 });

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { dbForUser, getSessionUser } from "@/lib/db/server";
 
 const TABLES = [
   "assessments",
@@ -16,22 +16,20 @@ const TABLES = [
   "coach_messages",
 ];
 
-/** Exports every row the user owns as a JSON download. RLS guarantees only their data is returned. */
+/** Exports every row the user owns as a JSON download. Row Level Security guarantees only their data is returned. */
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return Response.json({ error: "Please sign in again." }, { status: 401 });
+  const db = dbForUser(user.id);
 
   const out: Record<string, unknown> = {
     exported_at: new Date().toISOString(),
     account: { id: user.id, email: user.email, created_at: user.created_at },
   };
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+  const { data: profile } = await db.from("profiles").select("*").eq("id", user.id).single();
   out.profile = profile;
   for (const t of TABLES) {
-    const { data } = await supabase.from(t).select("*").eq("user_id", user.id);
+    const { data } = await db.from(t).select("*").eq("user_id", user.id);
     out[t] = data ?? [];
   }
   return new Response(JSON.stringify(out, null, 2), {

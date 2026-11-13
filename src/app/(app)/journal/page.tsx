@@ -9,11 +9,11 @@ export const metadata = { title: "Journal" };
 const TYPES = ["reflection", "observation", "decision", "emotion", "lesson"] as const;
 
 export default async function JournalPage({ searchParams }: { searchParams: Promise<{ q?: string; type?: string }> }) {
-  const { supabase, user } = await getUserState();
+  const { db, user } = await getUserState();
   const { q = "", type = "" } = await searchParams;
   const query = q.trim().slice(0, 200);
 
-  let req = supabase.from("journal_entries").select("id, title, body, entry_type, mood, tags, created_at, updated_at").eq("user_id", user.id);
+  let req = db.from("journal_entries").select("id, title, body, entry_type, mood, tags, created_at, updated_at").eq("user_id", user.id);
   if (query) req = req.textSearch("search", query, { type: "websearch", config: "english" });
   if ((TYPES as readonly string[]).includes(type)) req = req.eq("entry_type", type);
   const { data } = await req.order("created_at", { ascending: false }).limit(100);

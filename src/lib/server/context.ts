@@ -1,5 +1,5 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/db/server";
 import { userData } from "@/lib/ai/prompts";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { PHASES } from "@/lib/domain/programme";
@@ -14,31 +14,31 @@ const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s
  * wrapped with userData() so it cannot act as instructions.
  */
 export async function buildAIContext(
-  supabase: SupabaseClient,
+  db: Db,
   state: UserState,
   opts: { includeJournal?: boolean; checkins?: number } = {},
 ): Promise<string> {
   const uid = state.userId;
   const [checkinsRes, scenariosRes, decisionsRes, exercisesRes, sessionsRes, journalRes] = await Promise.all([
-    supabase
+    db
       .from("daily_checkins")
       .select("checkin_date, day_number, questions, answers, analysis")
       .eq("user_id", uid)
       .not("completed_at", "is", null)
       .order("checkin_date", { ascending: false })
       .limit(opts.checkins ?? 4),
-    supabase.from("scenario_responses").select("skill, score, evaluation").eq("user_id", uid).not("score", "is", null).order("created_at", { ascending: false }).limit(5),
-    supabase
+    db.from("scenario_responses").select("skill, score, evaluation").eq("user_id", uid).not("score", "is", null).order("created_at", { ascending: false }).limit(5),
+    db
       .from("decision_logs")
       .select("category, score, confidence, first_choice_ms, total_time_ms, choice_changes, evaluation")
       .eq("user_id", uid)
       .not("score", "is", null)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase.from("exercise_completions").select("exercise_type, score, evaluation").eq("user_id", uid).not("score", "is", null).order("created_at", { ascending: false }).limit(5),
-    supabase.from("daily_sessions").select("day_number, focus_skill, completed_at, challenge_status, challenge_notes").eq("user_id", uid).order("day_number", { ascending: false }).limit(5),
+    db.from("exercise_completions").select("exercise_type, score, evaluation").eq("user_id", uid).not("score", "is", null).order("created_at", { ascending: false }).limit(5),
+    db.from("daily_sessions").select("day_number, focus_skill, completed_at, challenge_status, challenge_notes").eq("user_id", uid).order("day_number", { ascending: false }).limit(5),
     opts.includeJournal && state.profile.coach_journal_access
-      ? supabase.from("journal_entries").select("title, body, entry_type, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5)
+      ? db.from("journal_entries").select("title, body, entry_type, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5)
       : Promise.resolve({ data: null }),
   ]);
 

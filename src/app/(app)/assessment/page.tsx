@@ -7,7 +7,7 @@ import { AssessmentResults } from "./results";
 export const metadata = { title: "Initial Assessment" };
 
 export default async function AssessmentPage() {
-  const { supabase, user, state } = await getUserState();
+  const { db, user, state } = await getUserState();
 
   if (state.baseline) {
     return (
@@ -21,7 +21,7 @@ export default async function AssessmentPage() {
     );
   }
 
-  const { data: inProgress } = await supabase
+  const { data: inProgress } = await db
     .from("assessments")
     .select("id")
     .eq("user_id", user.id)
@@ -30,7 +30,7 @@ export default async function AssessmentPage() {
     .limit(1)
     .maybeSingle();
   const { data: responses } = inProgress
-    ? await supabase.from("assessment_responses").select("question_id, value").eq("assessment_id", inProgress.id)
+    ? await db.from("assessment_responses").select("question_id, value").eq("assessment_id", inProgress.id)
     : { data: [] };
   const initial = Object.fromEntries((responses ?? []).map((r) => [r.question_id, r.value]));
 

@@ -1,5 +1,5 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/db/server";
 import { isDimension, type Dimension } from "@/lib/domain/dimensions";
 import { PHASES, programmeDay, todayIn } from "@/lib/domain/programme";
 import { computeScores, type Observation } from "@/lib/domain/scoring";
@@ -24,16 +24,16 @@ export function selfReportsFromCheckins(checkins: Pick<CheckinRow, "questions" |
  * Recomputes every dimension score from stored evidence, updates skill_progress
  * and appends a history row for each dimension whose score actually changed.
  */
-export async function recomputeScores(supabase: SupabaseClient, userId: string, source: string) {
+export async function recomputeScores(db: Db, userId: string, source: string) {
   const [{ data: profile }, { data: progress }, { data: checkins }, { data: scenarios }, { data: decisions }, { data: exercises }, { data: sessions }] =
     await Promise.all([
-      supabase.from("profiles").select("programme_start_date, timezone").eq("id", userId).single(),
-      supabase.from("skill_progress").select("*").eq("user_id", userId),
-      supabase.from("daily_checkins").select("questions, answers, checkin_date").eq("user_id", userId).not("completed_at", "is", null),
-      supabase.from("scenario_responses").select("skill, score, created_at").eq("user_id", userId).not("score", "is", null),
-      supabase.from("decision_logs").select("score, created_at").eq("user_id", userId).not("score", "is", null),
-      supabase.from("exercise_completions").select("skill, score, created_at").eq("user_id", userId).not("score", "is", null),
-      supabase.from("daily_sessions").select("completed_at, challenge_status").eq("user_id", userId),
+      db.from("profiles").select("programme_start_date, timezone").eq("id", userId).single(),
+      db.from("skill_progress").select("*").eq("user_id", userId),
+      db.from("daily_checkins").select("questions, answers, checkin_date").eq("user_id", userId).not("completed_at", "is", null),
+      db.from("scenario_responses").select("skill, score, created_at").eq("user_id", userId).not("score", "is", null),
+      db.from("decision_logs").select("score, created_at").eq("user_id", userId).not("score", "is", null),
+      db.from("exercise_completions").select("skill, score, created_at").eq("user_id", userId).not("score", "is", null),
+      db.from("daily_sessions").select("completed_at, challenge_status").eq("user_id", userId),
     ]);
 
   const rows = (progress ?? []) as SkillProgressRow[];
@@ -75,7 +75,7 @@ export async function recomputeScores(supabase: SupabaseClient, userId: string, 
   const previous = new Map(rows.map((r) => [r.dimension, Number(r.current)]));
   const now = new Date().toISOString();
 
-  const { error } = await supabase.from("skill_progress").upsert(
+  const { error } = await db.from("skill_progress").upsert(
     scores.map((s) => ({
       user_id: userId,
       dimension: s.dimension,
@@ -93,7 +93,7 @@ export async function recomputeScores(supabase: SupabaseClient, userId: string, 
 
   const changed = scores.filter((s) => Math.abs((previous.get(s.dimension) ?? -1) - s.current) >= 0.1);
   if (changed.length > 0) {
-    await supabase.from("personality_scores").insert(
+    await db.from("personality_scores").insert(
       changed.map((s) => ({
         user_id: userId,
         dimension: s.dimension,
@@ -107,15 +107,15 @@ export async function recomputeScores(supabase: SupabaseClient, userId: string, 
     );
   }
 
-  await awardAchievements(supabase, userId);
+  await awardAchievements(db, userId);
   return scores;
 }
 
 type Rule = { code: string; title: string; description: string; met: boolean };
 
 /** Achievements are derived only from stored activity, so they can never be earned artificially. */
-export async function awardAchievements(supabase: SupabaseClient, userId: string) {
-  const head = (table: string) => supabase.from(table).select("id", { count: "exact", head: true }).eq("user_id", userId);
+export async function awardAchievements(db: Db, userId: string) {
+  const head = (table: string) => db.from(table).select("id", { count: "exact", head: true }).eq("user_id", userId);
   const n = (r: { count: number | null }) => r.count ?? 0;
 
   const [assessments, checkins, decisions, exercises, journal, sessionsRes] = await Promise.all([
@@ -124,7 +124,7 @@ export async function awardAchievements(supabase: SupabaseClient, userId: string
     head("decision_logs").not("score", "is", null).then(n),
     head("exercise_completions").not("score", "is", null).then(n),
     head("journal_entries").then(n),
-    supabase.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", userId),
+    db.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", userId),
   ]);
 
   const sessions = sessionsRes.data ?? [];
@@ -158,6 +158,6 @@ export async function awardAchievements(supabase: SupabaseClient, userId: string
 
   const earned = rules.filter((r) => r.met).map(({ code, title, description }) => ({ user_id: userId, code, title, description }));
   if (earned.length > 0) {
-    await supabase.from("achievements").upsert(earned, { onConflict: "user_id,code", ignoreDuplicates: true });
+    await db.from("achievements").upsert(earned, { onConflict: "user_id,code", ignoreDuplicates: true });
   }
 }

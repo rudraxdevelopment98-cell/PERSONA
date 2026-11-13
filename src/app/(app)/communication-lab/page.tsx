@@ -8,7 +8,7 @@ import { CommunicationLab } from "./lab";
 export const metadata = { title: "Communication Lab" };
 
 export default async function CommunicationLabPage() {
-  const { supabase, user, state } = await getUserState();
+  const { db, user, state } = await getUserState();
   const header = (
     <PageHeader
       title="Communication Lab"
@@ -17,7 +17,7 @@ export default async function CommunicationLabPage() {
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="The Communication Lab" /></>);
 
-  const { data } = await supabase.from("exercise_completions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60);
+  const { data } = await db.from("exercise_completions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60);
   const rows = (data ?? []) as ExerciseRow[];
   const completed = rows.filter((r) => r.completed_at);
   const pending = rows.find((r) => !r.completed_at && Date.now() - Date.parse(r.created_at) < 86_400_000) ?? null;

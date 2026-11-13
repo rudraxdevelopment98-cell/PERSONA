@@ -17,8 +17,8 @@ const schema = z.object({
   response_time_ms: z.number().int().min(0).max(3_600_000).nullable(),
 });
 
-export const POST = apiRoute(schema, async (body, { supabase, user, state }) => {
-  const { data } = await supabase.from("daily_sessions").select("*").eq("id", body.session_id).eq("user_id", user.id).maybeSingle();
+export const POST = apiRoute(schema, async (body, { db, user, state }) => {
+  const { data } = await db.from("daily_sessions").select("*").eq("id", body.session_id).eq("user_id", user.id).maybeSingle();
   const session = data as SessionRow | null;
   if (!session) throw new HttpError(404, "Session not found.");
   if (!session.story_completed_at) throw new HttpError(409, "Finish reading the story first.");
@@ -28,7 +28,7 @@ export const POST = apiRoute(schema, async (body, { supabase, user, state }) => 
   const chosen = scenario.options.find((o) => o.id === body.choice_id);
   if (!chosen) throw new HttpError(400, "Unknown option.");
 
-  const { data: prior } = await supabase
+  const { data: prior } = await db
     .from("scenario_responses")
     .select("id")
     .eq("session_id", session.id)
@@ -36,7 +36,7 @@ export const POST = apiRoute(schema, async (body, { supabase, user, state }) => 
     .maybeSingle();
   if (prior) throw new HttpError(409, "You have already answered this scenario.");
 
-  const context = await buildAIContext(supabase, state, { checkins: 2 });
+  const context = await buildAIContext(db, state, { checkins: 2 });
   const prompt = `${context}
 
 ## Scenario
@@ -56,7 +56,7 @@ Evaluate the reasoning.`;
   const evaluation = await generateStructured({ system: SCENARIO_EVAL_SYSTEM, prompt, schema: scenarioEvaluationSchema, effort: "low" });
   const score = rubricTotal(evaluation.rubric);
 
-  const ins = await supabase.from("scenario_responses").insert({
+  const ins = await db.from("scenario_responses").insert({
     user_id: user.id,
     session_id: session.id,
     scenario_index: body.index,
@@ -70,11 +70,11 @@ Evaluate the reasoning.`;
   if (ins.error?.code === "23505") throw new HttpError(409, "You have already answered this scenario.");
   dbError(ins.error);
 
-  const { count } = await supabase.from("scenario_responses").select("id", { count: "exact", head: true }).eq("session_id", session.id);
+  const { count } = await db.from("scenario_responses").select("id", { count: "exact", head: true }).eq("session_id", session.id);
   if ((count ?? 0) >= session.scenarios.length && !session.scenarios_completed_at) {
-    await supabase.from("daily_sessions").update({ scenarios_completed_at: new Date().toISOString() }).eq("id", session.id);
+    await db.from("daily_sessions").update({ scenarios_completed_at: new Date().toISOString() }).eq("id", session.id);
   }
-  await recomputeScores(supabase, user.id, "scenario");
+  await recomputeScores(db, user.id, "scenario");
 
   return { evaluation, score, options: scenario.options };
 });

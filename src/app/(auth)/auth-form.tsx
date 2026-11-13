@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { Alert, Button, Input, Label, Spinner } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 
 function safeNext(next: string | null) {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
@@ -19,31 +19,20 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(params.get("error"));
-  const [notice, setNotice] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const supabase = createClient();
     try {
       if (mode === "signup") {
         if (password.length < 10) throw new Error("Use a password of at least 10 characters.");
-        const origin = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { display_name: name.trim().slice(0, 80) }, emailRedirectTo: `${origin}/auth/callback` },
-        });
-        if (error) throw error;
-        if (!data.session) {
-          setNotice("Check your email to confirm your account, then sign in.");
-          return;
-        }
+        const { error } = await authClient.signUp.email({ email, password, name: name.trim().slice(0, 80) || email.split("@")[0] });
+        if (error) throw new Error(error.message || "Could not create your account.");
         router.replace("/assessment");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { error } = await authClient.signIn.email({ email, password });
+        if (error) throw new Error(error.status === 401 ? "Incorrect email or password." : error.message || "Could not sign in.");
         router.replace(safeNext(params.get("next")));
       }
       router.refresh();
@@ -65,7 +54,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {mode === "login" ? "Continue your programme." : "Your data is private to you and can be exported or deleted at any time."}
         </p>
 
-        <form onSubmit={submit} className="mt-6 space-y-4">
+        <form onSubmit={submit} method="post" className="mt-6 space-y-4">
           {mode === "signup" && (
             <div>
               <Label htmlFor="name">First name</Label>
@@ -89,7 +78,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             />
           </div>
           {error && <Alert tone="danger">{error}</Alert>}
-          {notice && <Alert tone="success">{notice}</Alert>}
           <Button type="submit" disabled={busy} className="w-full">
             {busy && <Spinner />} {mode === "login" ? "Sign in" : "Create account"}
           </Button>

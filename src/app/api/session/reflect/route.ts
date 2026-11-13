@@ -15,8 +15,8 @@ const schema = z.object({
 });
 
 /** Final step: reflection. The session is only marked complete once every earlier step is done. */
-export const POST = apiRoute(schema, async ({ session_id, answers }, { supabase, user, state }) => {
-  const { data } = await supabase.from("daily_sessions").select("*").eq("id", session_id).eq("user_id", user.id).maybeSingle();
+export const POST = apiRoute(schema, async ({ session_id, answers }, { db, user, state }) => {
+  const { data } = await db.from("daily_sessions").select("*").eq("id", session_id).eq("user_id", user.id).maybeSingle();
   const session = data as SessionRow | null;
   if (!session) throw new HttpError(404, "Session not found.");
   if (session.completed_at) throw new HttpError(409, "This session is already complete.");
@@ -26,7 +26,7 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { supabase,
 
   let feedback = null;
   try {
-    const context = await buildAIContext(supabase, state, { checkins: 1 });
+    const context = await buildAIContext(db, state, { checkins: 1 });
     const qa = session.reflection_questions.map((q, i) => `Q: ${q}\nA: ${answers[i]}`).join("\n\n");
     feedback = await generateStructured({
       system: REFLECTION_SYSTEM,
@@ -38,11 +38,11 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { supabase,
     if (!(err instanceof AIError)) throw err;
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from("daily_sessions")
     .update({ reflection_answers: answers, reflection_feedback: feedback, completed_at: new Date().toISOString() })
     .eq("id", session.id);
   dbError(error);
-  await recomputeScores(supabase, user.id, "session");
+  await recomputeScores(db, user.id, "session");
   return { feedback };
 });

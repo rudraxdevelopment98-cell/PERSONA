@@ -8,7 +8,7 @@ import { DecisionLab } from "./lab";
 export const metadata = { title: "Decision Lab" };
 
 export default async function DecisionLabPage() {
-  const { supabase, user, state } = await getUserState();
+  const { db, user, state } = await getUserState();
   const header = (
     <PageHeader
       title="Decision Lab"
@@ -17,7 +17,7 @@ export default async function DecisionLabPage() {
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="The Decision Lab" /></>);
 
-  const { data } = await supabase.from("decision_logs").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
+  const { data } = await db.from("decision_logs").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
   const logs = (data ?? []) as DecisionLogRow[];
   const completed = logs.filter((l) => l.completed_at);
   const pending = logs.find((l) => !l.completed_at && Date.now() - Date.parse(l.created_at) < 86_400_000) ?? null;

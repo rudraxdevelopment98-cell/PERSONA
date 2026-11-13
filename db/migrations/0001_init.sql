@@ -1,9 +1,49 @@
--- PERSONA 90 - initial schema
--- "users" are Supabase Auth users (auth.users). Every application table is keyed
--- to auth.uid() and protected by Row Level Security so a user can only ever
--- read or write their own rows.
+-- PERSONA 90 - initial schema (PostgreSQL / Neon)
+--
+-- Authentication tables ("user", "session", "account", "verification",
+-- "rateLimit") are managed by Better Auth and only reachable by the server's
+-- owner connection. Application tables are protected by Row Level Security:
+-- the app runs every user request as the restricted role app_user with
+-- app.user_id set for that transaction, so a user can only ever read or write
+-- their own rows - even if a query in the code forgot a user filter.
 
 create extension if not exists pgcrypto;
+
+-- ---------------------------------------------------------------------------
+-- Better Auth
+-- ---------------------------------------------------------------------------
+create table "user" ("id" text not null primary key, "name" text not null, "email" text not null unique, "emailVerified" boolean not null, "image" text, "createdAt" timestamptz default CURRENT_TIMESTAMP not null, "updatedAt" timestamptz default CURRENT_TIMESTAMP not null);
+
+create table "session" ("id" text not null primary key, "expiresAt" timestamptz not null, "token" text not null unique, "createdAt" timestamptz default CURRENT_TIMESTAMP not null, "updatedAt" timestamptz not null, "ipAddress" text, "userAgent" text, "userId" text not null references "user" ("id") on delete cascade);
+
+create table "account" ("id" text not null primary key, "accountId" text not null, "providerId" text not null, "userId" text not null references "user" ("id") on delete cascade, "accessToken" text, "refreshToken" text, "idToken" text, "accessTokenExpiresAt" timestamptz, "refreshTokenExpiresAt" timestamptz, "scope" text, "password" text, "createdAt" timestamptz default CURRENT_TIMESTAMP not null, "updatedAt" timestamptz not null);
+
+create table "verification" ("id" text not null primary key, "identifier" text not null, "value" text not null, "expiresAt" timestamptz not null, "createdAt" timestamptz default CURRENT_TIMESTAMP not null, "updatedAt" timestamptz default CURRENT_TIMESTAMP not null);
+
+create table "rateLimit" ("id" text not null primary key, "key" text not null unique, "count" integer not null, "lastRequest" bigint not null);
+
+create index "session_userId_idx" on "session" ("userId");
+
+create index "account_userId_idx" on "account" ("userId");
+
+create index "verification_identifier_idx" on "verification" ("identifier");
+
+-- ---------------------------------------------------------------------------
+-- Restricted application role + current-user helper
+-- ---------------------------------------------------------------------------
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'app_user') then
+    create role app_user nologin;
+  end if;
+end $$;
+-- Let the connecting (owner) role switch to app_user with SET LOCAL ROLE.
+grant app_user to current_user;
+
+create or replace function public.app_current_user()
+returns text language sql stable as $$
+  select nullif(current_setting('app.user_id', true), '')
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Helpers
@@ -16,10 +56,10 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- profiles (1:1 with auth.users)
+-- profiles (1:1 with "user")
 -- ---------------------------------------------------------------------------
 create table public.profiles (
-  id uuid primary key references auth.users (id) on delete cascade,
+  id text primary key references "user" (id) on delete cascade,
   display_name text check (char_length(display_name) <= 80),
   programme_start_date date,
   timezone text not null default 'UTC' check (char_length(timezone) <= 64),
@@ -34,15 +74,15 @@ create trigger profiles_updated_at before update on public.profiles
 
 -- Create a profile automatically when a user signs up.
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql as $$
 begin
-  insert into public.profiles (id, display_name)
-  values (new.id, left(coalesce(new.raw_user_meta_data ->> 'display_name', ''), 80));
+  insert into public.profiles (id, display_name) values (new.id, left(coalesce(new.name, ''), 80))
+  on conflict (id) do nothing;
   return new;
 end $$;
 
-create trigger on_auth_user_created
-  after insert on auth.users
+create trigger on_user_created
+  after insert on "user"
   for each row execute function public.handle_new_user();
 
 -- ---------------------------------------------------------------------------
@@ -50,7 +90,7 @@ create trigger on_auth_user_created
 -- ---------------------------------------------------------------------------
 create table public.assessments (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   kind text not null default 'baseline' check (kind in ('baseline', 'checkpoint')),
   status text not null default 'in_progress' check (status in ('in_progress', 'completed')),
   scores jsonb,
@@ -63,7 +103,7 @@ create index assessments_user_idx on public.assessments (user_id, started_at des
 create table public.assessment_responses (
   id uuid primary key default gen_random_uuid(),
   assessment_id uuid not null references public.assessments (id) on delete cascade,
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   question_id text not null check (char_length(question_id) <= 32),
   dimension text not null,
   value smallint not null check (value between 1 and 5),
@@ -77,7 +117,7 @@ create index assessment_responses_user_idx on public.assessment_responses (user_
 -- ---------------------------------------------------------------------------
 create table public.daily_checkins (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   day_number smallint not null check (day_number between 1 and 90),
   checkin_date date not null,
   questions jsonb not null,
@@ -94,7 +134,7 @@ create index daily_checkins_user_idx on public.daily_checkins (user_id, checkin_
 -- ---------------------------------------------------------------------------
 create table public.daily_sessions (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   day_number smallint not null check (day_number between 1 and 90),
   session_date date not null,
   focus_skill text not null,
@@ -118,7 +158,7 @@ create index daily_sessions_user_idx on public.daily_sessions (user_id, day_numb
 
 create table public.generated_stories (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   session_id uuid references public.daily_sessions (id) on delete cascade,
   title text not null,
   body text not null,
@@ -135,7 +175,7 @@ create unique index generated_stories_session_idx on public.generated_stories (s
 -- ---------------------------------------------------------------------------
 create table public.scenario_responses (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   session_id uuid references public.daily_sessions (id) on delete cascade,
   scenario_index smallint not null,
   skill text not null,
@@ -151,7 +191,7 @@ create index scenario_responses_user_idx on public.scenario_responses (user_id, 
 
 create table public.exercise_completions (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   exercise_type text not null,
   skill text not null,
   prompt jsonb not null,
@@ -165,7 +205,7 @@ create index exercise_completions_user_idx on public.exercise_completions (user_
 
 create table public.decision_logs (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   category text not null,
   difficulty text not null check (difficulty in ('everyday', 'moderate', 'high_stakes')),
   scenario jsonb not null,
@@ -189,7 +229,7 @@ create index decision_logs_user_idx on public.decision_logs (user_id, created_at
 -- charts read this table directly, so nothing is ever back-filled or invented.
 create table public.personality_scores (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   dimension text not null,
   score numeric(5, 2) not null check (score between 0 and 100),
   self_reported numeric(5, 2),
@@ -202,7 +242,7 @@ create table public.personality_scores (
 create index personality_scores_user_idx on public.personality_scores (user_id, dimension, recorded_at);
 
 create table public.skill_progress (
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   dimension text not null,
   baseline numeric(5, 2) not null,
   current numeric(5, 2) not null,
@@ -217,7 +257,7 @@ create table public.skill_progress (
 
 create table public.achievements (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   code text not null,
   title text not null,
   description text not null,
@@ -230,7 +270,7 @@ create table public.achievements (
 -- ---------------------------------------------------------------------------
 create table public.journal_entries (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   title text not null check (char_length(title) between 1 and 200),
   body text not null check (char_length(body) <= 20000),
   entry_type text not null default 'reflection'
@@ -254,7 +294,7 @@ create trigger journal_entries_updated_at before update on public.journal_entrie
 -- ---------------------------------------------------------------------------
 create table public.coach_messages (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id text not null references "user" (id) on delete cascade,
   role text not null check (role in ('user', 'assistant')),
   content text not null check (char_length(content) <= 20000),
   created_at timestamptz not null default now()
@@ -265,8 +305,8 @@ create index coach_messages_user_idx on public.coach_messages (user_id, created_
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 alter table public.profiles enable row level security;
-create policy "profiles: own row select" on public.profiles for select using (id = auth.uid());
-create policy "profiles: own row update" on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
+create policy "profiles: own row select" on public.profiles for select using (id = public.app_current_user());
+create policy "profiles: own row update" on public.profiles for update using (id = public.app_current_user()) with check (id = public.app_current_user());
 
 do $$
 declare t text;
@@ -277,10 +317,10 @@ begin
     'personality_scores', 'skill_progress', 'achievements', 'journal_entries', 'coach_messages'
   ] loop
     execute format('alter table public.%I enable row level security', t);
-    execute format('create policy "%1$s: own rows select" on public.%1$I for select using (user_id = auth.uid())', t);
-    execute format('create policy "%1$s: own rows insert" on public.%1$I for insert with check (user_id = auth.uid())', t);
-    execute format('create policy "%1$s: own rows update" on public.%1$I for update using (user_id = auth.uid()) with check (user_id = auth.uid())', t);
-    execute format('create policy "%1$s: own rows delete" on public.%1$I for delete using (user_id = auth.uid())', t);
+    execute format('create policy "%1$s: own rows select" on public.%1$I for select using (user_id = public.app_current_user())', t);
+    execute format('create policy "%1$s: own rows insert" on public.%1$I for insert with check (user_id = public.app_current_user())', t);
+    execute format('create policy "%1$s: own rows update" on public.%1$I for update using (user_id = public.app_current_user()) with check (user_id = public.app_current_user())', t);
+    execute format('create policy "%1$s: own rows delete" on public.%1$I for delete using (user_id = public.app_current_user())', t);
   end loop;
 end $$;
 
@@ -288,17 +328,14 @@ end $$;
 drop policy "personality_scores: own rows update" on public.personality_scores;
 
 -- ---------------------------------------------------------------------------
--- Account deletion: removes the auth user; every table cascades.
+-- Privileges for the restricted role (no access to auth tables)
 -- ---------------------------------------------------------------------------
-create or replace function public.delete_my_account()
-returns void language plpgsql security definer set search_path = public, auth as $$
-declare uid uuid := auth.uid();
-begin
-  if uid is null then
-    raise exception 'not authenticated';
-  end if;
-  delete from auth.users where id = uid;
-end $$;
-
-revoke all on function public.delete_my_account() from public, anon;
-grant execute on function public.delete_my_account() to authenticated;
+grant usage on schema public to app_user;
+grant select, update on public.profiles to app_user;
+grant select, insert, update, delete on
+  public.assessments, public.assessment_responses, public.daily_checkins, public.daily_sessions,
+  public.generated_stories, public.scenario_responses, public.exercise_completions, public.decision_logs,
+  public.skill_progress, public.achievements, public.journal_entries, public.coach_messages
+  to app_user;
+grant select, insert, delete on public.personality_scores to app_user;
+grant execute on function public.app_current_user() to app_user;

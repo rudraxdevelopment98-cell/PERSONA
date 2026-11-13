@@ -13,7 +13,7 @@ export const metadata = { title: "Progress Analytics" };
 const fmt = (n: number | null) => (n == null ? "–" : Math.round(n));
 
 export default async function ProgressPage() {
-  const { supabase, user, state } = await getUserState();
+  const { db, user, state } = await getUserState();
   const header = (
     <PageHeader
       title="Progress Analytics"
@@ -23,9 +23,9 @@ export default async function ProgressPage() {
   if (!state.baseline) return (<>{header}<BaselineGate feature="Progress tracking" /></>);
 
   const [{ data: hist }, { data: sessions }, { data: checkins }] = await Promise.all([
-    supabase.from("personality_scores").select("dimension, score, source, recorded_at").eq("user_id", user.id).order("recorded_at").limit(5000),
-    supabase.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", user.id),
-    supabase.from("daily_checkins").select("day_number").eq("user_id", user.id).not("completed_at", "is", null),
+    db.from("personality_scores").select("dimension, score, source, recorded_at").eq("user_id", user.id).order("recorded_at").limit(5000),
+    db.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", user.id),
+    db.from("daily_checkins").select("day_number").eq("user_id", user.id).not("completed_at", "is", null),
   ]);
 
   const history = historyByDay(((hist ?? []) as ScoreHistoryRow[]).map((r) => ({ ...r, score: Number(r.score) })));

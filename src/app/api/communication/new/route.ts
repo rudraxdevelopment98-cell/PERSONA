@@ -10,19 +10,19 @@ export const maxDuration = 120;
 
 const schema = z.object({ exercise_type: z.enum(COMMUNICATION_EXERCISES.map((e) => e.id) as [string, ...string[]]) });
 
-export const POST = apiRoute(schema, async ({ exercise_type }, { supabase, user, state }) => {
+export const POST = apiRoute(schema, async ({ exercise_type }, { db, user, state }) => {
   requireBaseline(state);
-  await enforceHourlyLimit(supabase, user.id, "exercise_completions", 15);
+  await enforceHourlyLimit(db, user.id, "exercise_completions", 15);
   const ex = EXERCISE_BY_ID.get(exercise_type)!;
 
-  const { data: recent } = await supabase
+  const { data: recent } = await db
     .from("exercise_completions")
     .select("prompt")
     .eq("user_id", user.id)
     .eq("exercise_type", exercise_type)
     .order("created_at", { ascending: false })
     .limit(8);
-  const context = await buildAIContext(supabase, state, { checkins: 2 });
+  const context = await buildAIContext(db, state, { checkins: 2 });
 
   const prompt = await generateStructured({
     system: COMMUNICATION_PROMPT_SYSTEM,
@@ -31,7 +31,7 @@ export const POST = apiRoute(schema, async ({ exercise_type }, { supabase, user,
     effort: "low",
   });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("exercise_completions")
     .insert({ user_id: user.id, exercise_type, skill: ex.skill, prompt })
     .select("id")

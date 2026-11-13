@@ -12,14 +12,14 @@ export const maxDuration = 300;
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
 /** Generates today's personalised 30-minute session (once per programme day). */
-export const POST = apiRoute(z.object({}), async (_body, { supabase, user, state }) => {
+export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) => {
   requireBaseline(state);
   if (state.day < 1) throw new HttpError(409, "Your programme has not started yet.");
 
-  const { data: existing } = await supabase.from("daily_sessions").select("id").eq("user_id", user.id).eq("day_number", state.day).maybeSingle();
+  const { data: existing } = await db.from("daily_sessions").select("id").eq("user_id", user.id).eq("day_number", state.day).maybeSingle();
   if (existing) return { sessionId: existing.id };
 
-  const { data: checkin } = await supabase
+  const { data: checkin } = await db
     .from("daily_checkins")
     .select("completed_at")
     .eq("user_id", user.id)
@@ -27,7 +27,7 @@ export const POST = apiRoute(z.object({}), async (_body, { supabase, user, state
     .maybeSingle();
   if (!checkin?.completed_at) throw new HttpError(409, "Complete today's check-in first - your session is built from it.");
 
-  const { data: pastStories } = await supabase
+  const { data: pastStories } = await db
     .from("generated_stories")
     .select("title, body")
     .eq("user_id", user.id)
@@ -35,7 +35,7 @@ export const POST = apiRoute(z.object({}), async (_body, { supabase, user, state
     .limit(12);
 
   const focus = todaysFocus(state);
-  const context = await buildAIContext(supabase, state, { checkins: 3 });
+  const context = await buildAIContext(db, state, { checkins: 3 });
   const used = (pastStories ?? []).map((s) => `- "${s.title}": ${s.body.slice(0, 160).replace(/\s+/g, " ")}…`).join("\n");
   const prompt = `${context}
 
@@ -59,7 +59,7 @@ Write today's session.`;
   if (scenarios.length < 3 || scenarios.some((s) => s.options.length < 3)) throw new HttpError(502, "The session was incomplete. Please try again.");
   const reflection = content.reflection_questions.slice(0, 3);
 
-  const { data: session, error } = await supabase
+  const { data: session, error } = await db
     .from("daily_sessions")
     .insert({
       user_id: user.id,
@@ -74,12 +74,12 @@ Write today's session.`;
     .select("id")
     .single();
   if (error?.code === "23505") {
-    const { data } = await supabase.from("daily_sessions").select("id").eq("user_id", user.id).eq("day_number", state.day).single();
+    const { data } = await db.from("daily_sessions").select("id").eq("user_id", user.id).eq("day_number", state.day).single();
     return { sessionId: data!.id };
   }
   dbError(error);
 
-  const story = await supabase.from("generated_stories").insert({
+  const story = await db.from("generated_stories").insert({
     user_id: user.id,
     session_id: session!.id,
     title: content.story.title,

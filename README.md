@@ -42,12 +42,13 @@ src/
     domain/          pure logic: dimensions, assessment + rubric, programme, scoring engine, labs (unit-tested)
     ai/              Claude client (structured outputs, streaming, refusal fallback), prompts, Zod schemas
     server/          user state, personalisation context, score recomputation, achievements, API helpers
-    supabase/        server/browser clients
-supabase/migrations/ schema + RLS
+    db/              connection pool, per-user query layer (runs as restricted role with RLS)
+    auth.ts          Better Auth configuration
+db/migrations/       schema + RLS (applied by scripts/migrate.mjs)
 ```
 
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, Recharts, lucide icons.
-- **Backend**: Supabase Auth plus PostgreSQL, with Row Level Security on every table.
+- **Backend**: PostgreSQL (Neon) with Row Level Security on every application table, and **Better Auth** for email and password login (hashed passwords, database sessions, rate limiting). Migrations in `db/migrations` run automatically before every build.
 - **AI**: server-side only, with structured JSON outputs validated by Zod. Three switchable providers, chosen with one environment variable (`AI_PROVIDER`):
   - `gemini`: Google Gemini (`GEMINI_API_KEY`, free tier available; default model `gemini-flash-latest`)
   - `anthropic`: the Claude API directly (`ANTHROPIC_API_KEY`; `claude-opus-5-5` with server-side refusal fallback)
@@ -57,13 +58,13 @@ supabase/migrations/ schema + RLS
 
 ## Security and privacy
 
-- **Row Level Security** on every table: each policy checks `user_id = auth.uid()`, so users can read and write only their own rows. Score history is append-only for clients.
+- **Row Level Security** on every table: each request runs as the restricted Postgres role `app_user` with the signed-in user's id set for that transaction, and every policy checks `user_id = app_current_user()`. A missing filter in application code still cannot expose another user's rows, and `app_user` has no access to the login tables. Score history is append-only.
 - **Server-side secrets**: the Anthropic key is used only in server code (`server-only` imports) and is never shipped to the browser.
 - **Validation**: every request body is checked with Zod. Database `CHECK` constraints bound lengths and ranges.
 - **Prompt-injection hardening**: user-written text reaches the model wrapped in `<user_data>` tags, with instructions to treat it as data.
 - **Rate limits**: per-user hourly limits on AI-heavy endpoints, plus one session per programme day.
 - **Journal privacy**: entries are hidden from the AI Coach unless you opt in.
-- **Your data**: export everything as JSON (`/api/export`), or delete your account permanently. `delete_my_account()` removes the auth user and cascades.
+- **Your data**: export everything as JSON (`/api/export`), or delete your account permanently. Deleting the user row cascades to every table.
 - **Hardening**: security headers (HSTS, frame denial, nosniff, referrer policy) and `next` redirect sanitisation on login.
 - **AI safety**: prompts forbid diagnosis, shaming and manipulation, and route crisis disclosures to professional help.
 
@@ -73,14 +74,9 @@ supabase/migrations/ schema + RLS
    ```bash
    npm install
    ```
-2. **Create a Supabase project** (or run one locally with `npx supabase start`) and apply the migration:
-   ```bash
-   npx supabase db push            # hosted project, after `npx supabase link`
-   ```
-   Or paste `supabase/migrations/0001_init.sql` into the SQL editor.
-3. **Configure environment**: copy `.env.example` to `.env.local` and fill in the Supabase URL and anon key. For AI, set `GEMINI_API_KEY` (free key from https://aistudio.google.com/apikey), or set nothing on Vercel to use AI Gateway.
-4. **Auth settings**: in Supabase → Authentication → URL configuration, set the Site URL and add `<site>/auth/callback` as a redirect URL.
-5. **Run**
+2. **Create a PostgreSQL database.** On Vercel, use Storage → Create Database → Neon, then connect it to the project; `DATABASE_URL` is added automatically. Locally, any Postgres 15+ works.
+3. **Configure environment**: copy `.env.example` to `.env.local` and set `DATABASE_URL`, `BETTER_AUTH_SECRET` and an AI provider (`GEMINI_API_KEY` is free from https://aistudio.google.com/apikey).
+4. **Run**. `npm run build` applies migrations automatically; for development run `npm run db:migrate` once, then:
    ```bash
    npm run dev
    ```
@@ -91,8 +87,9 @@ supabase/migrations/ schema + RLS
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` / `npm start` | Production build and server |
-| `npm test` | Unit tests (scoring engine, rubric, programme, AI output schemas) |
+| `npm test` | Unit tests (scoring engine, rubric, programme, AI output schemas, query builder) |
 | `npm run typecheck` / `npm run lint` | Static checks |
+| `npm run db:migrate` | Apply database migrations |
 
 ## Deployment notes
 

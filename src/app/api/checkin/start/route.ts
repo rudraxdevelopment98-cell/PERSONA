@@ -20,11 +20,11 @@ function normalise(questions: CheckinQuestion[]): CheckinQuestion[] {
 }
 
 /** Returns today's check-in, generating adaptive questions on first request. */
-export const POST = apiRoute(z.object({}), async (_body, { supabase, user, state }) => {
+export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) => {
   requireBaseline(state);
   if (state.day < 1) throw new HttpError(409, "Your programme has not started yet.");
 
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from("daily_checkins")
     .select("*")
     .eq("user_id", user.id)
@@ -33,7 +33,7 @@ export const POST = apiRoute(z.object({}), async (_body, { supabase, user, state
   if (existing) return { checkin: existing };
 
   const focus = todaysFocus(state);
-  const context = await buildAIContext(supabase, state, { checkins: 3 });
+  const context = await buildAIContext(db, state, { checkins: 3 });
   const prompt = `${context}\n\nToday is day ${state.day}. Today's learning focus is "${focus.title}" (${DIMENSION_META[focus.dimension].label}). Write today's check-in questions.`;
 
   let questions: CheckinQuestion[] = [];
@@ -43,7 +43,7 @@ export const POST = apiRoute(z.object({}), async (_body, { supabase, user, state
   }
   if (questions.length < 5) throw new HttpError(502, "Could not prepare today's questions. Please try again.");
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("daily_checkins")
     .upsert(
       { user_id: user.id, day_number: state.day, checkin_date: state.today, questions },
@@ -54,7 +54,7 @@ export const POST = apiRoute(z.object({}), async (_body, { supabase, user, state
   dbError(error);
   if (data) return { checkin: data };
   // A concurrent request created it first.
-  const again = await supabase.from("daily_checkins").select("*").eq("user_id", user.id).eq("checkin_date", state.today).single();
+  const again = await db.from("daily_checkins").select("*").eq("user_id", user.id).eq("checkin_date", state.today).single();
   dbError(again.error);
   return { checkin: again.data };
 });

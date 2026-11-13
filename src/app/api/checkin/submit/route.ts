@@ -15,8 +15,8 @@ const schema = z.object({
     .max(7),
 });
 
-export const POST = apiRoute(schema, async ({ answers }, { supabase, user, state }) => {
-  const { data } = await supabase.from("daily_checkins").select("*").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle();
+export const POST = apiRoute(schema, async ({ answers }, { db, user, state }) => {
+  const { data } = await db.from("daily_checkins").select("*").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle();
   const checkin = data as CheckinRow | null;
   if (!checkin) throw new HttpError(404, "Start today's check-in first.");
   if (checkin.completed_at) throw new HttpError(409, "Today's check-in is already complete.");
@@ -33,13 +33,13 @@ export const POST = apiRoute(schema, async ({ answers }, { supabase, user, state
   }
 
   const completedAt = new Date().toISOString();
-  const save = await supabase.from("daily_checkins").update({ answers: clean, completed_at: completedAt }).eq("id", checkin.id);
+  const save = await db.from("daily_checkins").update({ answers: clean, completed_at: completedAt }).eq("id", checkin.id);
   dbError(save.error);
 
   let analysis = null;
   let analysisError: string | null = null;
   try {
-    const context = await buildAIContext(supabase, state, { checkins: 6 });
+    const context = await buildAIContext(db, state, { checkins: 6 });
     const today = checkin.questions.map((q) => `Q: ${q.text}\nA: ${clean.find((c) => c.id === q.id)?.value}`).join("\n");
     analysis = await generateStructured({
       system: CHECKIN_ANALYSIS_SYSTEM,
@@ -47,13 +47,13 @@ export const POST = apiRoute(schema, async ({ answers }, { supabase, user, state
       schema: checkinAnalysisSchema,
       effort: "low",
     });
-    const upd = await supabase.from("daily_checkins").update({ analysis }).eq("id", checkin.id);
+    const upd = await db.from("daily_checkins").update({ analysis }).eq("id", checkin.id);
     dbError(upd.error);
   } catch (err) {
     if (!(err instanceof AIError)) throw err;
     analysisError = err.message;
   }
 
-  await recomputeScores(supabase, user.id, "checkin");
+  await recomputeScores(db, user.id, "checkin");
   return { analysis, analysisError };
 });

@@ -1,9 +1,9 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/db/server";
 import { cache } from "react";
 import { DIMENSIONS, type Dimension } from "@/lib/domain/dimensions";
 import { focusForDay, phaseForDay, programmeDay, todayIn } from "@/lib/domain/programme";
-import { requireUser } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/db/server";
 import type { AssessmentRow, ProfileRow, SkillProgressRow } from "./types";
 
 export type UserState = {
@@ -17,10 +17,10 @@ export type UserState = {
   weakest: Dimension[];
 };
 
-export async function loadUserState(supabase: SupabaseClient, userId: string, email?: string): Promise<UserState> {
+export async function loadUserState(db: Db, userId: string, email?: string): Promise<UserState> {
   const [{ data: profile }, { data: baseline }, { data: skills }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", userId).single(),
-    supabase
+    db.from("profiles").select("*").eq("id", userId).single(),
+    db
       .from("assessments")
       .select("*")
       .eq("user_id", userId)
@@ -29,7 +29,7 @@ export async function loadUserState(supabase: SupabaseClient, userId: string, em
       .order("completed_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from("skill_progress").select("*").eq("user_id", userId),
+    db.from("skill_progress").select("*").eq("user_id", userId),
   ]);
 
   const p = (profile ?? {
@@ -69,9 +69,9 @@ export async function loadUserState(supabase: SupabaseClient, userId: string, em
 
 /** Request-scoped state for server components. */
 export const getUserState = cache(async () => {
-  const { supabase, user } = await requireUser();
-  const state = await loadUserState(supabase, user.id, user.email);
-  return { supabase, user, state };
+  const { db, user } = await requireUser();
+  const state = await loadUserState(db, user.id, user.email);
+  return { db, user, state };
 });
 
 export function todaysFocus(state: UserState) {
