@@ -1,0 +1,146 @@
+import { describe, expect, it } from "vitest";
+import { ASSESSMENT_ITEMS, isAssessmentComplete, scoreAssessment } from "./assessment";
+import { DIMENSIONS } from "./dimensions";
+import { baseFocusForDay, focusForDay, phaseForDay, programmeDay } from "./programme";
+import { computeScores, consistencyScore } from "./scoring";
+
+describe("assessment", () => {
+  it("has four items for every dimension and unique ids", () => {
+    for (const d of DIMENSIONS) expect(ASSESSMENT_ITEMS.filter((i) => i.dimension === d)).toHaveLength(4);
+    expect(new Set(ASSESSMENT_ITEMS.map((i) => i.id)).size).toBe(ASSESSMENT_ITEMS.length);
+  });
+
+  it("scores the best possible answers as 100 and the worst as 0", () => {
+    const best = ASSESSMENT_ITEMS.map((i) => ({
+      question_id: i.id,
+      value: i.kind === "likert" ? (i.reverse ? 1 : 5) : Math.max(...i.options.map((o) => o.value)),
+    }));
+    const worst = ASSESSMENT_ITEMS.map((i) => ({
+      question_id: i.id,
+      value: i.kind === "likert" ? (i.reverse ? 5 : 1) : Math.min(...i.options.map((o) => o.value)),
+    }));
+    expect(isAssessmentComplete(best)).toBe(true);
+    for (const d of DIMENSIONS) {
+      expect(scoreAssessment(best)[d]).toBe(100);
+      expect(scoreAssessment(worst)[d]).toBe(0);
+    }
+  });
+
+  it("ignores unknown questions and out-of-range values", () => {
+    const s = scoreAssessment([
+      { question_id: "nope", value: 5 },
+      { question_id: "conf_1", value: 9 },
+      { question_id: "conf_1", value: 3 },
+    ]);
+    expect(s.confidence).toBe(50);
+    expect(s.leadership).toBeNull();
+  });
+});
+
+describe("programme", () => {
+  it("maps days to phases and cycles focus areas", () => {
+    expect(phaseForDay(1).name).toBe("Foundation");
+    expect(phaseForDay(31).name).toBe("Development");
+    expect(phaseForDay(90).name).toBe("Transformation");
+    expect(baseFocusForDay(1).title).toBe("Self-awareness");
+    expect(baseFocusForDay(7).title).toBe("Confidence");
+    expect(baseFocusForDay(61).title).toBe("Leadership");
+  });
+
+  it("personalises every third day toward weaknesses", () => {
+    expect(focusForDay(3, ["critical_thinking"]).dimension).toBe("critical_thinking");
+    expect(focusForDay(1, ["critical_thinking"]).personalised).toBe(false);
+  });
+
+  it("computes programme day from the start date", () => {
+    expect(programmeDay(null, "2026-01-01")).toBe(0);
+    expect(programmeDay("2026-01-01", "2026-01-01")).toBe(1);
+    expect(programmeDay("2026-01-01", "2026-01-10")).toBe(10);
+    expect(programmeDay("2026-01-01", "2027-01-01")).toBe(90);
+    expect(programmeDay("2026-02-01", "2026-01-01")).toBe(0);
+  });
+});
+
+describe("scoring engine", () => {
+  const noConsistency = { daysElapsed: 0, sessionsCompleted: 0, checkinsCompleted: 0, challengesCompleted: 0 };
+
+  it("returns the baseline when there is no other evidence", () => {
+    const [s] = computeScores({ baseline: { confidence: 40 }, selfReports: [], demonstrated: [], consistency: noConsistency });
+    expect(s.current).toBe(40);
+    expect(s.demonstrated).toBeNull();
+    expect(s.consistency).toBeNull();
+  });
+
+  it("skips dimensions with no baseline instead of inventing one", () => {
+    expect(computeScores({ baseline: {}, selfReports: [], demonstrated: [], consistency: noConsistency })).toHaveLength(0);
+  });
+
+  it("blends self-report with the baseline and ramps demonstrated weight", () => {
+    const one = computeScores({
+      baseline: { confidence: 40 },
+      selfReports: [{ dimension: "confidence", score: 80, at: "2026-01-02" }],
+      demonstrated: [{ dimension: "confidence", score: 90, at: "2026-01-02" }],
+      consistency: noConsistency,
+    })[0];
+    // self = (40*3 + 80)/4 = 50; demonstrated weight = 0.55/3
+    expect(one.self_reported).toBe(50);
+    expect(one.current).toBeCloseTo((50 * 0.45 + 90 * (0.55 / 3)) / (0.45 + 0.55 / 3), 1);
+  });
+
+  it("applies consistency to self-discipline only, and only from day 7", () => {
+    const full = (days: number) => ({ daysElapsed: days, sessionsCompleted: days, checkinsCompleted: days, challengesCompleted: days });
+    const early = computeScores({ baseline: { leadership: 50, self_discipline: 50 }, selfReports: [], demonstrated: [], consistency: full(1) });
+    expect(early.map((s) => s.current)).toEqual([50, 50]);
+    const later = computeScores({ baseline: { leadership: 50, self_discipline: 50 }, selfReports: [], demonstrated: [], consistency: full(8) });
+    expect(later.find((s) => s.dimension === "leadership")!.current).toBe(50);
+    expect(later.find((s) => s.dimension === "self_discipline")!.current).toBeCloseTo((50 * 0.45 + 100 * 0.35) / 0.8, 1);
+  });
+
+  it("computes consistency from completion", () => {
+    expect(consistencyScore({ daysElapsed: 10, sessionsCompleted: 10, checkinsCompleted: 10, challengesCompleted: 10 })).toBe(100);
+    expect(consistencyScore({ daysElapsed: 10, sessionsCompleted: 5, checkinsCompleted: 0, challengesCompleted: 0 })).toBe(25);
+  });
+});
+
+import { currentStreak } from "./programme";
+describe("streak", () => {
+  it("counts consecutive days ending today or yesterday", () => {
+    expect(currentStreak([1, 2, 3], 3)).toBe(3);
+    expect(currentStreak([1, 2, 3], 4)).toBe(3);
+    expect(currentStreak([1, 2, 3], 5)).toBe(0);
+    expect(currentStreak([1, 3, 4], 4)).toBe(2);
+    expect(currentStreak([], 1)).toBe(0);
+  });
+});
+
+import { decisionStats } from "./labs";
+describe("decision stats", () => {
+  it("returns null without data and computes calibration", () => {
+    expect(decisionStats([])).toBeNull();
+    const s = decisionStats([
+      { score: 50, confidence: 9, first_choice_ms: 10000, total_time_ms: 60000, choice_changes: 2 },
+      { score: 60, confidence: 9, first_choice_ms: 20000, total_time_ms: 80000, choice_changes: 0 },
+      { score: 40, confidence: 8, first_choice_ms: null, total_time_ms: 40000, choice_changes: 1 },
+    ])!;
+    expect(s.count).toBe(3);
+    expect(s.avgFirstChoiceSec).toBe(15);
+    expect(s.calibrationGap).toBe(37);
+    expect(s.calibrationNote).toMatch(/ahead/);
+  });
+});
+
+import { historyByDay } from "./scoring";
+describe("history", () => {
+  it("carries scores forward and emits one point per recorded day", () => {
+    const h = historyByDay([
+      { dimension: "confidence", score: 40, recorded_at: "2026-01-01T10:00:00Z" },
+      { dimension: "leadership", score: 60, recorded_at: "2026-01-01T10:00:00Z" },
+      { dimension: "confidence", score: 50, recorded_at: "2026-01-03T09:00:00Z" },
+      { dimension: "confidence", score: 52, recorded_at: "2026-01-03T18:00:00Z" },
+    ]);
+    expect(h).toHaveLength(2);
+    expect(h[0].overall).toBe(50);
+    expect(h[1].scores).toEqual({ confidence: 52, leadership: 60 });
+    expect(h[1].overall).toBe(56);
+  });
+});

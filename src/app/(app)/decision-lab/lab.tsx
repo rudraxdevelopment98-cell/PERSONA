@@ -1,0 +1,210 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Badge, Button, Card, CardHeader, Label, Select, Spinner, Textarea, cx } from "@/components/ui";
+import type { DecisionEvaluation, DecisionScenario } from "@/lib/ai/schemas";
+import { postJSON } from "@/lib/client/api";
+import { DECISION_CATEGORIES, DECISION_DIFFICULTIES } from "@/lib/domain/labs";
+import { RubricTable } from "@/components/rubric";
+
+type Pending = { id: string; scenario: DecisionScenario; category: string; difficulty: string };
+
+const LABELS: Record<string, string> = {
+  clear_criteria: "Clear criteria",
+  alternatives_considered: "Alternatives",
+  risk_and_consequences: "Risk & consequences",
+  ownership: "Ownership",
+};
+
+export function DecisionLab({ pending }: { pending: Pending | null }) {
+  const router = useRouter();
+  const [category, setCategory] = useState<string>(DECISION_CATEGORIES[0].id);
+  const [difficulty, setDifficulty] = useState<string>("moderate");
+  const [current, setCurrent] = useState<Pending | null>(pending);
+  const [choice, setChoice] = useState<string | null>(null);
+  const [reasoning, setReasoning] = useState("");
+  const [confidence, setConfidence] = useState(5);
+  const [result, setResult] = useState<{ evaluation: DecisionEvaluation; score: number } | null>(null);
+  const [busy, setBusy] = useState<null | "new" | "submit">(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const shownAt = useRef(0);
+  const firstChoiceAt = useRef<number | null>(null);
+  const changes = useRef(0);
+
+  useEffect(() => {
+    shownAt.current = Date.now();
+    firstChoiceAt.current = null;
+    changes.current = 0;
+  }, [current?.id]);
+
+  function pick(id: string) {
+    if (result) return;
+    if (firstChoiceAt.current == null) firstChoiceAt.current = Date.now();
+    else if (choice !== id) changes.current += 1;
+    setChoice(id);
+  }
+
+  async function generate() {
+    setBusy("new");
+    setError(null);
+    try {
+      const res = await postJSON<{ id: string; scenario: DecisionScenario }>("/api/decision/new", { category, difficulty });
+      setCurrent({ id: res.id, scenario: res.scenario, category, difficulty });
+      setChoice(null);
+      setReasoning("");
+      setConfidence(5);
+      setResult(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create a scenario.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function submit() {
+    if (!current || !choice) return;
+    setBusy("submit");
+    setError(null);
+    try {
+      const now = Date.now();
+      const res = await postJSON<{ evaluation: DecisionEvaluation; score: number }>("/api/decision/submit", {
+        id: current.id,
+        chosen_option: choice,
+        reasoning,
+        confidence,
+        first_choice_ms: firstChoiceAt.current != null ? firstChoiceAt.current - shownAt.current : null,
+        total_time_ms: now - shownAt.current,
+        choice_changes: changes.current,
+      });
+      setResult(res);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not submit.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const s = current?.scenario;
+  return (
+    <div className="space-y-4">
+      <Card className="p-5">
+        <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <div>
+            <Label htmlFor="cat">Category</Label>
+            <Select id="cat" value={category} onChange={(e) => setCategory(e.target.value)}>
+              {DECISION_CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="diff">Difficulty</Label>
+            <Select id="diff" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+              {DECISION_DIFFICULTIES.map((d) => (
+                <option key={d.id} value={d.id}>{d.label}</option>
+              ))}
+            </Select>
+          </div>
+          <Button onClick={generate} disabled={busy !== null || Boolean(current && !result && choice)}>
+            {busy === "new" && <Spinner />} {busy === "new" ? "Creating…" : current ? "New scenario" : "Generate scenario"}
+          </Button>
+        </div>
+        {error && !s && <div className="mt-4"><Alert tone="danger">{error}</Alert></div>}
+      </Card>
+
+      {s && (
+        <Card>
+          <CardHeader title={s.title} action={result ? <Badge tone="primary">{result.score}/100</Badge> : undefined} />
+          <div className="space-y-4 px-5 py-4">
+            <p className="text-sm leading-relaxed">{s.context}</p>
+            <p className="text-sm"><span className="font-medium">What&apos;s at stake:</span> {s.stakes}</p>
+            {s.constraints.length > 0 && (
+              <ul className="space-y-1 text-sm text-muted">
+                {s.constraints.map((c, i) => (
+                  <li key={i}>· {c}</li>
+                ))}
+              </ul>
+            )}
+            <div className="space-y-2">
+              {s.options.map((o) => {
+                const consequence = result?.evaluation.option_consequences.find((c) => c.id === o.id)?.consequence;
+                return (
+                  <div key={o.id}>
+                    <button
+                      type="button"
+                      onClick={() => pick(o.id)}
+                      disabled={Boolean(result)}
+                      aria-pressed={choice === o.id}
+                      className={cx(
+                        "flex w-full gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-colors",
+                        choice === o.id ? "border-primary bg-primary-soft" : "border-line hover:border-line-strong",
+                      )}
+                    >
+                      <span className="font-medium uppercase text-muted">{o.id}</span>
+                      <span>{o.text}</span>
+                    </button>
+                    {consequence && <p className="mt-1 pl-9 text-xs leading-relaxed text-muted">{consequence}</p>}
+                  </div>
+                );
+              })}
+            </div>
+
+            {!result ? (
+              <>
+                <div>
+                  <Label htmlFor="reasoning">Your reasoning: what matters most here, what did you weigh up, and what could go wrong?</Label>
+                  <Textarea id="reasoning" rows={4} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="confidence">
+                    How confident are you in this decision? <span className="tabular-nums text-muted">{confidence}/10</span>
+                  </Label>
+                  <input id="confidence" type="range" min={1} max={10} value={confidence} onChange={(e) => setConfidence(Number(e.target.value))} className="w-full" />
+                </div>
+                {error && <Alert tone="danger">{error}</Alert>}
+                <div className="flex justify-end">
+                  <Button onClick={submit} disabled={!choice || reasoning.trim().length < 20 || busy !== null}>
+                    {busy === "submit" && <Spinner />} {busy === "submit" ? "Evaluating…" : "Commit to decision"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4 rounded-md bg-bg p-4">
+                <RubricTable rubric={result.evaluation.rubric} labels={LABELS} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted">What you did well</p>
+                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.what_went_well}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted">To improve</p>
+                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.to_improve}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted">Hesitation</p>
+                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.hesitation_insight}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted">Practise next</p>
+                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.practise_next}</p>
+                  </div>
+                </div>
+                {result.evaluation.biases_noticed.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted">Biases noticed:</span>
+                    {result.evaluation.biases_noticed.map((b) => (
+                      <Badge key={b} tone="warning">{b}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
