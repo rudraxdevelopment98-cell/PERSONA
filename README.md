@@ -48,7 +48,12 @@ supabase/migrations/ schema + RLS
 
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, Recharts, lucide icons.
 - **Backend**: Supabase Auth plus PostgreSQL, with Row Level Security on every table.
-- **AI**: the Anthropic SDK, server-side only, with structured JSON outputs validated by Zod. On Vercel, requests go through **Vercel AI Gateway** (`anthropic/claude-opus-5.5`), authenticated automatically with the deployment's OIDC token, so **no API key is needed**. If `ANTHROPIC_API_KEY` is set, the app calls the Claude API directly instead (`claude-opus-5-5`, with server-side refusal fallback). The coach streams its replies.
+- **AI**: server-side only, with structured JSON outputs validated by Zod. Three switchable providers, chosen with one environment variable (`AI_PROVIDER`):
+  - `gemini`: Google Gemini (`GEMINI_API_KEY`, free tier available; default model `gemini-flash-latest`)
+  - `anthropic`: the Claude API directly (`ANTHROPIC_API_KEY`; `claude-opus-5-5` with server-side refusal fallback)
+  - `gateway`: Claude through Vercel AI Gateway, with no key needed on Vercel (OIDC; `anthropic/claude-opus-5.5`)
+
+  If `AI_PROVIDER` is unset, the first configured provider in that order is used. `AI_MODEL` overrides the model. The coach streams its replies. The active provider is shown in Settings.
 
 ## Security and privacy
 
@@ -73,7 +78,7 @@ supabase/migrations/ schema + RLS
    npx supabase db push            # hosted project, after `npx supabase link`
    ```
    Or paste `supabase/migrations/0001_init.sql` into the SQL editor.
-3. **Configure environment**: copy `.env.example` to `.env.local` and fill in the Supabase URL and anon key. On Vercel, AI works with no key via AI Gateway. For local AI, either run `vercel env pull` (which provides an OIDC token) or set `ANTHROPIC_API_KEY`.
+3. **Configure environment**: copy `.env.example` to `.env.local` and fill in the Supabase URL and anon key. For AI, set `GEMINI_API_KEY` (free key from https://aistudio.google.com/apikey), or set nothing on Vercel to use AI Gateway.
 4. **Auth settings**: in Supabase → Authentication → URL configuration, set the Site URL and add `<site>/auth/callback` as a redirect URL.
 5. **Run**
    ```bash
