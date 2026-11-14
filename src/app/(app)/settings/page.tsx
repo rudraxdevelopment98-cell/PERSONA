@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/ui";
 import { appProvider } from "@/lib/ai/client";
 import { getConnectionSummary } from "@/lib/server/ai-connection";
-import { recoveryStatus } from "@/lib/server/recovery";
+import { recoveryStatus, securityQuestionsSet } from "@/lib/server/recovery";
 import { getUserState } from "@/lib/server/state";
 import { SettingsForm } from "./form";
 import { SecuritySettings } from "./security";
@@ -17,7 +17,7 @@ const APP_PROVIDER_NAMES: Record<string, string> = {
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ ai?: string; ai_error?: string }> }) {
   const [{ db, user, state }, params] = await Promise.all([getUserState(), searchParams]);
-  const [connection, recovery] = await Promise.all([getConnectionSummary(db, user.id), recoveryStatus(db, user.id)]);
+  const [connection, recovery, questions] = await Promise.all([getConnectionSummary(db, user.id), recoveryStatus(db, user.id), securityQuestionsSet(db, user.id)]);
   const app = appProvider();
   return (
     <>
@@ -31,7 +31,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         error={params.ai_error ?? null}
       />
       <div className="mb-6">
-        <SecuritySettings remaining={recovery.remaining} email={state.email ?? ""} />
+        <SecuritySettings remaining={recovery.remaining} email={state.email ?? ""} questions={questions} />
       </div>
       <SettingsForm
         email={state.email ?? ""}

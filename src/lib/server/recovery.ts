@@ -115,3 +115,90 @@ export async function resetPasswordWithCode(email: string, code: string, newPass
   if (!updated) throw new RecoveryError("This account has no password to reset.");
   await pool.query('delete from "session" where "userId" = $1', [userId]);
 }
+
+
+// ---------------------------------------------------------------------------
+// Backup: security questions written by the user
+// ---------------------------------------------------------------------------
+
+export function normaliseAnswer(a: string): string {
+  return a.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+export async function saveSecurityQuestions(db: Db, userId: string, q: { q1: string; a1: string; q2: string; a2: string }) {
+  const ctx = await auth.$context;
+  const [h1, h2] = await Promise.all([ctx.password.hash(normaliseAnswer(q.a1)), ctx.password.hash(normaliseAnswer(q.a2))]);
+  const { error } = await db.from("security_questions").upsert(
+    { user_id: userId, question_1: q.q1.trim(), answer_1_hash: h1, question_2: q.q2.trim(), answer_2_hash: h2, updated_at: new Date().toISOString() },
+    { onConflict: "user_id" },
+  );
+  if (error) throw new Error("Could not save your security questions.");
+}
+
+export async function securityQuestionsSet(db: Db, userId: string): Promise<{ q1: string; q2: string } | null> {
+  const { data } = await db.from("security_questions").select("question_1, question_2").eq("user_id", userId).maybeSingle();
+  return data ? { q1: data.question_1, q2: data.question_2 } : null;
+}
+
+const DECOYS: [string, string][] = [
+  ["What was the name of your first school?", "Which city would you most like to live in?"],
+  ["What was your childhood nickname?", "What is the name of your favourite teacher?"],
+  ["What was the first film you saw in a cinema?", "What street did you grow up on?"],
+  ["What was the model of your first phone?", "What is your favourite childhood book?"],
+];
+
+/**
+ * The questions to show for an email. Unknown emails get stable decoy
+ * questions, so the page never reveals whether an account exists.
+ */
+export async function questionsForEmail(email: string): Promise<{ q1: string; q2: string }> {
+  const { rows } = await getPool().query(
+    'select q.question_1, q.question_2 from public.security_questions q join "user" u on u.id = q.user_id where lower(u.email) = lower($1)',
+    [email.trim()],
+  );
+  if (rows[0]) return { q1: rows[0].question_1, q2: rows[0].question_2 };
+  const pick = DECOYS[parseInt(hashValue("decoy", email).slice(0, 8), 16) % DECOYS.length];
+  return { q1: pick[0], q2: pick[1] };
+}
+
+/** Resets the password if both answers match. 3 attempts per account per day, 10 per IP per hour. */
+export async function resetPasswordWithAnswers(email: string, a1: string, a2: string, newPassword: string, ip: string) {
+  const pool = getPool();
+  const emailHash = hashValue("email", email);
+  const ipHash = hashValue("ip", ip || "unknown");
+  const { rows: recent } = await pool.query(
+    `select
+       count(*) filter (where email_hash = $1 and created_at > now() - interval '24 hours')::int as by_email,
+       count(*) filter (where ip_hash = $2 and created_at > now() - interval '1 hour')::int as by_ip
+     from public.password_reset_attempts
+     where method = 'questions' and created_at > now() - interval '24 hours' and (email_hash = $1 or ip_hash = $2)`,
+    [emailHash, ipHash],
+  );
+  if (recent[0].by_email >= 3 || recent[0].by_ip >= 10) {
+    throw new RecoveryError("Too many attempts. For your security, try again in 24 hours or use a recovery code.");
+  }
+  await pool.query("insert into public.password_reset_attempts (email_hash, ip_hash, method) values ($1, $2, 'questions')", [emailHash, ipHash]);
+
+  const fail = "Those answers don't match. Check spelling and try again.";
+  const { rows } = await pool.query(
+    'select u.id, q.answer_1_hash, q.answer_2_hash from public.security_questions q join "user" u on u.id = q.user_id where lower(u.email) = lower($1)',
+    [email.trim()],
+  );
+  const ctx = await auth.$context;
+  if (!rows[0]) {
+    // Spend comparable time for unknown accounts.
+    await ctx.password.hash(normaliseAnswer(a1));
+    throw new RecoveryError(fail);
+  }
+  const [ok1, ok2] = await Promise.all([
+    ctx.password.verify({ hash: rows[0].answer_1_hash, password: normaliseAnswer(a1) }),
+    ctx.password.verify({ hash: rows[0].answer_2_hash, password: normaliseAnswer(a2) }),
+  ]);
+  if (!ok1 || !ok2) throw new RecoveryError(fail);
+
+  const userId: string = rows[0].id;
+  const hashed = await ctx.password.hash(newPassword);
+  const { rowCount } = await pool.query(`update "account" set password = $1, "updatedAt" = now() where "userId" = $2 and "providerId" = 'credential'`, [hashed, userId]);
+  if (!rowCount) throw new RecoveryError("This account has no password to reset.");
+  await pool.query('delete from "session" where "userId" = $1', [userId]);
+}
