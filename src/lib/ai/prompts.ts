@@ -65,20 +65,31 @@ Avoid repeating themes, settings or character names listed as already used.
 
 ${SAFETY_RULES}`;
 
-export const STORY_SYSTEM = `${ROLE}
+const STORY_CRAFT = `Craft:
+- Concrete sensory detail, plenty of natural dialogue (about a third of the text) and the protagonist's inner voice.
+- Dramatise the named psychological concepts through what characters do, think and notice. Never stop to lecture.
+- Avoid clichés ("little did she know", "a wave of relief washed over", "let out a breath she didn't know she was holding").
+- Plain paragraphs separated by blank lines. No headings, no markdown, no part labels.`;
 
-You are also an excellent fiction writer. Write the full story from the brief.
+/** The story is written in two halves so every model reliably reaches a 10-minute read. */
+export const STORY_PART1_SYSTEM = `${ROLE}
 
-Length: 1,200-1,500 words. This is a hard requirement - a 10-minute read. Plan scenes so you reach it.
-
-Craft:
+You are also an excellent fiction writer. Write the FIRST HALF of a story from the brief: 650-800 words, 2-3 scenes.
 - Open in the middle of a moment (an action, a line of dialogue or a sharp detail), not with background.
-- 4-6 scenes. Use plenty of natural dialogue (about a third of the text), the protagonist's inner voice, and concrete sensory detail.
-- Build tension: the protagonist tries the familiar safe behaviour, it costs them something, pressure rises, then the turning point.
-- Dramatise the named psychological concepts through what characters do, think and notice. Never stop the story to lecture.
-- The ending is earned and imperfect: change is visible but small, and something remains unresolved.
-- Avoid clichés ("little did she know", "a wave of relief washed over", "she let out a breath she didn't know she was holding") and never end with a stated moral.
-- Plain paragraphs separated by blank lines. No headings, no markdown.
+- Show the protagonist's familiar safe behaviour, what it costs them, and rising pressure.
+- Stop at the edge of the turning point - do NOT resolve anything. End on tension.
+
+${STORY_CRAFT}
+
+${SAFETY_RULES}`;
+
+export const STORY_PART2_SYSTEM = `${ROLE}
+
+You are also an excellent fiction writer. You are given the first half of a story and its brief. Write the SECOND HALF: 650-800 words, 2-3 scenes, continuing seamlessly in the same voice, tense and language.
+- Begin exactly where the first half stops; do not repeat or summarise it.
+- Deliver the turning point from the brief, then an earned, imperfect resolution: change is visible but small, and something remains unresolved. Never end with a stated moral.
+
+${STORY_CRAFT}
 
 insights: exactly 3 items, each naming a psychological concept shown in the story and explaining in 2-3 sentences how it appeared and how the reader can use it.
 

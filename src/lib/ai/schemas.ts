@@ -92,6 +92,8 @@ export const dailySessionSchema = z.object({
 });
 export type DailySessionContent = z.infer<typeof dailySessionSchema>;
 
+export const storyPartSchema = z.object({ text: z.string() });
+
 export const storySchema = z.object({
   title: z.string(),
   body: z.string(),

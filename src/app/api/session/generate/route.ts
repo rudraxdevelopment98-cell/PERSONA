@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AIError, generateStructured } from "@/lib/ai/client";
-import { SESSION_SYSTEM, STORY_EXPANSION_SYSTEM, STORY_SYSTEM } from "@/lib/ai/prompts";
-import { dailySessionSchema, storyExpansionSchema, storySchema } from "@/lib/ai/schemas";
+import { SESSION_SYSTEM, STORY_EXPANSION_SYSTEM, STORY_PART1_SYSTEM, STORY_PART2_SYSTEM } from "@/lib/ai/prompts";
+import { dailySessionSchema, storyExpansionSchema, storyPartSchema, storySchema } from "@/lib/ai/schemas";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { apiRoute, dbError, HttpError, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
@@ -51,14 +51,10 @@ Plan today's session.`;
 
   const content = await generateStructured({ language: state.profile.language, system: SESSION_SYSTEM, prompt, schema: dailySessionSchema, effort: "medium", maxTokens: 16000 });
 
-  // The story is written in its own focused call from the plan's brief.
+  // The story is written in two focused calls from the plan's brief: the first
+  // half builds to the turning point, the second half resolves it.
   const brief = content.story_brief;
-  const story = await generateStructured({
-    language: state.profile.language,
-    system: STORY_SYSTEM,
-    prompt: `${context}
-
-## Story brief
+  const briefText = `## Story brief
 Title: ${brief.title}
 Setting: ${brief.setting}
 Protagonist: ${brief.protagonist}
@@ -66,13 +62,24 @@ Supporting characters: ${brief.supporting_characters}
 Central conflict: ${brief.central_conflict}
 Turning point: ${brief.turning_point}
 Concepts to dramatise: ${brief.concepts.join(", ")}
-Skill being trained: ${DIMENSION_META[focus.dimension].label}
-
-Write the full story now (1,200-1,500 words).`,
+Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
+  const part1 = await generateStructured({
+    language: state.profile.language,
+    system: STORY_PART1_SYSTEM,
+    prompt: `${context}\n\n${briefText}\n\nWrite the first half now (650-800 words).`,
+    schema: storyPartSchema,
+    effort: "medium",
+    maxTokens: 24000,
+  });
+  const part2 = await generateStructured({
+    language: state.profile.language,
+    system: STORY_PART2_SYSTEM,
+    prompt: `${briefText}\n\n## First half (already written)\n${part1.text}\n\nWrite the second half now (650-800 words), plus the title and 3 insights.`,
     schema: storySchema,
     effort: "medium",
-    maxTokens: 32000,
+    maxTokens: 24000,
   });
+  const story = { title: part2.title || brief.title, body: `${part1.text.trim()}\n\n${part2.body.trim()}`, insights: part2.insights };
 
   // Some models still write short; expand once if it is well under target.
   if (countWords(story.body) < 900) {
