@@ -6,7 +6,7 @@ import { apiRoute, dbError, HttpError } from "@/lib/server/api";
 import { generateDevelopmentProfile } from "@/lib/server/profile";
 import { awardAchievements } from "@/lib/server/progress";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const schema = z.object({
   held_back: z.string().trim().min(10, "Please describe a situation in a sentence or two.").max(2000),

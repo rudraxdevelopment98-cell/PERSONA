@@ -7,7 +7,7 @@ import { apiRoute, dbError, HttpError, requireBaseline } from "@/lib/server/api"
 import { buildAIContext } from "@/lib/server/context";
 import { todaysFocus } from "@/lib/server/state";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 function normalise(questions: CheckinQuestion[]): CheckinQuestion[] {
   return questions.slice(0, 7).map((q, i) => ({

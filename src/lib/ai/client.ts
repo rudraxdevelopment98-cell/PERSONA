@@ -160,6 +160,8 @@ async function geminiClient() {
     // v1beta carries JSON-schema output and thinking configuration.
     httpOptions: {
       apiVersion: process.env.GEMINI_API_VERSION || "v1beta",
+      // Fail a single slow request well before the platform's function time limit.
+      timeout: 150_000,
       ...(process.env.GEMINI_BASE_URL ? { baseUrl: process.env.GEMINI_BASE_URL } : {}),
     },
   });
@@ -173,6 +175,7 @@ function mapGeminiError(err: unknown): never {
   // Google's error text helps diagnose configuration problems; it never contains the key.
   console.error(`[ai] Gemini request failed (${status ?? "network"}): ${String((err as Error)?.message ?? err).slice(0, 500)}`);
   if (status === 429) throw new AIError("The free AI limit was reached for now. Please try again in a minute.", "upstream");
+  if (status && TRANSIENT.has(status)) throw new AIError("The AI service is very busy right now. Please try again in a minute.", "upstream");
   if (status === 401 || status === 403) throw new AIError("The AI service rejected the server's credentials.", "not_configured");
   if (status) throw new AIError(`The AI service returned an error (${status}).`, "upstream");
   throw new AIError("The AI service could not be reached. Please try again.", "upstream");
@@ -206,6 +209,9 @@ function suggestedGeminiModel(err: unknown): string | null {
   return m ? m[1] : null;
 }
 
+const TRANSIENT = new Set([500, 502, 503, 504]);
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function withGeminiModelFallback<T>(p: Provider, fn: (model: string) => Promise<T>): Promise<T> {
   const queue = [...new Set([workingGeminiModel ?? p.model, p.model, ...GEMINI_FALLBACK_MODELS])];
   const tried = new Set<string>();
@@ -214,16 +220,29 @@ async function withGeminiModelFallback<T>(p: Provider, fn: (model: string) => Pr
     const model = queue.shift()!;
     if (tried.has(model)) continue;
     tried.add(model);
-    try {
-      const result = await fn(model);
-      workingGeminiModel = model;
-      return result;
-    } catch (err) {
-      lastErr = err;
-      if (errStatus(err) !== 404) throw err;
-      const suggestion = suggestedGeminiModel(err);
-      if (suggestion && !tried.has(suggestion)) queue.unshift(suggestion);
-      console.warn(`[ai] Gemini model "${model}" is unavailable (${errText(err).slice(0, 300)}); trying ${queue[0] ?? "nothing else"}.`);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const result = await fn(model);
+        workingGeminiModel = model;
+        return result;
+      } catch (err) {
+        lastErr = err;
+        const status = errStatus(err);
+        // Overloaded: wait briefly and retry once, then move on to the next model.
+        if (status && TRANSIENT.has(status)) {
+          console.warn(`[ai] Gemini model "${model}" is busy (${status}); ${attempt === 0 ? "retrying" : "trying another model"}.`);
+          if (attempt === 0) {
+            await pause(1500);
+            continue;
+          }
+          break;
+        }
+        if (status !== 404) throw err;
+        const suggestion = suggestedGeminiModel(err);
+        if (suggestion && !tried.has(suggestion)) queue.unshift(suggestion);
+        console.warn(`[ai] Gemini model "${model}" is unavailable (${errText(err).slice(0, 300)}); trying ${queue[0] ?? "nothing else"}.`);
+        break;
+      }
     }
   }
   throw lastErr;

@@ -7,7 +7,7 @@ import { buildAIContext } from "@/lib/server/context";
 import { recomputeScores } from "@/lib/server/progress";
 import type { CheckinRow } from "@/lib/server/types";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const schema = z.object({
   answers: z

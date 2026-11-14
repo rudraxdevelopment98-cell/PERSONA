@@ -7,7 +7,7 @@ import { buildAIContext } from "@/lib/server/context";
 import { recomputeScores } from "@/lib/server/progress";
 import type { SessionRow } from "@/lib/server/types";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const schema = z.object({
   session_id: z.uuid(),

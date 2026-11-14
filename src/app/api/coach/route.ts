@@ -5,7 +5,7 @@ import { buildAIContext } from "@/lib/server/context";
 import { loadUserState } from "@/lib/server/state";
 import { dbForUser, getSessionUser } from "@/lib/db/server";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const schema = z.object({ message: z.string().trim().min(1).max(4000) });
 

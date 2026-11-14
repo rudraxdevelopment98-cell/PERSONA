@@ -6,7 +6,7 @@ import { DECISION_CATEGORIES, DECISION_DIFFICULTIES } from "@/lib/domain/labs";
 import { apiRoute, dbError, enforceHourlyLimit, HttpError, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const schema = z.object({
   category: z.enum(DECISION_CATEGORIES.map((c) => c.id) as [string, ...string[]]),

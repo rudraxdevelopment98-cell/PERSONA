@@ -6,7 +6,7 @@ import { COMMUNICATION_EXERCISES, EXERCISE_BY_ID } from "@/lib/domain/labs";
 import { apiRoute, dbError, enforceHourlyLimit, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const schema = z.object({ exercise_type: z.enum(COMMUNICATION_EXERCISES.map((e) => e.id) as [string, ...string[]]) });
 
