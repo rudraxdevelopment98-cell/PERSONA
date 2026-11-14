@@ -19,7 +19,7 @@ export type ProviderKind = "gemini" | "anthropic" | "gateway";
 type Provider = { kind: ProviderKind; model: string };
 
 const DEFAULT_MODELS: Record<ProviderKind, string> = {
-  gemini: "gemini-flash-latest",
+  gemini: "gemini-2.5-flash",
   anthropic: "claude-opus-5-5",
   gateway: "anthropic/claude-opus-5.5",
 };
@@ -183,11 +183,29 @@ function checkGeminiFinish(last: GeminiChunk | null) {
   if (reason === "MAX_TOKENS") throw new AIError("The AI response was cut off. Please try again.", "truncated");
 }
 
+/** Models tried in order if the configured one is unavailable (HTTP 404). */
+const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash"];
+
+async function withGeminiModelFallback<T>(p: Provider, fn: (model: string) => Promise<T>): Promise<T> {
+  const models = [p.model, ...GEMINI_FALLBACK_MODELS.filter((m) => m !== p.model)];
+  let lastErr: unknown;
+  for (const model of models) {
+    try {
+      return await fn(model);
+    } catch (err) {
+      lastErr = err;
+      if ((err as { status?: number })?.status !== 404) throw err;
+      console.warn(`[ai] Gemini model "${model}" is unavailable; trying the next one.`);
+    }
+  }
+  throw lastErr;
+}
+
 async function geminiStructured(p: Provider, system: string, prompt: string, jsonSchema: Record<string, unknown>, effort: Effort, maxTokens: number) {
   const ai = await geminiClient();
-  const run = async (withSchema: boolean) => {
+  const run = (withSchema: boolean) => withGeminiModelFallback(p, async (model) => {
     const stream = await ai.models.generateContentStream({
-      model: p.model,
+      model,
       contents: [{ role: "user", parts: [{ text: withSchema ? prompt : `${prompt}\n\nRespond with JSON only, matching this JSON Schema:\n${JSON.stringify(jsonSchema)}` }] }],
       config: {
         systemInstruction: system,
@@ -205,7 +223,7 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
     }
     checkGeminiFinish(last);
     return text;
-  };
+  });
   try {
     return await run(true);
   } catch (err) {
@@ -225,11 +243,11 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
 async function* geminiText(p: Provider, system: string, messages: ChatMessage[], effort: Effort, maxTokens: number): AsyncGenerator<string> {
   const ai = await geminiClient();
   try {
-    const stream = await ai.models.generateContentStream({
-      model: p.model,
+    const stream = await withGeminiModelFallback(p, (model) => ai.models.generateContentStream({
+      model,
       contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
       config: { systemInstruction: system, maxOutputTokens: maxTokens, thinkingConfig: { thinkingBudget: GEMINI_THINKING[effort] } },
-    });
+    }));
     let last: GeminiChunk | null = null;
     for await (const chunk of stream) {
       if (chunk.text) yield chunk.text;
