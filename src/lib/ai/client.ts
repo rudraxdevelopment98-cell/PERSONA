@@ -19,7 +19,7 @@ export type ProviderKind = "gemini" | "anthropic" | "gateway";
 type Provider = { kind: ProviderKind; model: string };
 
 const DEFAULT_MODELS: Record<ProviderKind, string> = {
-  gemini: "gemini-2.5-flash",
+  gemini: "gemini-3.8-flash",
   anthropic: "claude-opus-5-5",
   gateway: "anthropic/claude-opus-5.5",
 };
@@ -189,71 +189,116 @@ function checkGeminiFinish(last: GeminiChunk | null) {
   if (reason === "MAX_TOKENS") throw new AIError("The AI response was cut off. Please try again.", "truncated");
 }
 
-/** Models tried in order if the configured one is unavailable (HTTP 404). */
-const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash"];
+/**
+ * Models tried in order if the configured one is unavailable (HTTP 404). Google
+ * retires models for new accounts over time, so when its error names a
+ * replacement model, that model is tried next. The first model that works is
+ * remembered for the lifetime of the server instance.
+ */
+const GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"];
+let workingGeminiModel: string | null = null;
+
+const errStatus = (err: unknown) => (err as { status?: number })?.status;
+const errText = (err: unknown) => String((err as Error)?.message ?? err);
+
+function suggestedGeminiModel(err: unknown): string | null {
+  const m = /use (?:models\/)?(gemini-[a-z0-9.\-]*[a-z0-9])/i.exec(errText(err));
+  return m ? m[1] : null;
+}
 
 async function withGeminiModelFallback<T>(p: Provider, fn: (model: string) => Promise<T>): Promise<T> {
-  const models = [p.model, ...GEMINI_FALLBACK_MODELS.filter((m) => m !== p.model)];
+  const queue = [...new Set([workingGeminiModel ?? p.model, p.model, ...GEMINI_FALLBACK_MODELS])];
+  const tried = new Set<string>();
   let lastErr: unknown;
-  for (const model of models) {
+  while (queue.length > 0) {
+    const model = queue.shift()!;
+    if (tried.has(model)) continue;
+    tried.add(model);
     try {
-      return await fn(model);
+      const result = await fn(model);
+      workingGeminiModel = model;
+      return result;
     } catch (err) {
       lastErr = err;
-      if ((err as { status?: number })?.status !== 404) throw err;
-      console.warn(`[ai] Gemini model "${model}" is unavailable (${String((err as Error)?.message ?? "").slice(0, 200)}); trying the next one.`);
+      if (errStatus(err) !== 404) throw err;
+      const suggestion = suggestedGeminiModel(err);
+      if (suggestion && !tried.has(suggestion)) queue.unshift(suggestion);
+      console.warn(`[ai] Gemini model "${model}" is unavailable (${errText(err).slice(0, 300)}); trying ${queue[0] ?? "nothing else"}.`);
     }
   }
   throw lastErr;
 }
 
+/**
+ * Request variants, from richest to most compatible. A 400 (unsupported
+ * setting) moves to the next variant: first dropping the thinking setting,
+ * then the JSON schema (which then goes in the prompt; Zod still validates).
+ */
+const STRUCTURED_VARIANTS = [
+  { schema: true, thinking: true },
+  { schema: true, thinking: false },
+  { schema: false, thinking: false },
+];
+
 async function geminiStructured(p: Provider, system: string, prompt: string, jsonSchema: Record<string, unknown>, effort: Effort, maxTokens: number) {
   const ai = await geminiClient();
-  const run = (withSchema: boolean) => withGeminiModelFallback(p, async (model) => {
-    const stream = await ai.models.generateContentStream({
-      model,
-      contents: [{ role: "user", parts: [{ text: withSchema ? prompt : `${prompt}\n\nRespond with JSON only, matching this JSON Schema:\n${JSON.stringify(jsonSchema)}` }] }],
-      config: {
-        systemInstruction: system,
-        maxOutputTokens: maxTokens,
-        responseMimeType: "application/json",
-        ...(withSchema ? { responseJsonSchema: jsonSchema } : {}),
-        thinkingConfig: { thinkingBudget: GEMINI_THINKING[effort] },
-      },
-    });
-    let text = "";
-    let last: GeminiChunk | null = null;
-    for await (const chunk of stream) {
-      text += chunk.text ?? "";
-      last = chunk as GeminiChunk;
+  let lastErr: unknown;
+  for (const v of STRUCTURED_VARIANTS) {
+    try {
+      return await withGeminiModelFallback(p, async (model) => {
+        const stream = await ai.models.generateContentStream({
+          model,
+          contents: [
+            { role: "user", parts: [{ text: v.schema ? prompt : `${prompt}\n\nRespond with JSON only, matching this JSON Schema:\n${JSON.stringify(jsonSchema)}` }] },
+          ],
+          config: {
+            systemInstruction: system,
+            maxOutputTokens: maxTokens,
+            responseMimeType: "application/json",
+            ...(v.schema ? { responseJsonSchema: jsonSchema } : {}),
+            ...(v.thinking ? { thinkingConfig: { thinkingBudget: GEMINI_THINKING[effort] } } : {}),
+          },
+        });
+        let text = "";
+        let last: GeminiChunk | null = null;
+        for await (const chunk of stream) {
+          text += chunk.text ?? "";
+          last = chunk as GeminiChunk;
+        }
+        checkGeminiFinish(last);
+        return text;
+      });
+    } catch (err) {
+      lastErr = err;
+      if (errStatus(err) !== 400) break;
+      console.warn(`[ai] Gemini rejected a request setting (${errText(err).slice(0, 200)}); retrying with a simpler request.`);
     }
-    checkGeminiFinish(last);
-    return text;
-  });
-  try {
-    return await run(true);
-  } catch (err) {
-    // Some models reject parts of a JSON Schema; fall back to JSON mode with the
-    // schema in the prompt. Output is still validated with Zod afterwards.
-    if ((err as { status?: number })?.status === 400) {
-      try {
-        return await run(false);
-      } catch (retryErr) {
-        mapGeminiError(retryErr);
-      }
-    }
-    mapGeminiError(err);
   }
+  mapGeminiError(lastErr);
 }
 
 async function* geminiText(p: Provider, system: string, messages: ChatMessage[], effort: Effort, maxTokens: number): AsyncGenerator<string> {
   const ai = await geminiClient();
+  const open = (thinking: boolean) =>
+    withGeminiModelFallback(p, (model) =>
+      ai.models.generateContentStream({
+        model,
+        contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+        config: {
+          systemInstruction: system,
+          maxOutputTokens: maxTokens,
+          ...(thinking ? { thinkingConfig: { thinkingBudget: GEMINI_THINKING[effort] } } : {}),
+        },
+      }),
+    );
   try {
-    const stream = await withGeminiModelFallback(p, (model) => ai.models.generateContentStream({
-      model,
-      contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
-      config: { systemInstruction: system, maxOutputTokens: maxTokens, thinkingConfig: { thinkingBudget: GEMINI_THINKING[effort] } },
-    }));
+    let stream;
+    try {
+      stream = await open(true);
+    } catch (err) {
+      if (errStatus(err) !== 400) throw err;
+      stream = await open(false);
+    }
     let last: GeminiChunk | null = null;
     for await (const chunk of stream) {
       if (chunk.text) yield chunk.text;
