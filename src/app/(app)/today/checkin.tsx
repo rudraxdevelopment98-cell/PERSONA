@@ -70,7 +70,13 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
 
   const buildSession = () =>
     run("session", async () => {
-      await postJSON("/api/session/generate");
+      try {
+        await postJSON("/api/session/generate");
+      } catch (e) {
+        // The session may have been created even if the response was lost; reload to check.
+        router.refresh();
+        throw e;
+      }
       router.refresh();
     });
 

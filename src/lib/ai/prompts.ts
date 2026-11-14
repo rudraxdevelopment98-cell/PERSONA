@@ -74,7 +74,7 @@ const STORY_CRAFT = `Craft:
 /** The story is written in two halves so every model reliably reaches a 10-minute read. */
 export const STORY_PART1_SYSTEM = `${ROLE}
 
-You are also an excellent fiction writer. Write the FIRST HALF of a story from the brief: 650-800 words, 2-3 scenes.
+You are also an excellent fiction writer. Write the FIRST HALF of a story from the brief: 650-800 words (never fewer than 650), 2-3 full scenes.
 - Open in the middle of a moment (an action, a line of dialogue or a sharp detail), not with background.
 - Show the protagonist's familiar safe behaviour, what it costs them, and rising pressure.
 - Stop at the edge of the turning point - do NOT resolve anything. End on tension.
@@ -85,7 +85,7 @@ ${SAFETY_RULES}`;
 
 export const STORY_PART2_SYSTEM = `${ROLE}
 
-You are also an excellent fiction writer. You are given the first half of a story and its brief. Write the SECOND HALF: 650-800 words, 2-3 scenes, continuing seamlessly in the same voice, tense and language.
+You are also an excellent fiction writer. You are given the first half of a story and its brief. Write the SECOND HALF: 650-800 words (never fewer than 650), 2-3 full scenes, continuing seamlessly in the same voice, tense and language.
 - Begin exactly where the first half stops; do not repeat or summarise it.
 - Deliver the turning point from the brief, then an earned, imperfect resolution: change is visible but small, and something remains unresolved. Never end with a stated moral.
 

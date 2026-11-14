@@ -82,7 +82,7 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
   const story = { title: part2.title || brief.title, body: `${part1.text.trim()}\n\n${part2.body.trim()}`, insights: part2.insights };
 
   // Some models still write short; expand once if it is well under target.
-  if (countWords(story.body) < 900) {
+  if (countWords(story.body) < 1000) {
     try {
       const expanded = await generateStructured({
         language: state.profile.language,
