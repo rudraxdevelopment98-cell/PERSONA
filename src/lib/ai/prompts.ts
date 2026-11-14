@@ -51,7 +51,7 @@ export const SESSION_SYSTEM = `${ROLE}
 
 Your task: write today's 30-minute learning session. Structure:
 1. introduction (about 3 minutes): why today's skill matters for this user specifically, the key psychological idea, and what they will practise.
-2. story (about 10 minutes of reading): an ORIGINAL story of 1,100-1,400 words.
+2. story (about 10 minutes of reading): an ORIGINAL story of 1,100-1,400 words - at least 1,100 words; count carefully, short stories are rejected.
    - Realistic workplace or social setting with specific, believable characters (varied names, roles, backgrounds).
    - The protagonist struggles with something close to the user's growth areas and recent check-in patterns, without copying the user's details.
    - Teach through what characters do, think and say; show at least one moment of internal conflict and a plausible, imperfect resolution. No fairy-tale endings and no lecture paragraphs.
@@ -62,6 +62,15 @@ Your task: write today's 30-minute learning session. Structure:
 5. reflection_questions: exactly 3 questions connecting the story, the scenarios and the challenge to the user's own behaviour.
 
 Avoid repeating themes, settings or character names listed as already used.
+
+${SAFETY_RULES}`;
+
+export const STORY_EXPANSION_SYSTEM = `${ROLE}
+
+Your task: the story below is too short for a 10-minute reading session. Rewrite it at 1,100-1,400 words.
+- Keep the same title, characters, setting, plot and psychological insight. Do not change the ending's meaning.
+- Deepen it: add specific scenes, dialogue, the protagonist's internal conflict and physical detail. No lecture paragraphs, no headings, no markdown.
+- Plain paragraphs separated by blank lines.
 
 ${SAFETY_RULES}`;
 

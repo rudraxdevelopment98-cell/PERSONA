@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { generateStructured } from "@/lib/ai/client";
-import { SESSION_SYSTEM } from "@/lib/ai/prompts";
-import { dailySessionSchema } from "@/lib/ai/schemas";
+import { AIError, generateStructured } from "@/lib/ai/client";
+import { SESSION_SYSTEM, STORY_EXPANSION_SYSTEM } from "@/lib/ai/prompts";
+import { dailySessionSchema, storyExpansionSchema } from "@/lib/ai/schemas";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { apiRoute, dbError, HttpError, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
@@ -50,6 +50,23 @@ ${used || "None yet."}
 Write today's session.`;
 
   const content = await generateStructured({ system: SESSION_SYSTEM, prompt, schema: dailySessionSchema, effort: "medium", maxTokens: 32000 });
+
+  // Some models write short stories; expand once if it is well under target.
+  if (countWords(content.story.body) < 900) {
+    try {
+      const expanded = await generateStructured({
+        system: STORY_EXPANSION_SYSTEM,
+        prompt: `Title: ${content.story.title}\nFocus skill: ${DIMENSION_META[focus.dimension].label}\n\n${content.story.body}`,
+        schema: storyExpansionSchema,
+        effort: "low",
+        maxTokens: 32000,
+      });
+      if (countWords(expanded.body) > countWords(content.story.body)) content.story.body = expanded.body;
+    } catch (err) {
+      if (!(err instanceof AIError)) throw err;
+      console.warn("[ai] Story expansion failed; keeping the original story.");
+    }
+  }
 
   const ids = ["a", "b", "c", "d"];
   const scenarios = content.scenarios.slice(0, 3).map((s) => ({

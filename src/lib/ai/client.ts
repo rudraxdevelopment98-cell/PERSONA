@@ -19,7 +19,7 @@ export type ProviderKind = "gemini" | "anthropic" | "gateway";
 type Provider = { kind: ProviderKind; model: string };
 
 const DEFAULT_MODELS: Record<ProviderKind, string> = {
-  gemini: "gemini-3.8-flash",
+  gemini: "gemini-3.6-flash",
   anthropic: "claude-opus-5-5",
   gateway: "anthropic/claude-opus-5.5",
 };
@@ -54,10 +54,15 @@ function parseAndValidate<S extends z.ZodType>(text: string, schema: S): z.infer
   try {
     raw = JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/g, ""));
   } catch {
+    console.error(`[ai] Output was not valid JSON (${text.length} chars).`);
     throw new AIError("The AI returned malformed output. Please try again.", "invalid_output");
   }
   const parsed = schema.safeParse(raw);
-  if (!parsed.success) throw new AIError("The AI returned output in an unexpected shape. Please try again.", "invalid_output");
+  if (!parsed.success) {
+    // Log only field paths and issue codes - never the user's content.
+    console.error(`[ai] Output failed validation: ${parsed.error.issues.slice(0, 5).map((i) => `${i.path.join(".") || "(root)"}: ${i.code}`).join("; ")}`);
+    throw new AIError("The AI returned output in an unexpected shape. Please try again.", "invalid_output");
+  }
   return parsed.data;
 }
 
@@ -210,7 +215,7 @@ function checkGeminiFinish(last: GeminiChunk | null) {
  * replacement named in a 404 is tried next. The first model that works is
  * remembered for the lifetime of the server instance.
  */
-const GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash"];
+const GEMINI_FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-2.5-flash"];
 let workingGeminiModel: string | null = null;
 
 const errStatus = (err: unknown) => (err as { status?: number })?.status;
@@ -292,7 +297,7 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
   const ai = await geminiClient();
   const deadline = Date.now() + OPERATION_BUDGET_MS;
   // Long generations (the daily story) get more time per attempt than short ones.
-  const attemptMs = maxTokens > 16_000 ? 150_000 : 50_000;
+  const attemptMs = maxTokens > 16_000 ? 120_000 : 30_000;
   let lastErr: unknown;
   for (const v of STRUCTURED_VARIANTS) {
     try {

@@ -50,7 +50,7 @@ db/migrations/       schema + RLS (applied by scripts/migrate.mjs)
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, Recharts, lucide icons.
 - **Backend**: PostgreSQL (Neon) with Row Level Security on every application table, and **Better Auth** for email and password login (hashed passwords, database sessions, rate limiting). Migrations in `db/migrations` run automatically before every build.
 - **AI**: server-side only, with structured JSON outputs validated by Zod. Three switchable providers, chosen with one environment variable (`AI_PROVIDER`):
-  - `gemini`: Google Gemini (`GEMINI_API_KEY`, free tier available; default model `gemini-3.8-flash`)
+  - `gemini`: Google Gemini (`GEMINI_API_KEY`, free tier available; default model `gemini-3.6-flash`)
   - `anthropic`: the Claude API directly (`ANTHROPIC_API_KEY`; `claude-opus-5-5` with server-side refusal fallback)
   - `gateway`: Claude through Vercel AI Gateway, with no key needed on Vercel (OIDC; `anthropic/claude-opus-5.5`)
 

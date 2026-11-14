@@ -87,6 +87,8 @@ export const dailySessionSchema = z.object({
 });
 export type DailySessionContent = z.infer<typeof dailySessionSchema>;
 
+export const storyExpansionSchema = z.object({ body: z.string() });
+
 const feedbackFields = {
   what_went_well: z.string(),
   to_improve: z.string(),
