@@ -176,3 +176,19 @@ describe("speech metrics", () => {
     expect(analyseSpeech("it was like, like, really like hard", 5000, 0).fillers.like).toBe(2);
   });
 });
+
+import { assessmentPack } from "./assessment-i18n";
+describe("assessment translations", () => {
+  it("cover every item and option in Hinglish and Hindi", () => {
+    for (const lang of ["hinglish", "hi"] as const) {
+      const pack = assessmentPack(lang)!;
+      for (const item of ASSESSMENT_ITEMS) {
+        const t = pack.items[item.id];
+        expect(t?.text, `${lang} ${item.id}`).toBeTruthy();
+        if (item.kind === "situational") expect(t.options?.length, `${lang} ${item.id} options`).toBe(item.options.length);
+      }
+      expect(pack.likert).toHaveLength(5);
+    }
+    expect(assessmentPack("en")).toBeNull();
+  });
+});

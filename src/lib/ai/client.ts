@@ -1,4 +1,5 @@
 import "server-only";
+import { AsyncLocalStorage } from "node:async_hooks";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { toOutputSchema } from "./output-schema";
@@ -16,23 +17,41 @@ import { languageInstruction, type Language } from "./prompts";
  * AI_MODEL overrides the default model for whichever provider is active.
  * Switching providers is a single environment-variable change - no code edits.
  */
-export type ProviderKind = "gemini" | "anthropic" | "gateway";
-type Provider = { kind: ProviderKind; model: string };
+export type ProviderKind = "gemini" | "anthropic" | "gateway" | "openai" | "openrouter";
+/** `apiKey` is set when the user connected their own provider. */
+type Provider = { kind: ProviderKind; model: string; apiKey?: string };
 
-const DEFAULT_MODELS: Record<ProviderKind, string> = {
+/** A user's own AI connection (decrypted), applied for the duration of one request. */
+export type UserAIOverride = { provider: "openrouter" | "anthropic" | "gemini" | "openai"; model: string; apiKey: string };
+const userAI = new AsyncLocalStorage<UserAIOverride | null>();
+
+/** Runs `fn` so that every AI call inside it uses the given user's provider. */
+export function runWithUserAI<T>(ai: UserAIOverride | null, fn: () => T): T {
+  return userAI.run(ai, fn);
+}
+
+const DEFAULT_MODELS: Record<"gemini" | "anthropic" | "gateway", string> = {
   gemini: "gemini-3.6-flash",
   anthropic: "claude-opus-5-5",
   gateway: "anthropic/claude-opus-5.5",
 };
 
-export function activeProvider(): Provider {
+/** The app's own provider, ignoring any user connection. */
+export function appProvider(): Provider {
   const requested = process.env.AI_PROVIDER?.trim().toLowerCase();
-  let kind: ProviderKind;
+  let kind: "gemini" | "anthropic" | "gateway";
   if (requested === "gemini" || requested === "anthropic" || requested === "gateway") kind = requested;
   else if (process.env.GEMINI_API_KEY) kind = "gemini";
   else if (process.env.ANTHROPIC_API_KEY) kind = "anthropic";
   else kind = "gateway";
   return { kind, model: process.env.AI_MODEL || DEFAULT_MODELS[kind] };
+}
+
+/** The provider for the current request: the user's own connection if any, else the app's. */
+export function activeProvider(): Provider {
+  const own = userAI.getStore();
+  if (own) return { kind: own.provider, model: own.model, apiKey: own.apiKey };
+  return appProvider();
 }
 
 export class AIError extends Error {
@@ -45,6 +64,8 @@ export class AIError extends Error {
 }
 
 type Effort = "low" | "medium" | "high";
+
+const OWN_KEY_REJECTED = "Your connected AI key was rejected. Update or disconnect it in Settings → Your AI.";
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const REFUSAL_NOTE =
@@ -80,6 +101,7 @@ const GATEWAY_URL = process.env.AI_GATEWAY_URL || "https://ai-gateway.vercel.sh"
 let directClient: Anthropic | null = null;
 
 async function anthropicClient(p: Provider): Promise<Anthropic> {
+  if (p.kind === "anthropic" && p.apiKey) return new Anthropic({ apiKey: p.apiKey, maxRetries: 2 });
   if (p.kind === "anthropic") {
     if (!process.env.ANTHROPIC_API_KEY) throw new AIError("AI_PROVIDER is 'anthropic' but ANTHROPIC_API_KEY is not set.", "not_configured");
     directClient ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2 });
@@ -105,7 +127,7 @@ type StreamParams = Parameters<Anthropic["messages"]["stream"]>[0];
 
 /** Opens a stream; uses the beta endpoint only when the refusal-fallback beta applies. */
 function openClaudeStream(anthropic: Anthropic, p: Provider, params: StreamParams) {
-  if (p.kind === "anthropic" && FALLBACK_MODELS.has(p.model)) {
+  if (p.kind === "anthropic" && !p.apiKey && FALLBACK_MODELS.has(p.model)) {
     return anthropic.beta.messages.stream({ ...(params as object), betas: [FALLBACK_BETA], fallbacks: "default" } as Parameters<
       Anthropic["beta"]["messages"]["stream"]
     >[0]);
@@ -116,7 +138,7 @@ function openClaudeStream(anthropic: Anthropic, p: Provider, params: StreamParam
 function mapClaudeError(err: unknown): never {
   if (err instanceof AIError) throw err;
   if (err instanceof Anthropic.RateLimitError) throw new AIError("The AI service is busy. Please try again in a minute.", "upstream");
-  if (err instanceof Anthropic.AuthenticationError) throw new AIError("The AI service rejected the server's credentials.", "not_configured");
+  if (err instanceof Anthropic.AuthenticationError) throw new AIError(userAI.getStore() ? OWN_KEY_REJECTED : "The AI service rejected the server's credentials.", "not_configured");
   if (err instanceof Anthropic.APIError) throw new AIError(`The AI service returned an error (${err.status ?? "network"}).`, "upstream");
   throw err;
 }
@@ -160,11 +182,12 @@ async function* claudeText(p: Provider, system: string, messages: ChatMessage[],
 
 type ThinkingLevel = import("@google/genai").ThinkingLevel;
 
-async function geminiClient() {
-  if (!process.env.GEMINI_API_KEY) throw new AIError("AI_PROVIDER is 'gemini' but GEMINI_API_KEY is not set.", "not_configured");
+async function geminiClient(p: Provider) {
+  const apiKey = p.apiKey ?? process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new AIError("AI_PROVIDER is 'gemini' but GEMINI_API_KEY is not set.", "not_configured");
   const { GoogleGenAI } = await import("@google/genai");
   return new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
+    apiKey,
     // v1beta carries JSON-schema output and thinking configuration.
     httpOptions: {
       apiVersion: process.env.GEMINI_API_VERSION || "v1beta",
@@ -194,7 +217,9 @@ function mapGeminiError(err: unknown): never {
   console.error(`[ai] Gemini request failed (${status ?? "network"}): ${String((err as Error)?.message ?? err).slice(0, 500)}`);
   if (status === 429) throw new AIError("The free AI limit was reached for now. Please try again in a minute.", "upstream");
   if (status && TRANSIENT.has(status)) throw new AIError("The AI service is very busy right now. Please try again in a minute.", "upstream");
-  if (status === 401 || status === 403) throw new AIError("The AI service rejected the server's credentials.", "not_configured");
+  if (status === 401 || status === 403 || (status === 400 && /api key/i.test(errText(err)))) {
+    throw new AIError(userAI.getStore() ? OWN_KEY_REJECTED : "The AI service rejected the server's credentials.", "not_configured");
+  }
   if (status) throw new AIError(`The AI service returned an error (${status}).`, "upstream");
   throw new AIError("The AI service could not be reached. Please try again.", "upstream");
 }
@@ -250,7 +275,7 @@ async function withGeminiModelFallback<T>(
   // Pass 1 uses the normal time per attempt; if every model was busy or slow,
   // pass 2 retries them with double the time (load spikes are usually short).
   for (let pass = 0; pass < 2; pass++) {
-    const queue = [...new Set([workingGeminiModel ?? p.model, p.model, ...GEMINI_FALLBACK_MODELS])];
+    const queue = [...new Set([p.apiKey ? p.model : (workingGeminiModel ?? p.model), p.model, ...GEMINI_FALLBACK_MODELS])];
     const tried = new Set<string>();
     const perAttempt = attemptMs * (pass + 1);
     while (queue.length > 0) {
@@ -261,7 +286,7 @@ async function withGeminiModelFallback<T>(
       tried.add(model);
       try {
         const result = await fn(model, AbortSignal.timeout(Math.min(perAttempt, remaining - 3_000)));
-        workingGeminiModel = model;
+        if (!p.apiKey) workingGeminiModel = model;
         return result;
       } catch (err) {
         lastErr = err;
@@ -304,7 +329,7 @@ const STRUCTURED_VARIANTS = [
 ];
 
 async function geminiStructured(p: Provider, system: string, prompt: string, jsonSchema: Record<string, unknown>, effort: Effort, maxTokens: number) {
-  const ai = await geminiClient();
+  const ai = await geminiClient(p);
   const deadline = Date.now() + OPERATION_BUDGET_MS;
   // Long generations (the daily story) get more time per attempt than short ones.
   const attemptMs = maxTokens > 16_000 ? 120_000 : 30_000;
@@ -349,7 +374,7 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
 }
 
 async function* geminiText(p: Provider, system: string, messages: ChatMessage[], effort: Effort, maxTokens: number): AsyncGenerator<string> {
-  const ai = await geminiClient();
+  const ai = await geminiClient(p);
   const deadline = Date.now() + OPERATION_BUDGET_MS;
   const open = (thinking: boolean) =>
     withGeminiModelFallback(p, deadline, 90_000, (model, signal) =>
@@ -389,6 +414,121 @@ async function* geminiText(p: Provider, system: string, messages: ChatMessage[],
 }
 
 // ---------------------------------------------------------------------------
+// OpenAI-compatible chat completions (OpenAI and OpenRouter, user keys only)
+// ---------------------------------------------------------------------------
+
+const OAI_BASE = {
+  openai: process.env.USER_OPENAI_BASE_URL || "https://api.openai.com/v1",
+  openrouter: process.env.USER_OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
+};
+
+function oaiHeaders(p: Provider): Record<string, string> {
+  const h: Record<string, string> = { Authorization: `Bearer ${p.apiKey}`, "Content-Type": "application/json" };
+  if (p.kind === "openrouter") {
+    h["HTTP-Referer"] = process.env.NEXT_PUBLIC_SITE_URL || "https://persona-90.vercel.app";
+    h["X-Title"] = "PERSONA 90";
+  }
+  return h;
+}
+
+async function oaiError(res: Response): Promise<never> {
+  const body = await res.text().catch(() => "");
+  console.error(`[ai] ${res.url.split("?")[0]} failed (${res.status}): ${body.slice(0, 300)}`);
+  if (res.status === 401 || res.status === 403) throw new AIError(OWN_KEY_REJECTED, "not_configured");
+  if (res.status === 402) throw new AIError("Your connected AI account has run out of credits. Add credits or disconnect it in Settings → Your AI.", "not_configured");
+  if (res.status === 404) throw new AIError("Your chosen AI model is not available. Pick another model in Settings → Your AI.", "not_configured");
+  if (res.status === 429 || res.status >= 500) throw new AIError("Your AI provider is busy right now. Please try again in a minute.", "upstream");
+  throw Object.assign(new AIError(`Your AI provider returned an error (${res.status}).`, "upstream"), { status: res.status });
+}
+
+type OaiChoice = { message?: { content?: string | null; refusal?: string | null }; finish_reason?: string };
+
+async function oaiStructured(p: Provider, system: string, prompt: string, jsonSchema: Record<string, unknown>, maxTokens: number): Promise<string> {
+  const base = OAI_BASE[p.kind as "openai" | "openrouter"];
+  // Strict JSON schema first; some models only support plain JSON mode.
+  const formats: Record<string, unknown>[] = [
+    { type: "json_schema", json_schema: { name: "output", strict: true, schema: jsonSchema } },
+    { type: "json_object" },
+  ];
+  let lastErr: unknown;
+  for (const [i, format] of formats.entries()) {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: oaiHeaders(p),
+      signal: AbortSignal.timeout(240_000),
+      body: JSON.stringify({
+        model: p.model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: i === 0 ? prompt : `${prompt}\n\nRespond with JSON only, matching this JSON Schema:\n${JSON.stringify(jsonSchema)}` },
+        ],
+        response_format: format,
+        ...(p.kind === "openai" ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
+      }),
+    }).catch((err) => {
+      throw new AIError(/timeout|abort/i.test(String(err)) ? "Your AI provider took too long. Please try again." : "Could not reach your AI provider.", "upstream");
+    });
+    if (!res.ok) {
+      try {
+        await oaiError(res);
+      } catch (err) {
+        lastErr = err;
+        if ((err as { status?: number }).status === 400 && i === 0) continue;
+        throw err;
+      }
+    }
+    const data = (await res.json()) as { choices?: OaiChoice[] };
+    const choice = data.choices?.[0];
+    if (choice?.message?.refusal || choice?.finish_reason === "content_filter") {
+      throw new AIError("The AI declined to generate this content. Try rephrasing your input.", "refusal");
+    }
+    if (choice?.finish_reason === "length") throw new AIError("The AI response was cut off. Please try again.", "truncated");
+    return choice?.message?.content ?? "";
+  }
+  throw lastErr;
+}
+
+async function* oaiText(p: Provider, system: string, messages: ChatMessage[], maxTokens: number): AsyncGenerator<string> {
+  const base = OAI_BASE[p.kind as "openai" | "openrouter"];
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: oaiHeaders(p),
+    signal: AbortSignal.timeout(240_000),
+    body: JSON.stringify({
+      model: p.model,
+      stream: true,
+      messages: [{ role: "system", content: system }, ...messages],
+      ...(p.kind === "openai" ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
+    }),
+  }).catch(() => {
+    throw new AIError("Could not reach your AI provider.", "upstream");
+  });
+  if (!res.ok || !res.body) await oaiError(res);
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t.startsWith("data:")) continue;
+      const payload = t.slice(5).trim();
+      if (payload === "[DONE]") return;
+      try {
+        const delta = (JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] }).choices?.[0]?.delta?.content;
+        if (delta) yield delta;
+      } catch {
+        /* keep-alive comments and partial lines */
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public API (provider-agnostic)
 // ---------------------------------------------------------------------------
 
@@ -412,7 +552,9 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   const text =
     p.kind === "gemini"
       ? await geminiStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens)
-      : await claudeStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens);
+      : p.kind === "openai" || p.kind === "openrouter"
+        ? await oaiStructured(p, system, opts.prompt, jsonSchema, maxTokens)
+        : await claudeStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens);
   return parseAndValidate(text, opts.schema);
 }
 
@@ -428,5 +570,7 @@ export async function* streamText(opts: {
   const system = opts.system + languageInstruction(opts.language);
   const effort = opts.effort ?? "medium";
   const maxTokens = opts.maxTokens ?? 8000;
-  yield* p.kind === "gemini" ? geminiText(p, system, opts.messages, effort, maxTokens) : claudeText(p, system, opts.messages, effort, maxTokens);
+  if (p.kind === "gemini") yield* geminiText(p, system, opts.messages, effort, maxTokens);
+  else if (p.kind === "openai" || p.kind === "openrouter") yield* oaiText(p, system, opts.messages, maxTokens);
+  else yield* claudeText(p, system, opts.messages, effort, maxTokens);
 }

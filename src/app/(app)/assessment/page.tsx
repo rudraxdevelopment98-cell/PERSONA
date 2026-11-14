@@ -7,6 +7,21 @@ import { AssessmentResults } from "./results";
 
 export const metadata = { title: "Initial Assessment" };
 
+const INTRO = {
+  en: {
+    title: "Initial assessment",
+    description: `${ASSESSMENT_ITEMS.length} questions across ten dimensions, plus two short reflections. Answer based on what you actually do, not what you would like to do. There are no right answers, and your progress is saved as you go.`,
+  },
+  hinglish: {
+    title: "Shuruaati assessment",
+    description: `10 skills par ${ASSESSMENT_ITEMS.length} sawaal, aur do chhote reflection. Wahi jawab do jo aap asal mein karte ho, na ki jo karna chahte ho. Koi jawab sahi ya galat nahi hai, aur aapka progress har jawab ke saath save hota hai.`,
+  },
+  hi: {
+    title: "प्रारंभिक आकलन",
+    description: `दस क्षमताओं पर ${ASSESSMENT_ITEMS.length} प्रश्न और दो छोटे विचार। वही जवाब दें जो आप वास्तव में करते हैं, न कि जो करना चाहते हैं। कोई जवाब सही या गलत नहीं है, और हर जवाब के साथ आपकी प्रगति सेव होती है।`,
+  },
+} as const;
+
 export default async function AssessmentPage() {
   const { db, user, state } = await getUserState();
 
@@ -38,13 +53,13 @@ export default async function AssessmentPage() {
   return (
     <>
       <PageHeader
-        title="Initial assessment"
-        description={`${ASSESSMENT_ITEMS.length} questions across ten dimensions, plus two short reflections. Answer based on what you actually do, not what you would like to do. There are no right answers, and your progress is saved as you go.`}
+        title={INTRO[state.profile.language].title}
+        description={INTRO[state.profile.language].description}
       />
       <div className="mb-5">
         <LanguagePicker value={state.profile.language} />
       </div>
-      <AssessmentWizard initial={initial} />
+      <AssessmentWizard initial={initial} language={state.profile.language} />
     </>
   );
 }

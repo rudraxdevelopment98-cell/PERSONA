@@ -1,7 +1,8 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { AIError } from "@/lib/ai/client";
+import { AIError, runWithUserAI } from "@/lib/ai/client";
+import { getUserAI } from "./ai-connection";
 import { dbForUser, getSessionUser, type Db, type SessionUser } from "@/lib/db/server";
 import { loadUserState, type UserState } from "./state";
 
@@ -38,8 +39,9 @@ export function apiRoute<S extends z.ZodType>(schema: S, handler: (body: z.infer
       const parsed = schema.safeParse(json);
       if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message ?? "Invalid request.");
 
-      const state = await loadUserState(db, user.id, user.email);
-      const result = await handler(parsed.data, { db, user, state });
+      const [state, ai] = await Promise.all([loadUserState(db, user.id, user.email), getUserAI(db, user.id)]);
+      // Every AI call in this request uses the user's own provider if they connected one.
+      const result = await runWithUserAI(ai, () => handler(parsed.data, { db, user, state }));
       return NextResponse.json(result ?? { ok: true });
     } catch (err) {
       if (err instanceof HttpError) return NextResponse.json({ error: err.message }, { status: err.status });

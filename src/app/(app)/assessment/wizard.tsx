@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Check, CloudCheck, History } from "lucide-react"
 import { Alert, Button, Card, Label, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
 import { ASSESSMENT_ITEMS, LIKERT_SCALE, type AssessmentItem } from "@/lib/domain/assessment";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
+import { assessmentPack, type AssessmentLang } from "@/lib/domain/assessment-i18n";
 import { postJSON } from "@/lib/client/api";
 
 const PAGE_SIZE = 5;
@@ -17,19 +18,26 @@ function Question({
   pickedIndex,
   onChange,
   index,
+  lang,
 }: {
+  lang: AssessmentLang;
   item: AssessmentItem;
   value?: number;
   pickedIndex?: number;
   onChange: (v: number, optionIndex: number) => void;
   index: number;
 }) {
-  const options = item.kind === "likert" ? LIKERT_SCALE.map((s) => ({ value: s.value, label: s.label })) : item.options;
+  const pack = assessmentPack(lang);
+  const t = pack?.items[item.id];
+  const options =
+    item.kind === "likert"
+      ? LIKERT_SCALE.map((s, i) => ({ value: s.value, label: pack?.likert[i] ?? s.label }))
+      : item.options.map((o, i) => ({ value: o.value, label: t?.options?.[i] ?? o.label }));
   return (
     <fieldset className="py-5 first:pt-0 last:pb-0">
       <legend className="mb-3 text-sm leading-relaxed text-ink">
         <span className="mr-2 text-muted tabular-nums">{index}.</span>
-        {item.text}
+        {t?.text ?? item.text}
       </legend>
       <div className={cx("grid gap-2", item.kind === "likert" ? "grid-cols-1 sm:grid-cols-5" : "grid-cols-1")}>
         {options.map((o, i) => {
@@ -59,7 +67,9 @@ function Question({
   );
 }
 
-export function AssessmentWizard({ initial }: { initial: Record<string, number> }) {
+export function AssessmentWizard({ initial, language = "en" }: { initial: Record<string, number>; language?: AssessmentLang }) {
+  const pack = assessmentPack(language);
+  const ui = pack?.ui;
   const router = useRouter();
   const [answers, setAnswers] = useState<Record<string, number>>(initial);
   // Situational items can share option values, so remember which option index was picked.
@@ -144,7 +154,7 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
 
   const current = pages[page] ?? [];
   const pageComplete = current.every((i) => answers[i.id] != null);
-  const dims = [...new Set(current.map((i) => DIMENSION_META[i.dimension].label))];
+  const dims = [...new Set(current.map((i) => pack?.dimensions[i.dimension] ?? DIMENSION_META[i.dimension].label))];
 
   return (
     <div className="space-y-4">
@@ -155,10 +165,10 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
         </span>
         <span className="inline-flex w-20 shrink-0 items-center justify-end gap-1 text-xs font-semibold text-muted" aria-live="polite">
           {saving > 0 ? (
-            "Saving…"
+            (ui?.saving ?? "Saving…")
           ) : answered > 0 ? (
             <>
-              <CloudCheck className="size-3.5 text-success" /> Saved
+              <CloudCheck className="size-3.5 text-success" /> {ui?.saved ?? "Saved"}
             </>
           ) : null}
         </span>
@@ -167,7 +177,7 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
       {resumed.current && (
         <div className="flex items-center gap-2 rounded-xl bg-accent-soft px-4 py-2.5 text-sm">
           <History className="size-4 shrink-0 text-accent" />
-          Welcome back - your {Object.keys(initial).length} earlier answers are saved. Continue where you left off.
+          {ui ? ui.welcomeBack(Object.keys(initial).length) : `Welcome back - your ${Object.keys(initial).length} earlier answers are saved. Continue where you left off.`}
         </div>
       )}
 
@@ -175,7 +185,7 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
         {!isReflection ? (
           <>
             <p className="mb-5 text-xs font-medium uppercase tracking-wide text-muted">
-              Part {page + 1} of {pages.length + 1} · {dims.join(" · ")}
+              {ui?.part ?? "Part"} {page + 1} {ui?.of ?? "of"} {pages.length + 1} · {dims.join(" · ")}
             </p>
             <div className="divide-y divide-line">
               {current.map((item, i) => {
@@ -187,6 +197,7 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
                     index={page * PAGE_SIZE + i + 1}
                     value={value}
                     pickedIndex={picked[item.id]}
+                    lang={language}
                     onChange={(v, idx) => answer(item, v, idx)}
                   />
                 );
@@ -195,16 +206,16 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
           </>
         ) : (
           <div className="space-y-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">Final part · In your own words</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">{ui?.finalPart ?? "Final part · In your own words"}</p>
             <div>
-              <Label htmlFor="held">Describe a recent situation where you held back from saying or doing something. What stopped you?</Label>
+              <Label htmlFor="held">{ui?.heldBack ?? "Describe a recent situation where you held back from saying or doing something. What stopped you?"}</Label>
               <Textarea id="held" value={heldBack} onChange={(e) => setHeldBack(e.target.value)} maxLength={2000} rows={4} />
             </div>
             <div>
-              <Label htmlFor="goal">What would you like to be noticeably different about how you think or act after 90 days?</Label>
+              <Label htmlFor="goal">{ui?.goal ?? "What would you like to be noticeably different about how you think or act after 90 days?"}</Label>
               <Textarea id="goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={2000} rows={4} />
             </div>
-            <p className="text-xs text-muted">These answers personalise your profile and stories. They are never shared.</p>
+            <p className="text-xs text-muted">{ui?.privateNote ?? "These answers personalise your profile and stories. They are never shared."}</p>
           </div>
         )}
       </Card>
@@ -213,15 +224,15 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
 
       <div className="flex items-center justify-between">
         <Button variant="secondary" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0 || busy}>
-          <ArrowLeft className="size-4" /> Back
+          <ArrowLeft className="size-4" /> {ui?.back ?? "Back"}
         </Button>
         {!isReflection ? (
           <Button onClick={() => setPage((p) => p + 1)} disabled={!pageComplete}>
-            Continue <ArrowRight className="size-4" />
+            {ui?.continue ?? "Continue"} <ArrowRight className="size-4" />
           </Button>
         ) : (
           <Button onClick={finish} disabled={busy || heldBack.trim().length < 10 || goal.trim().length < 10 || answered < ASSESSMENT_ITEMS.length}>
-            {busy ? <Spinner /> : <Check className="size-4" />} {busy ? "Building your profile…" : "Finish assessment"}
+            {busy ? <Spinner /> : <Check className="size-4" />} {busy ? (ui?.building ?? "Building your profile…") : (ui?.finish ?? "Finish assessment")}
           </Button>
         )}
       </div>

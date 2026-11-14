@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { AIError, streamText } from "@/lib/ai/client";
+import { AIError, runWithUserAI, streamText } from "@/lib/ai/client";
+import { getUserAI } from "@/lib/server/ai-connection";
 import { COACH_SYSTEM } from "@/lib/ai/prompts";
 import { buildAIContext } from "@/lib/server/context";
 import { loadUserState } from "@/lib/server/state";
@@ -43,7 +44,9 @@ export async function POST(request: Request) {
   const system = `${COACH_SYSTEM}\n\n# What you know about this user\n${context}`;
   const encoder = new TextEncoder();
 
-  const body = new ReadableStream({
+  const ai = await getUserAI(db, user.id);
+  // start() runs synchronously inside runWithUserAI, so the whole stream uses the user's provider.
+  const body = runWithUserAI(ai, () => new ReadableStream({
     async start(controller) {
       let reply = "";
       try {
@@ -59,7 +62,7 @@ export async function POST(request: Request) {
         controller.close();
       }
     },
-  });
+  }));
 
   return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 }

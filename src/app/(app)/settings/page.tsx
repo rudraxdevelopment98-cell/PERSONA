@@ -1,30 +1,33 @@
-import { Card, CardHeader, PageHeader } from "@/components/ui";
-import { activeProvider } from "@/lib/ai/client";
+import { PageHeader } from "@/components/ui";
+import { appProvider } from "@/lib/ai/client";
+import { getConnectionSummary } from "@/lib/server/ai-connection";
 import { getUserState } from "@/lib/server/state";
 import { SettingsForm } from "./form";
+import { YourAI } from "./your-ai";
 
 export const metadata = { title: "Settings" };
 
-export default async function SettingsPage() {
-  const { state } = await getUserState();
-  const ai = activeProvider();
-  const providerName = { gemini: "Google Gemini", anthropic: "Claude (Anthropic API)", gateway: "Claude (Vercel AI Gateway)" }[ai.kind];
+const APP_PROVIDER_NAMES: Record<string, string> = {
+  gemini: "Google Gemini (free)",
+  anthropic: "Claude (Anthropic API)",
+  gateway: "Claude (Vercel AI Gateway)",
+};
+
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ ai?: string; ai_error?: string }> }) {
+  const [{ db, user, state }, params] = await Promise.all([getUserState(), searchParams]);
+  const connection = await getConnectionSummary(db, user.id);
+  const app = appProvider();
   return (
     <>
-      <PageHeader title="Settings" description="Your profile, privacy and data." />
-      <Card className="mb-6">
-        <CardHeader title="AI provider" description="Generates your sessions, feedback and coaching. Your text is sent to this provider only to produce your content." />
-        <div className="px-5 py-4 text-sm">
-          <p>
-            <span className="font-medium">{providerName}</span> <span className="text-muted">· {ai.model}</span>
-          </p>
-          {ai.kind === "gemini" && (
-            <p className="mt-1.5 text-xs leading-relaxed text-muted">
-              On Google&apos;s free tier, Google may use submitted content to improve its products. Avoid writing details you would not want shared.
-            </p>
-          )}
-        </div>
-      </Card>
+      <PageHeader title="Settings" description="Your profile, AI, privacy and data." />
+      <YourAI
+        connection={connection}
+        appProviderName={APP_PROVIDER_NAMES[app.kind] ?? app.kind}
+        appModel={app.model}
+        appIsFreeGemini={app.kind === "gemini"}
+        notice={params.ai === "connected" ? "OpenRouter connected. Your sessions now use your own AI." : null}
+        error={params.ai_error ?? null}
+      />
       <SettingsForm
         email={state.email ?? ""}
         displayName={state.profile.display_name ?? ""}
