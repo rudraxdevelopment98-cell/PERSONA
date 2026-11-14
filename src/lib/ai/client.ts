@@ -157,7 +157,11 @@ async function geminiClient() {
   const { GoogleGenAI } = await import("@google/genai");
   return new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
-    ...(process.env.GEMINI_BASE_URL ? { httpOptions: { baseUrl: process.env.GEMINI_BASE_URL } } : {}),
+    // v1beta carries JSON-schema output and thinking configuration.
+    httpOptions: {
+      apiVersion: process.env.GEMINI_API_VERSION || "v1beta",
+      ...(process.env.GEMINI_BASE_URL ? { baseUrl: process.env.GEMINI_BASE_URL } : {}),
+    },
   });
 }
 
@@ -166,6 +170,8 @@ const GEMINI_THINKING: Record<Effort, number> = { low: 512, medium: 2048, high: 
 function mapGeminiError(err: unknown): never {
   if (err instanceof AIError) throw err;
   const status = (err as { status?: number })?.status;
+  // Google's error text helps diagnose configuration problems; it never contains the key.
+  console.error(`[ai] Gemini request failed (${status ?? "network"}): ${String((err as Error)?.message ?? err).slice(0, 500)}`);
   if (status === 429) throw new AIError("The free AI limit was reached for now. Please try again in a minute.", "upstream");
   if (status === 401 || status === 403) throw new AIError("The AI service rejected the server's credentials.", "not_configured");
   if (status) throw new AIError(`The AI service returned an error (${status}).`, "upstream");
@@ -195,7 +201,7 @@ async function withGeminiModelFallback<T>(p: Provider, fn: (model: string) => Pr
     } catch (err) {
       lastErr = err;
       if ((err as { status?: number })?.status !== 404) throw err;
-      console.warn(`[ai] Gemini model "${model}" is unavailable; trying the next one.`);
+      console.warn(`[ai] Gemini model "${model}" is unavailable (${String((err as Error)?.message ?? "").slice(0, 200)}); trying the next one.`);
     }
   }
   throw lastErr;
