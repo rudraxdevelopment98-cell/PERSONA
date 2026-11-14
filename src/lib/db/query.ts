@@ -45,6 +45,7 @@ const JSON_COLUMNS = new Set([
   "reflections",
   "development_profile",
   "roadmap",
+  "speech",
 ]);
 
 const PRIMARY_KEYS: Record<string, string[]> = { skill_progress: ["user_id", "dimension"], profiles: ["id"] };

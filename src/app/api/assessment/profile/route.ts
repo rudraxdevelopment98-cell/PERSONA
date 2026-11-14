@@ -9,6 +9,6 @@ export const maxDuration = 300;
 export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) => {
   requireBaseline(state);
   const scores = Object.fromEntries(DIMENSIONS.map((d) => [d, state.baseline!.scores?.[d] ?? 0])) as Record<Dimension, number>;
-  const profile = await generateDevelopmentProfile(db, user.id, scores, state.baseline!.reflections);
+  const profile = await generateDevelopmentProfile(db, user.id, scores, state.baseline!.reflections, state.profile.language);
   return { profile };
 });

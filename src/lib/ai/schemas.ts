@@ -64,6 +64,7 @@ export const sessionScenarioSchema = z.object({
 });
 export type SessionScenario = z.infer<typeof sessionScenarioSchema>;
 
+/** Session plan: everything except the story, which is written in its own focused call. */
 export const dailySessionSchema = z.object({
   introduction: z.object({
     title: z.string(),
@@ -71,10 +72,14 @@ export const dailySessionSchema = z.object({
     key_idea: z.string(),
     what_you_will_practise: z.array(z.string()),
   }),
-  story: z.object({
+  story_brief: z.object({
     title: z.string(),
-    body: z.string(),
-    insights: z.array(z.object({ title: z.string(), explanation: z.string() })),
+    setting: z.string(),
+    protagonist: z.string(),
+    supporting_characters: z.string(),
+    central_conflict: z.string(),
+    turning_point: z.string(),
+    concepts: z.array(z.string()),
   }),
   scenarios: z.array(sessionScenarioSchema),
   challenge: z.object({
@@ -87,7 +92,16 @@ export const dailySessionSchema = z.object({
 });
 export type DailySessionContent = z.infer<typeof dailySessionSchema>;
 
+export const storySchema = z.object({
+  title: z.string(),
+  body: z.string(),
+  insights: z.array(z.object({ title: z.string(), explanation: z.string() })),
+});
+export type StoryContent = z.infer<typeof storySchema>;
+
 export const storyExpansionSchema = z.object({ body: z.string() });
+
+const conceptField = z.object({ name: z.string(), explanation: z.string() });
 
 const feedbackFields = {
   what_went_well: z.string(),
@@ -103,6 +117,9 @@ export const scenarioEvaluationSchema = z.object({
     practicality: score25,
   }),
   ...feedbackFields,
+  your_words: z.string(),
+  concept: conceptField,
+  example_response: z.string(),
   pattern_note: z.string(),
 });
 export type ScenarioEvaluation = z.infer<typeof scenarioEvaluationSchema>;
@@ -133,6 +150,9 @@ export const decisionEvaluationSchema = z.object({
   biases_noticed: z.array(z.string()),
   hesitation_insight: z.string(),
   ...feedbackFields,
+  your_words: z.string(),
+  concept: conceptField,
+  better_approach: z.string(),
 });
 export type DecisionEvaluation = z.infer<typeof decisionEvaluationSchema>;
 
@@ -153,7 +173,11 @@ export const communicationEvaluationSchema = z.object({
     composure: score25,
   }),
   ...feedbackFields,
+  your_words: z.string(),
+  technique: conceptField,
   stronger_version: z.string(),
+  why_it_works: z.string(),
+  delivery_feedback: z.string(),
 });
 export type CommunicationEvaluation = z.infer<typeof communicationEvaluationSchema>;
 

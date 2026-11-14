@@ -2,13 +2,22 @@
 
 import { useState, useTransition } from "react";
 import { Download } from "lucide-react";
-import { Alert, Button, Card, CardHeader, Input, Label, Spinner } from "@/components/ui";
+import { Alert, Button, Card, CardHeader, Input, Label, Select, Spinner } from "@/components/ui";
+import { LANGUAGE_LABELS, type Language } from "@/lib/ai/prompts";
 import { deleteAccount, updateSettings } from "./actions";
 
-export function SettingsForm(props: { email: string; displayName: string; timezone: string; coachJournalAccess: boolean; startDate: string | null }) {
+export function SettingsForm(props: {
+  email: string;
+  displayName: string;
+  timezone: string;
+  coachJournalAccess: boolean;
+  startDate: string | null;
+  language: Language;
+}) {
   const [name, setName] = useState(props.displayName);
   const [tz, setTz] = useState(props.timezone);
   const [journal, setJournal] = useState(props.coachJournalAccess);
+  const [language, setLang] = useState<Language>(props.language);
   const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
   const [confirm, setConfirm] = useState("");
   const [delError, setDelError] = useState<string | null>(null);
@@ -40,6 +49,14 @@ export function SettingsForm(props: { email: string; displayName: string; timezo
               )}
             </div>
             <div>
+              <Label htmlFor="lang">Language for stories, questions and feedback</Label>
+              <Select id="lang" value={language} onChange={(e) => setLang(e.target.value as Language)}>
+                {(Object.keys(LANGUAGE_LABELS) as Language[]).map((l) => (
+                  <option key={l} value={l}>{LANGUAGE_LABELS[l]}</option>
+                ))}
+              </Select>
+            </div>
+            <div>
               <Label>Programme start</Label>
               <Input value={props.startDate ? new Date(`${props.startDate}T00:00:00`).toLocaleDateString("en-GB", { dateStyle: "long" }) : "Not started"} disabled />
             </div>
@@ -67,7 +84,7 @@ export function SettingsForm(props: { email: string; displayName: string; timezo
             disabled={saving}
             onClick={() =>
               startSave(async () => {
-                const res = await updateSettings({ display_name: name, timezone: tz, coach_journal_access: journal });
+                const res = await updateSettings({ display_name: name, timezone: tz, coach_journal_access: journal, language });
                 setMsg(res.error ? { tone: "danger", text: res.error } : { tone: "success", text: "Settings saved." });
               })
             }

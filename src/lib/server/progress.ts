@@ -1,7 +1,8 @@
 import "server-only";
 import type { Db } from "@/lib/db/server";
 import { isDimension, type Dimension } from "@/lib/domain/dimensions";
-import { PHASES, programmeDay, todayIn } from "@/lib/domain/programme";
+import { programmeDay, todayIn } from "@/lib/domain/programme";
+import { awardAchievements } from "./gamification";
 import { computeScores, type Observation } from "@/lib/domain/scoring";
 import type { CheckinRow, SkillProgressRow } from "./types";
 
@@ -107,57 +108,8 @@ export async function recomputeScores(db: Db, userId: string, source: string) {
     );
   }
 
-  await awardAchievements(db, userId);
+  await awardAchievements(db, userId, day);
   return scores;
 }
 
-type Rule = { code: string; title: string; description: string; met: boolean };
-
-/** Achievements are derived only from stored activity, so they can never be earned artificially. */
-export async function awardAchievements(db: Db, userId: string) {
-  const head = (table: string) => db.from(table).select("id", { count: "exact", head: true }).eq("user_id", userId);
-  const n = (r: { count: number | null }) => r.count ?? 0;
-
-  const [assessments, checkins, decisions, exercises, journal, sessionsRes] = await Promise.all([
-    head("assessments").eq("status", "completed").then(n),
-    head("daily_checkins").not("completed_at", "is", null).then(n),
-    head("decision_logs").not("score", "is", null).then(n),
-    head("exercise_completions").not("score", "is", null).then(n),
-    head("journal_entries").then(n),
-    db.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", userId),
-  ]);
-
-  const sessions = sessionsRes.data ?? [];
-  const completedDays = sessions.filter((s) => s.completed_at).map((s) => s.day_number as number).sort((a, b) => a - b);
-  let streak = 0;
-  let best = 0;
-  for (let i = 0; i < completedDays.length; i++) {
-    streak = i > 0 && completedDays[i] === completedDays[i - 1] + 1 ? streak + 1 : 1;
-    best = Math.max(best, streak);
-  }
-  const challenges = sessions.filter((s) => s.challenge_status === "completed").length;
-  const phaseDone = (n: number) => {
-    const [from, to] = PHASES[n - 1].days;
-    return completedDays.filter((d) => d >= from && d <= to).length >= 24;
-  };
-
-  const rules: Rule[] = [
-    { code: "baseline", title: "Baseline set", description: "Completed the initial assessment.", met: assessments > 0 },
-    { code: "first_checkin", title: "First check-in", description: "Completed your first daily check-in.", met: checkins > 0 },
-    { code: "first_session", title: "First session", description: "Completed your first daily learning session.", met: completedDays.length > 0 },
-    { code: "streak_7", title: "Seven-day streak", description: "Completed sessions on 7 consecutive programme days.", met: best >= 7 },
-    { code: "sessions_30", title: "Thirty sessions", description: "Completed 30 daily sessions.", met: completedDays.length >= 30 },
-    { code: "challenges_5", title: "Out in the world", description: "Completed 5 real-world challenges.", met: challenges >= 5 },
-    { code: "decisions_10", title: "Decision maker", description: "Worked through 10 Decision Lab scenarios.", met: decisions >= 10 },
-    { code: "communication_10", title: "Finding your voice", description: "Completed 10 Communication Lab exercises.", met: exercises >= 10 },
-    { code: "journal_10", title: "Reflective practice", description: "Wrote 10 journal entries.", met: journal >= 10 },
-    { code: "phase_1", title: "Foundation complete", description: "Completed at least 24 sessions in Phase 1.", met: phaseDone(1) },
-    { code: "phase_2", title: "Development complete", description: "Completed at least 24 sessions in Phase 2.", met: phaseDone(2) },
-    { code: "phase_3", title: "Transformation complete", description: "Completed at least 24 sessions in Phase 3.", met: phaseDone(3) },
-  ];
-
-  const earned = rules.filter((r) => r.met).map(({ code, title, description }) => ({ user_id: userId, code, title, description }));
-  if (earned.length > 0) {
-    await db.from("achievements").upsert(earned, { onConflict: "user_id,code", ignoreDuplicates: true });
-  }
-}
+export { awardAchievements } from "./gamification";

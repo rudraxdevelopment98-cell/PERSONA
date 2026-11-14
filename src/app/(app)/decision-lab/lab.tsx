@@ -6,6 +6,7 @@ import { Alert, Badge, Button, Card, CardHeader, Label, Select, Spinner, Textare
 import type { DecisionEvaluation, DecisionScenario } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import { DECISION_CATEGORIES, DECISION_DIFFICULTIES } from "@/lib/domain/labs";
+import { DeepFeedback } from "@/components/feedback";
 import { RubricTable } from "@/components/rubric";
 
 type Pending = { id: string; scenario: DecisionScenario; category: string; difficulty: string };
@@ -139,7 +140,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                       disabled={Boolean(result)}
                       aria-pressed={choice === o.id}
                       className={cx(
-                        "flex w-full gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-colors",
+                        "flex w-full gap-3 rounded-xl border-2 px-3.5 py-3 text-left text-sm transition-all",
                         choice === o.id ? "border-primary bg-primary-soft" : "border-line hover:border-line-strong",
                       )}
                     >
@@ -172,34 +173,27 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                 </div>
               </>
             ) : (
-              <div className="space-y-4 rounded-md bg-bg p-4">
+              <div className="animate-pop space-y-4 rounded-2xl bg-bg p-4">
                 <RubricTable rubric={result.evaluation.rubric} labels={LABELS} />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted">What you did well</p>
-                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.what_went_well}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted">To improve</p>
-                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.to_improve}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted">Hesitation</p>
-                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.hesitation_insight}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted">Practise next</p>
-                    <p className="mt-0.5 text-sm leading-relaxed">{result.evaluation.practise_next}</p>
-                  </div>
-                </div>
                 {result.evaluation.biases_noticed.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-muted">Biases noticed:</span>
+                    <span className="text-xs font-semibold text-muted">Biases noticed:</span>
                     {result.evaluation.biases_noticed.map((b) => (
                       <Badge key={b} tone="warning">{b}</Badge>
                     ))}
                   </div>
                 )}
+                <DeepFeedback
+                  yourWords={result.evaluation.your_words}
+                  wentWell={result.evaluation.what_went_well}
+                  toImprove={result.evaluation.to_improve}
+                  concept={result.evaluation.concept}
+                  conceptLabel="Decision science"
+                  example={result.evaluation.better_approach}
+                  exampleLabel="A better way to decide"
+                  extra={[{ label: "About your hesitation", text: result.evaluation.hesitation_insight }]}
+                  practiseNext={result.evaluation.practise_next}
+                />
               </div>
             )}
           </div>

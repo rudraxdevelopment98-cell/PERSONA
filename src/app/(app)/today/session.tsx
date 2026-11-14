@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, Check, Lock, Target } from "lucide-react";
+import { DeepFeedback } from "@/components/feedback";
 import { RubricTable } from "@/components/rubric";
 import { Alert, Badge, Button, Card, CardHeader, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
 import type { ReflectionFeedback, ScenarioEvaluation } from "@/lib/ai/schemas";
@@ -68,7 +69,7 @@ function Section({
         <span className="text-xs text-muted">{minutes}</span>
       </div>
       {locked ? (
-        <div className="flex items-center gap-2 rounded-lg border border-dashed border-line-strong px-5 py-4 text-sm text-muted">
+        <div className="flex items-center gap-2 rounded-2xl border border-dashed border-line-strong px-5 py-4 text-sm text-muted">
           <Lock className="size-4" strokeWidth={1.75} /> {lockedText}
         </div>
       ) : (
@@ -176,7 +177,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete 
           <p className="text-xs font-medium uppercase tracking-wide text-muted">Psychological insights</p>
           <div className="mt-3 grid gap-4 md:grid-cols-3">
             {story.insights.map((ins) => (
-              <div key={ins.title} className="rounded-md bg-bg p-4">
+              <div key={ins.title} className="rounded-xl bg-bg p-4">
                 <p className="text-sm font-medium">{ins.title}</p>
                 <p className="mt-1 text-sm leading-relaxed text-muted">{ins.explanation}</p>
               </div>
@@ -242,8 +243,8 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
                   onClick={() => setChoice(o.id)}
                   aria-pressed={chosen}
                   className={cx(
-                    "flex w-full gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-colors",
-                    chosen ? "border-primary bg-primary-soft" : "border-line hover:border-line-strong",
+                    "flex w-full gap-3 rounded-xl border-2 px-3.5 py-3 text-left text-sm transition-all",
+                    chosen ? "border-primary bg-primary-soft" : "border-line hover:border-line-strong hover:bg-bg",
                     r && !chosen && "opacity-80",
                   )}
                 >
@@ -274,15 +275,16 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
           </>
         ) : (
           r.evaluation && (
-            <div className="space-y-4 rounded-md bg-bg p-4">
+            <div className="animate-pop space-y-4 rounded-2xl bg-bg p-4">
               <RubricTable rubric={r.evaluation.rubric} labels={RUBRIC_LABELS} />
-              <Feedback
-                items={[
-                  { label: "What you did well", text: r.evaluation.what_went_well },
-                  { label: "To improve", text: r.evaluation.to_improve },
-                  { label: "Practise next", text: r.evaluation.practise_next },
-                  { label: "Pattern", text: r.evaluation.pattern_note },
-                ]}
+              <DeepFeedback
+                yourWords={r.evaluation.your_words}
+                wentWell={r.evaluation.what_went_well}
+                toImprove={r.evaluation.to_improve}
+                concept={r.evaluation.concept}
+                example={r.evaluation.example_response}
+                extra={[{ label: "Your pattern", text: r.evaluation.pattern_note }]}
+                practiseNext={r.evaluation.practise_next}
               />
             </div>
           )
@@ -362,7 +364,7 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
             </div>
           </>
         ) : (
-          <div className="flex flex-col gap-3 rounded-md bg-bg p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-xl bg-bg p-4 sm:flex-row sm:items-start sm:justify-between">
             <p className="text-sm leading-relaxed">{session.challenge_notes || "No notes recorded."}</p>
             <Button variant="secondary" onClick={() => setEditing(true)}>
               Update
@@ -401,7 +403,7 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
               {q}
             </label>
             {session.completed ? (
-              <p className="rounded-md bg-bg px-3 py-2 text-sm leading-relaxed">{answers[i]}</p>
+              <p className="rounded-xl bg-bg px-3 py-2 text-sm leading-relaxed">{answers[i]}</p>
             ) : (
               <Textarea
                 id={`refl-${i}`}
@@ -460,7 +462,7 @@ export function SessionFlow({ session: initial, story, scenarios: initialScenari
         <Card className="p-5 sm:p-6">
           <h3 className="text-lg font-semibold">{intro.title}</h3>
           <p className="mt-3 text-sm leading-relaxed">{intro.why_it_matters}</p>
-          <div className="mt-4 rounded-md border-l-2 border-primary bg-bg px-4 py-3">
+          <div className="mt-4 rounded-xl border-l-2 border-primary bg-bg px-4 py-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">Key idea</p>
             <p className="mt-1 text-sm leading-relaxed">{intro.key_idea}</p>
           </div>

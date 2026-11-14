@@ -1,203 +1,223 @@
 import Link from "next/link";
-import { ArrowRight, Award, Check, Circle } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ClipboardCheck, Flame, GitBranch, Lightbulb, Mic, PenLine, Sparkles, Target, Zap } from "lucide-react";
+import { BadgeIcon } from "@/components/badge-icon";
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
-import { Badge, ButtonLink, Card, CardHeader, Delta, PageHeader, Stat, cx } from "@/components/ui";
+import { Badge, ButtonLink, Card, CardHeader, IconTile, PageHeader, ProgressRing, cx } from "@/components/ui";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
-import { PHASES, PROGRAMME_LENGTH, currentStreak } from "@/lib/domain/programme";
+import { PROGRAMME_LENGTH } from "@/lib/domain/programme";
 import { overallScore } from "@/lib/domain/scoring";
+import { ACHIEVEMENTS, getGamification } from "@/lib/server/gamification";
 import { getUserState, todaysFocus } from "@/lib/server/state";
-import type { AchievementRow, CheckinRow, SessionRow } from "@/lib/server/types";
+import type { CheckinRow, SessionRow } from "@/lib/server/types";
 
-export const metadata = { title: "Dashboard" };
+export const metadata = { title: "Home" };
 
-function Step({ done, active, label, detail }: { done: boolean; active: boolean; label: string; detail: string }) {
-  return (
-    <li className="flex items-start gap-3 py-2.5">
-      <span
-        className={cx(
-          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border",
-          done ? "border-success bg-success text-white" : active ? "border-primary text-primary" : "border-line-strong text-muted",
-        )}
-      >
-        {done ? <Check className="size-3" strokeWidth={3} /> : active ? <Circle className="size-2 fill-current" /> : null}
-      </span>
-      <div className="min-w-0">
-        <p className={cx("text-sm", done ? "text-muted" : "font-medium text-ink")}>{label}</p>
-        <p className="text-xs text-muted">{detail}</p>
-      </div>
-    </li>
-  );
+function greeting(hour: number) {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 export default async function Dashboard() {
-  const { db, user, state } = await getUserState();
+  const [{ db, user, state }, { stats, level }] = await Promise.all([getUserState(), getGamification()]);
   const name = state.profile.display_name || "there";
 
   if (!state.baseline) {
     return (
       <>
-        <PageHeader title={`Welcome, ${name}`} description="Your programme starts with a short assessment of how you currently think and act." />
+        <PageHeader eyebrow="Welcome" title={`Hi, ${name} 👋`} description="Your programme starts with a short assessment of how you currently think and act." />
         <BaselineGate feature="Your 90-day programme" />
       </>
     );
   }
 
   const focus = todaysFocus(state);
-  const [{ data: checkin }, { data: session }, { data: sessions }, { data: achievements }] = await Promise.all([
+  const [{ data: checkin }, { data: session }, { data: achievements }] = await Promise.all([
     db.from("daily_checkins").select("completed_at, analysis").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle(),
     db
       .from("daily_sessions")
-      .select("id, story_completed_at, scenarios_completed_at, challenge_status, completed_at, introduction")
+      .select("id, story_completed_at, scenarios_completed_at, challenge_status, completed_at")
       .eq("user_id", user.id)
       .eq("day_number", state.day)
       .maybeSingle(),
-    db.from("daily_sessions").select("day_number, completed_at, challenge_status").eq("user_id", user.id),
-    db.from("achievements").select("code, title, description, earned_at").eq("user_id", user.id).order("earned_at", { ascending: false }).limit(4),
+    db.from("achievements").select("code, earned_at").eq("user_id", user.id).order("earned_at", { ascending: false }).limit(4),
   ]);
 
   const c = checkin as Pick<CheckinRow, "completed_at" | "analysis"> | null;
-  const s = session as Pick<SessionRow, "id" | "story_completed_at" | "scenarios_completed_at" | "challenge_status" | "completed_at" | "introduction"> | null;
-  const completedDays = (sessions ?? []).filter((x) => x.completed_at).map((x) => x.day_number as number);
-  const challengesDone = (sessions ?? []).filter((x) => x.challenge_status === "completed").length;
-  const overall = overallScore(state.skills);
-  const baselineOverall = overallScore(state.skills.map((k) => ({ current: k.baseline })));
-  const streak = currentStreak(completedDays, state.day);
+  const s = session as Pick<SessionRow, "id" | "story_completed_at" | "scenarios_completed_at" | "challenge_status" | "completed_at"> | null;
+  const overall = overallScore(state.skills) ?? 0;
+  const baselineOverall = overallScore(state.skills.map((k) => ({ current: k.baseline }))) ?? 0;
 
   const steps = [
-    { label: "Daily check-in", detail: "5–7 questions · about 3 min", done: Boolean(c?.completed_at) },
-    { label: "Read today's story", detail: "About 10 min", done: Boolean(s?.story_completed_at) },
-    { label: "Interactive scenarios", detail: "3 scenarios · about 7 min", done: Boolean(s?.scenarios_completed_at) },
-    { label: "Reflection", detail: "About 3 min", done: Boolean(s?.completed_at) },
-    { label: "Real-world challenge", detail: s?.challenge_status === "skipped" ? "Skipped" : "Do it today, then record it", done: s?.challenge_status === "completed" },
+    { label: "Check-in", detail: "3 min", done: Boolean(c?.completed_at), icon: ClipboardCheck, tone: "sky" as const },
+    { label: "Story", detail: "10 min", done: Boolean(s?.story_completed_at), icon: BookOpen, tone: "primary" as const },
+    { label: "Scenarios", detail: "7 min", done: Boolean(s?.scenarios_completed_at), icon: GitBranch, tone: "accent" as const },
+    { label: "Reflection", detail: "3 min", done: Boolean(s?.completed_at), icon: PenLine, tone: "sun" as const },
+    { label: "Challenge", detail: "in real life", done: s?.challenge_status === "completed", icon: Target, tone: "coral" as const },
   ];
+  const done = steps.filter((x) => x.done).length;
   const nextIndex = steps.findIndex((x) => !x.done);
-  const allDone = nextIndex === -1;
+  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: state.profile.timezone }).format(new Date()));
+  const badgeDefs = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
 
   return (
-    <>
-      <PageHeader
-        title={`Good to see you, ${name}`}
-        description={
-          <>
-            Day {state.day} of {PROGRAMME_LENGTH} · Phase {focus.phase.number}, {focus.phase.name}
-          </>
-        }
-        action={
-          !allDone && (
-            <ButtonLink href="/today">
-              {nextIndex === 0 ? "Start today's check-in" : "Continue today"} <ArrowRight className="size-4" />
-            </ButtonLink>
-          )
-        }
-      />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader
-            title="Today"
-            description={
-              <>
-                Focus: <span className="text-ink">{focus.title}</span> · {DIMENSION_META[focus.dimension].label}
-              </>
-            }
-            action={focus.personalised ? <Badge tone="primary">Personalised</Badge> : undefined}
-          />
-          <div className="grid gap-6 px-5 py-4 sm:grid-cols-2">
-            <ol>
-              {steps.map((st, i) => (
-                <Step key={st.label} label={st.label} detail={st.detail} done={st.done} active={i === nextIndex} />
-              ))}
-            </ol>
-            <div className="rounded-md bg-bg p-4">
-              {c?.analysis ? (
-                <>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted">From today&apos;s check-in</p>
-                  <p className="mt-2 text-sm leading-relaxed">{c.analysis.observation}</p>
-                  <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted">Try today</p>
-                  <p className="mt-1 text-sm leading-relaxed">{c.analysis.suggestion_for_today}</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted">How today works</p>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">
-                    Your check-in answers shape today&apos;s story, scenarios and challenge. Allow about 30 minutes, plus the challenge itself.
-                  </p>
-                </>
-              )}
-              {allDone && <p className="mt-3 text-sm font-medium text-success">Everything for today is done.</p>}
+    <div className="space-y-5">
+      {/* Hero */}
+      <section className="animate-rise overflow-hidden rounded-2xl bg-primary text-white shadow-raised">
+        <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <p className="text-sm text-white/70">
+              {greeting(hour)}, {name}
+            </p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">
+              Day {state.day} <span className="text-white/50">/ {PROGRAMME_LENGTH}</span>
+            </h1>
+            <p className="mt-1 text-sm text-white/80">
+              Phase {focus.phase.number} · {focus.phase.name} — today: <span className="font-semibold text-white">{focus.title}</span>
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-amber-300">
+                <Flame className="size-3.5" /> {stats.streak}-day streak
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-teal-300">
+                <Zap className="size-3.5" /> {stats.xp} XP · Level {level.level}
+              </span>
             </div>
           </div>
+          <div className="flex items-center gap-4">
+            <ProgressRing value={(done / steps.length) * 100} size={92} stroke={9} color="#2dd4bf" track="rgba(255,255,255,0.15)" label={`${done} of 5 done today`}>
+              <div className="text-center">
+                <p className="text-xl font-extrabold leading-none">
+                  {done}/{steps.length}
+                </p>
+                <p className="text-[10px] text-white/70">today</p>
+              </div>
+            </ProgressRing>
+            {nextIndex !== -1 && (
+              <ButtonLink href="/today" className="bg-white text-primary hover:bg-white/90">
+                {nextIndex === 0 ? "Start today" : "Continue"} <ArrowRight className="size-4" />
+              </ButtonLink>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        {/* Today's path */}
+        <Card className="lg:col-span-2">
+          <CardHeader
+            title="Today's path"
+            description={<>Focus: {DIMENSION_META[focus.dimension].label}</>}
+            action={focus.personalised ? <Badge tone="accent">Personalised</Badge> : undefined}
+          />
+          <div className="grid grid-cols-5 gap-2 p-5">
+            {steps.map((st, i) => (
+              <Link key={st.label} href="/today" className="group flex flex-col items-center text-center">
+                <span
+                  className={cx(
+                    "relative flex size-12 items-center justify-center rounded-2xl transition group-hover:scale-105 sm:size-14",
+                    st.done ? "bg-success text-white" : i === nextIndex ? "bg-primary text-white shadow-raised" : "bg-bg text-muted",
+                  )}
+                >
+                  {st.done ? <Check className="size-6" strokeWidth={3} /> : <st.icon className="size-6" />}
+                </span>
+                <span className={cx("mt-2 text-xs font-bold", !st.done && i !== nextIndex && "text-muted")}>{st.label}</span>
+                <span className="text-[11px] text-muted">{st.detail}</span>
+              </Link>
+            ))}
+          </div>
+          {c?.analysis && (
+            <div className="mx-5 mb-5 flex gap-3 rounded-2xl bg-accent-soft p-4">
+              <Lightbulb className="mt-0.5 size-5 shrink-0 text-accent" />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-accent">Try today</p>
+                <p className="mt-0.5 text-sm leading-relaxed">{c.analysis.suggestion_for_today}</p>
+              </div>
+            </div>
+          )}
         </Card>
 
-        <Card className="p-5">
-          <div className="grid grid-cols-2 gap-5">
-            <Stat label="Overall" value={overall ?? "–"} hint={overall != null && baselineOverall != null ? <Delta value={overall - baselineOverall} /> : null} />
-            <Stat label="Streak" value={streak} hint={streak === 1 ? "day" : "days"} />
-            <Stat label="Sessions" value={completedDays.length} hint={`of ${state.day} day${state.day === 1 ? "" : "s"} so far`} />
-            <Stat label="Challenges" value={challengesDone} hint="completed" />
-          </div>
-          <Link href="/progress" className="mt-5 flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-            View progress <ArrowRight className="size-3.5" />
+        {/* Score */}
+        <Card className="flex flex-col items-center justify-center p-5 text-center">
+          <ProgressRing value={overall} size={120} stroke={11} label={`Overall score ${overall}`}>
+            <div>
+              <p className="text-3xl font-extrabold leading-none tabular-nums">{Math.round(overall)}</p>
+              <p className="text-[11px] text-muted">overall</p>
+            </div>
+          </ProgressRing>
+          <p className="mt-3 text-sm">
+            <span className={cx("font-bold", overall - baselineOverall >= 0 ? "text-success" : "text-danger")}>
+              {overall - baselineOverall >= 0 ? "+" : ""}
+              {Math.round((overall - baselineOverall) * 10) / 10}
+            </span>{" "}
+            <span className="text-muted">since you started</span>
+          </p>
+          <Link href="/progress" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">
+            See progress <ArrowRight className="size-3.5" />
           </Link>
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      {/* Quick practice */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          { href: "/decision-lab", title: "Decision Lab", text: "Make a tough call", icon: GitBranch, tone: "sky" as const },
+          { href: "/communication-lab", title: "Speak up", text: "Voice practice", icon: Mic, tone: "coral" as const },
+          { href: "/coach", title: "Ask your coach", text: "Talk it through", icon: Sparkles, tone: "accent" as const },
+        ].map((q) => (
+          <Link key={q.href} href={q.href}>
+            <Card className="flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-raised">
+              <IconTile tone={q.tone}>
+                <q.icon className="size-5" />
+              </IconTile>
+              <div>
+                <p className="text-sm font-bold">{q.title}</p>
+                <p className="text-xs text-muted">{q.text}</p>
+              </div>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Skills" description="Current score; the tick marks your baseline." />
-          <div className="px-5 py-5">
+          <CardHeader title="Your skills" description="Bar = now · tick = when you started" />
+          <div className="px-5 pb-5 pt-3">
             <ScoreBars rows={state.skills} />
           </div>
         </Card>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader title="Roadmap" />
-            <div className="space-y-4 px-5 py-4">
-              {PHASES.map((p) => {
-                const pct = Math.max(0, Math.min(100, ((state.day - p.days[0] + 1) / 30) * 100));
-                const current = state.day >= p.days[0] && state.day <= p.days[1];
-                return (
-                  <div key={p.number}>
-                    <div className="mb-1 flex items-baseline justify-between text-sm">
-                      <span className={current ? "font-medium" : "text-muted"}>{p.name}</span>
-                      <span className="text-xs tabular-nums text-muted">
-                        {p.days[0]}–{p.days[1]}
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-primary-soft">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-              <Link href="/programme" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-                Full programme <ArrowRight className="size-3.5" />
+        <Card>
+          <CardHeader
+            title="Badges"
+            action={
+              <Link href="/achievements" className="text-xs font-bold text-primary hover:underline">
+                All
               </Link>
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader title="Achievements" />
-            {(achievements ?? []).length === 0 ? (
-              <p className="px-5 py-4 text-sm text-muted">Achievements appear here as you complete activities.</p>
-            ) : (
-              <ul className="divide-y divide-line">
-                {(achievements as AchievementRow[]).map((a) => (
-                  <li key={a.code} className="flex items-start gap-3 px-5 py-3">
-                    <Award className="mt-0.5 size-4 shrink-0 text-muted" strokeWidth={1.75} />
+            }
+          />
+          {(achievements ?? []).length === 0 ? (
+            <p className="px-5 pb-5 pt-2 text-sm text-muted">Complete activities to earn badges.</p>
+          ) : (
+            <ul className="space-y-1 px-3 pb-4 pt-2">
+              {(achievements ?? []).map((a) => {
+                const def = badgeDefs.get(a.code as string);
+                return (
+                  <li key={a.code} className="flex items-center gap-3 rounded-xl px-2 py-2">
+                    <span className="flex size-9 items-center justify-center rounded-full bg-sun text-white">
+                      <BadgeIcon name={def?.icon ?? "trophy"} className="size-4" />
+                    </span>
                     <div>
-                      <p className="text-sm font-medium">{a.title}</p>
-                      <p className="text-xs text-muted">{a.description}</p>
+                      <p className="text-sm font-bold">{def?.title ?? a.code}</p>
+                      <p className="text-xs text-muted">{def?.description}</p>
                     </div>
                   </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
       </div>
-    </>
+    </div>
   );
 }

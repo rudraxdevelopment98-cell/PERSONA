@@ -1,9 +1,11 @@
 export function Logo({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="flex size-7 items-center justify-center rounded-md bg-primary text-[13px] font-semibold text-white">P</span>
-      <span className="text-sm font-semibold tracking-tight text-ink">
-        PERSONA <span className="text-muted">90</span>
+      <span className="relative flex size-8 items-center justify-center rounded-xl bg-primary text-sm font-extrabold text-white">
+        P<span className="absolute bottom-1.5 right-1.5 size-1.5 rounded-full bg-accent" />
+      </span>
+      <span className="text-[15px] font-extrabold tracking-tight text-ink">
+        PERSONA <span className="text-accent">90</span>
       </span>
     </span>
   );

@@ -53,7 +53,7 @@ Time taken: ${body.response_time_ms != null ? Math.round(body.response_time_ms /
 
 Evaluate the reasoning.`;
 
-  const evaluation = await generateStructured({ system: SCENARIO_EVAL_SYSTEM, prompt, schema: scenarioEvaluationSchema, effort: "low" });
+  const evaluation = await generateStructured({ language: state.profile.language, system: SCENARIO_EVAL_SYSTEM, prompt, schema: scenarioEvaluationSchema, effort: "low" });
   const score = rubricTotal(evaluation.rubric);
 
   const ins = await db.from("scenario_responses").insert({

@@ -1,6 +1,7 @@
 import { ASSESSMENT_ITEMS } from "@/lib/domain/assessment";
 import { getUserState } from "@/lib/server/state";
 import { PageHeader } from "@/components/ui";
+import { LanguagePicker } from "@/components/language-picker";
 import { AssessmentWizard } from "./wizard";
 import { AssessmentResults } from "./results";
 
@@ -40,6 +41,9 @@ export default async function AssessmentPage() {
         title="Initial assessment"
         description={`${ASSESSMENT_ITEMS.length} questions across ten dimensions, plus two short reflections. Answer based on what you actually do, not what you would like to do. There are no right answers, and your progress is saved as you go.`}
       />
+      <div className="mb-5">
+        <LanguagePicker value={state.profile.language} />
+      </div>
       <AssessmentWizard initial={initial} />
     </>
   );

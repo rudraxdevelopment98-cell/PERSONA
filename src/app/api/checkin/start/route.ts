@@ -38,7 +38,7 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
 
   let questions: CheckinQuestion[] = [];
   for (let attempt = 0; attempt < 2 && questions.length < 5; attempt++) {
-    const out = await generateStructured({ system: CHECKIN_QUESTIONS_SYSTEM, prompt, schema: checkinQuestionsSchema, effort: "low" });
+    const out = await generateStructured({ language: state.profile.language, system: CHECKIN_QUESTIONS_SYSTEM, prompt, schema: checkinQuestionsSchema, effort: "low" });
     questions = normalise(out.questions);
   }
   if (questions.length < 5) throw new HttpError(502, "Could not prepare today's questions. Please try again.");

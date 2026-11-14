@@ -25,6 +25,7 @@ export const POST = apiRoute(schema, async ({ exercise_type }, { db, user, state
   const context = await buildAIContext(db, state, { checkins: 2 });
 
   const prompt = await generateStructured({
+    language: state.profile.language,
     system: COMMUNICATION_PROMPT_SYSTEM,
     prompt: `${context}\n\n## Exercise type\n${ex.label}: ${ex.description}\nAvoid repeating these recent situations:\n${(recent ?? []).map((r) => `- ${r.prompt?.title}`).join("\n") || "None"}\n\nCreate the exercise.`,
     schema: communicationPromptSchema,

@@ -24,6 +24,7 @@ export const POST = apiRoute(schema, async ({ category, difficulty }, { db, user
   const diff = DECISION_DIFFICULTIES.find((d) => d.id === difficulty)!.label;
 
   const scenario = await generateStructured({
+    language: state.profile.language,
     system: DECISION_SCENARIO_SYSTEM,
     prompt: `${context}\n\n## Request\nCategory: ${cat}\nDifficulty: ${diff}\nAvoid these recent scenarios:\n${used || "None"}\n\nCreate the scenario.`,
     schema: decisionScenarioSchema,

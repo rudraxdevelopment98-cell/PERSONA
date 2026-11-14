@@ -29,6 +29,7 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { db, user,
     const context = await buildAIContext(db, state, { checkins: 1 });
     const qa = session.reflection_questions.map((q, i) => `Q: ${q}\nA: ${answers[i]}`).join("\n\n");
     feedback = await generateStructured({
+      language: state.profile.language,
       system: REFLECTION_SYSTEM,
       prompt: `${context}\n\n## Today's session\nFocus: ${session.introduction.focus_title}\nChallenge: ${session.challenge.title}\n\n${userData("reflection", qa)}\n\nRespond to the reflection.`,
       schema: reflectionFeedbackSchema,

@@ -20,6 +20,7 @@ export type ProfileRow = {
   development_profile: DevelopmentProfile | null;
   roadmap: unknown;
   coach_journal_access: boolean;
+  language: "en" | "hinglish" | "hi";
   created_at: string;
 };
 
@@ -119,6 +120,7 @@ export type ExerciseRow = {
   response: string | null;
   evaluation: CommunicationEvaluation | null;
   score: number | null;
+  input_mode: "text" | "voice";
   created_at: string;
   completed_at: string | null;
 };

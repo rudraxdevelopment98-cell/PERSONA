@@ -40,6 +40,7 @@ export async function loadUserState(db: Db, userId: string, email?: string): Pro
     development_profile: null,
     roadmap: null,
     coach_journal_access: false,
+    language: "en",
     created_at: new Date().toISOString(),
   }) as ProfileRow;
 

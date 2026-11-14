@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { toOutputSchema } from "./output-schema";
+import { languageInstruction, type Language } from "./prompts";
 
 /**
  * AI provider switch. Set AI_PROVIDER to choose explicitly, or leave it unset
@@ -392,22 +393,31 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   schema: S;
   effort?: Effort;
   maxTokens?: number;
+  language?: Language | null;
 }): Promise<z.infer<S>> {
   const p = activeProvider();
+  const system = opts.system + languageInstruction(opts.language);
   const jsonSchema = toOutputSchema(z.toJSONSchema(opts.schema, { io: "input" })) as Record<string, unknown>;
   const effort = opts.effort ?? "medium";
   const maxTokens = opts.maxTokens ?? 16000;
   const text =
     p.kind === "gemini"
-      ? await geminiStructured(p, opts.system, opts.prompt, jsonSchema, effort, maxTokens)
-      : await claudeStructured(p, opts.system, opts.prompt, jsonSchema, effort, maxTokens);
+      ? await geminiStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens)
+      : await claudeStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens);
   return parseAndValidate(text, opts.schema);
 }
 
 /** Streams plain-text deltas (used by the AI Coach). */
-export async function* streamText(opts: { system: string; messages: ChatMessage[]; effort?: Effort; maxTokens?: number }): AsyncGenerator<string> {
+export async function* streamText(opts: {
+  system: string;
+  messages: ChatMessage[];
+  effort?: Effort;
+  maxTokens?: number;
+  language?: Language | null;
+}): AsyncGenerator<string> {
   const p = activeProvider();
+  const system = opts.system + languageInstruction(opts.language);
   const effort = opts.effort ?? "medium";
   const maxTokens = opts.maxTokens ?? 8000;
-  yield* p.kind === "gemini" ? geminiText(p, opts.system, opts.messages, effort, maxTokens) : claudeText(p, opts.system, opts.messages, effort, maxTokens);
+  yield* p.kind === "gemini" ? geminiText(p, system, opts.messages, effort, maxTokens) : claudeText(p, system, opts.messages, effort, maxTokens);
 }

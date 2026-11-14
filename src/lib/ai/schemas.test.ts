@@ -32,6 +32,9 @@ describe("AI output schemas", () => {
       what_went_well: "",
       to_improve: "",
       practise_next: "",
+      your_words: "",
+      concept: { name: "", explanation: "" },
+      example_response: "",
       pattern_note: "",
     });
     expect(parsed.rubric).toEqual({ situational_awareness: 25, quality_of_reasoning: 20, independence: 0, practicality: 25 });

@@ -12,7 +12,8 @@ export default async function CommunicationLabPage() {
   const header = (
     <PageHeader
       title="Communication Lab"
-      description="Respond to realistic conversations in writing, as you would say it out loud. Each reply is scored on clarity, assertiveness, empathy and composure, with a stronger version written in your own voice."
+      eyebrow="Practice"
+      description="Say no, disagree, take criticism - out loud or in writing. Each reply is scored on clarity, assertiveness, empathy and composure, and you get a stronger version in your own voice."
     />
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="The Communication Lab" /></>);
@@ -35,6 +36,7 @@ export default async function CommunicationLabPage() {
         <CommunicationLab
           stats={perType.map(({ id, count, avg }) => ({ id, count, avg }))}
           pending={pending ? { id: pending.id, exercise_type: pending.exercise_type, prompt: pending.prompt } : null}
+          language={state.profile.language}
         />
 
         {completed.length > 0 && (
@@ -51,7 +53,10 @@ export default async function CommunicationLabPage() {
                           {EXERCISE_BY_ID.get(c.exercise_type)?.label} · {new Date(c.created_at).toLocaleDateString("en-GB")}
                         </span>
                       </span>
-                      <Badge tone="primary">{c.score}/100</Badge>
+                      <span className="flex items-center gap-2">
+                        {c.input_mode === "voice" && <Badge tone="coral">Voice</Badge>}
+                        <Badge tone="accent">{c.score}/100</Badge>
+                      </span>
                     </summary>
                     <div className="mt-3 space-y-2 text-sm leading-relaxed">
                       <p><span className="text-muted">They said:</span> &ldquo;{c.prompt.they_say}&rdquo;</p>

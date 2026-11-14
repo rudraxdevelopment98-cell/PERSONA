@@ -30,6 +30,7 @@ export default async function SettingsPage() {
         displayName={state.profile.display_name ?? ""}
         timezone={state.profile.timezone}
         coachJournalAccess={state.profile.coach_journal_access}
+        language={state.profile.language}
         startDate={state.profile.programme_start_date}
       />
     </>

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     async start(controller) {
       let reply = "";
       try {
-        for await (const chunk of streamText({ system, messages, effort: "medium" })) {
+        for await (const chunk of streamText({ system, messages, effort: "medium", language: state.profile.language })) {
           reply += chunk;
           controller.enqueue(encoder.encode(chunk));
         }

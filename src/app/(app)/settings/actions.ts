@@ -18,6 +18,7 @@ const schema = z.object({
     }
   }, "Unknown timezone."),
   coach_journal_access: z.boolean(),
+  language: z.enum(["en", "hinglish", "hi"]),
 });
 
 export async function updateSettings(input: z.infer<typeof schema>): Promise<{ error?: string }> {
@@ -26,6 +27,16 @@ export async function updateSettings(input: z.infer<typeof schema>): Promise<{ e
   const { db, user } = await requireUser();
   const { error } = await db.from("profiles").update(parsed.data).eq("id", user.id);
   if (error) return { error: "Could not save settings." };
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function setLanguage(language: string): Promise<{ error?: string }> {
+  const parsed = z.enum(["en", "hinglish", "hi"]).safeParse(language);
+  if (!parsed.success) return { error: "Unknown language." };
+  const { db, user } = await requireUser();
+  const { error } = await db.from("profiles").update({ language: parsed.data }).eq("id", user.id);
+  if (error) return { error: "Could not save the language." };
   revalidatePath("/", "layout");
   return {};
 }

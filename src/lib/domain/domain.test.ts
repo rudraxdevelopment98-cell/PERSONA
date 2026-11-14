@@ -144,3 +144,35 @@ describe("history", () => {
     expect(h[1].overall).toBe(56);
   });
 });
+
+import { levelInfo, totalXp, xpForLevel } from "./gamification";
+describe("gamification", () => {
+  it("computes XP and levels from activity", () => {
+    expect(xpForLevel(1)).toBe(0);
+    expect(xpForLevel(2)).toBe(100);
+    expect(xpForLevel(3)).toBe(250);
+    const zero = { assessments: 0, checkins: 0, storiesRead: 0, scenarios: 0, sessionsCompleted: 0, challenges: 0, decisions: 0, communication: 0, voiceExercises: 0, journalEntries: 0 };
+    expect(totalXp(zero)).toBe(0);
+    expect(totalXp({ ...zero, assessments: 1, checkins: 1, scenarios: 3 })).toBe(90);
+    const l = levelInfo(120);
+    expect(l.level).toBe(2);
+    expect(l.intoLevel).toBe(20);
+    expect(l.toNext).toBe(130);
+    expect(levelInfo(0).name).toBe("Newcomer");
+  });
+});
+
+import { analyseSpeech } from "./speech";
+describe("speech metrics", () => {
+  it("counts words, pace and fillers", () => {
+    const m = analyseSpeech("Um I think, um, we should basically move the deadline. You know it's risky.", 30_000, 2_000);
+    expect(m.word_count).toBe(14);
+    expect(m.wpm).toBe(28);
+    expect(m.fillers).toEqual({ um: 2, basically: 1, "you know": 1 });
+    expect(m.filler_count).toBe(4);
+  });
+  it("only counts ambiguous words when repeated", () => {
+    expect(analyseSpeech("I like this plan", 5000, 0).filler_count).toBe(0);
+    expect(analyseSpeech("it was like, like, really like hard", 5000, 0).fillers.like).toBe(2);
+  });
+});

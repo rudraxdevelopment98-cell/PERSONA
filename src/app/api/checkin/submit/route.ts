@@ -42,6 +42,7 @@ export const POST = apiRoute(schema, async ({ answers }, { db, user, state }) =>
     const context = await buildAIContext(db, state, { checkins: 6 });
     const today = checkin.questions.map((q) => `Q: ${q.text}\nA: ${clean.find((c) => c.id === q.id)?.value}`).join("\n");
     analysis = await generateStructured({
+      language: state.profile.language,
       system: CHECKIN_ANALYSIS_SYSTEM,
       prompt: `${context}\n\n## Today's check-in (day ${checkin.day_number})\n${userData("today's answers", today)}\n\nAnalyse today's check-in.`,
       schema: checkinAnalysisSchema,

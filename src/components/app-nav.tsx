@@ -2,123 +2,178 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   BookOpenCheck,
   ClipboardList,
+  Dumbbell,
+  Flame,
   GitBranch,
-  LayoutDashboard,
+  Home,
   LineChart,
   LogOut,
   Map,
-  Menu,
   MessageCircle,
   MessagesSquare,
   NotebookPen,
   Settings,
-  X,
+  Sparkles,
+  Trophy,
+  UserRound,
 } from "lucide-react";
 import { Logo } from "./logo";
-import { cx } from "./ui";
+import { ProgressRing, cx } from "./ui";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/today", label: "Daily Development", icon: BookOpenCheck },
-  { href: "/decision-lab", label: "Decision Lab", icon: GitBranch },
-  { href: "/communication-lab", label: "Communication Lab", icon: MessagesSquare },
-  { href: "/coach", label: "AI Coach", icon: MessageCircle },
-  { href: "/journal", label: "Journal", icon: NotebookPen },
-  { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/programme", label: "90-Day Programme", icon: Map },
-  { href: "/assessment", label: "Assessment", icon: ClipboardList },
-  { href: "/settings", label: "Settings", icon: Settings },
+export type NavStats = { level: number; levelName: string; progress: number; toNext: number; xp: number; streak: number };
+
+const GROUPS = [
+  {
+    label: "Today",
+    items: [
+      { href: "/dashboard", label: "Home", icon: Home },
+      { href: "/today", label: "Daily session", icon: BookOpenCheck },
+    ],
+  },
+  {
+    label: "Practice",
+    items: [
+      { href: "/decision-lab", label: "Decision Lab", icon: GitBranch },
+      { href: "/communication-lab", label: "Communication Lab", icon: MessagesSquare },
+      { href: "/coach", label: "AI Coach", icon: MessageCircle },
+    ],
+  },
+  {
+    label: "Growth",
+    items: [
+      { href: "/progress", label: "Progress", icon: LineChart },
+      { href: "/achievements", label: "Achievements", icon: Trophy },
+      { href: "/journal", label: "Journal", icon: NotebookPen },
+      { href: "/programme", label: "90-day plan", icon: Map },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { href: "/assessment", label: "Assessment", icon: ClipboardList },
+      { href: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const path = usePathname();
-  return (
-    <nav className="space-y-0.5">
-      {NAV.map((item) => {
-        const active = path === item.href || path.startsWith(`${item.href}/`);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            className={cx(
-              "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
-              active ? "bg-primary-soft font-medium text-ink" : "text-muted hover:bg-primary-soft/60 hover:text-ink",
-            )}
-          >
-            <item.icon className="size-4 shrink-0" strokeWidth={1.75} />
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
+const TABS = [
+  { href: "/dashboard", label: "Home", icon: Home, match: ["/dashboard"] },
+  { href: "/today", label: "Today", icon: BookOpenCheck, match: ["/today"] },
+  { href: "/practice", label: "Practice", icon: Dumbbell, match: ["/practice", "/decision-lab", "/communication-lab"] },
+  { href: "/coach", label: "Coach", icon: Sparkles, match: ["/coach"] },
+  { href: "/me", label: "Me", icon: UserRound, match: ["/me", "/progress", "/achievements", "/journal", "/programme", "/assessment", "/settings"] },
+];
 
-function Footer({ name, day }: { name: string; day: number }) {
+const isActive = (path: string, href: string) => path === href || path.startsWith(`${href}/`);
+
+function LevelCard({ stats, name, day }: { stats: NavStats; name: string; day: number }) {
   return (
-    <div className="border-t border-line pt-3">
-      <div className="px-2.5">
-        <p className="truncate text-sm font-medium text-ink">{name}</p>
-        <p className="text-xs text-muted">{day > 0 ? `Day ${day} of 90` : "Programme not started"}</p>
+    <Link href="/achievements" className="block rounded-2xl bg-primary p-4 text-white shadow-raised transition hover:brightness-110">
+      <div className="flex items-center gap-3">
+        <ProgressRing value={stats.progress} size={52} stroke={5} color="#2dd4bf" track="rgba(255,255,255,0.15)" label={`Level ${stats.level}`}>
+          <span className="text-base font-extrabold">{stats.level}</span>
+        </ProgressRing>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold">{name}</p>
+          <p className="text-xs text-white/70">{stats.levelName}</p>
+        </div>
       </div>
-      <form action="/auth/signout" method="post" className="mt-2">
-        <button className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted hover:bg-primary-soft/60 hover:text-ink">
-          <LogOut className="size-4" strokeWidth={1.75} /> Sign out
-        </button>
-      </form>
-    </div>
+      <div className="mt-3 flex items-center justify-between text-xs">
+        <span className="inline-flex items-center gap-1 font-semibold text-amber-300">
+          <Flame className="size-3.5" /> {stats.streak} day{stats.streak === 1 ? "" : "s"}
+        </span>
+        <span className="text-white/70">{day > 0 ? `Day ${day}/90` : "Not started"}</span>
+      </div>
+      <p className="mt-1 text-[11px] text-white/60">{stats.toNext} XP to level {stats.level + 1}</p>
+    </Link>
   );
 }
 
-export function AppNav({ name, day }: { name: string; day: number }) {
-  const [open, setOpen] = useState(false);
+export function AppNav({ name, day, stats }: { name: string; day: number; stats: NavStats }) {
   const path = usePathname();
-  useEffect(() => setOpen(false), [path]);
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-surface px-3 py-4 lg:flex">
-        <Link href="/dashboard" className="mb-6 px-2.5">
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface px-4 py-5 lg:flex">
+        <Link href="/dashboard" className="mb-5 px-2">
           <Logo />
         </Link>
-        <div className="flex-1 overflow-y-auto">
-          <NavLinks />
-        </div>
-        <Footer name={name} day={day} />
+        <LevelCard stats={stats} name={name} day={day} />
+        <nav className="mt-5 flex-1 space-y-5 overflow-y-auto">
+          {GROUPS.map((g) => (
+            <div key={g.label}>
+              <p className="mb-1.5 px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted/80">{g.label}</p>
+              <div className="space-y-0.5">
+                {g.items.map((item) => {
+                  const active = isActive(path, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cx(
+                        "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors",
+                        active ? "bg-primary-soft font-semibold text-primary" : "text-muted hover:bg-bg hover:text-ink",
+                      )}
+                    >
+                      <item.icon className="size-[18px] shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+        <form action="/auth/signout" method="post" className="border-t border-line pt-3">
+          <button className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium text-muted hover:bg-bg hover:text-ink">
+            <LogOut className="size-[18px]" strokeWidth={1.75} /> Sign out
+          </button>
+        </form>
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur lg:hidden">
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line/70 bg-surface/90 px-4 backdrop-blur-md lg:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <Link href="/dashboard">
           <Logo />
         </Link>
-        <button onClick={() => setOpen(true)} className="rounded-md p-2 text-muted hover:bg-primary-soft" aria-label="Open menu">
-          <Menu className="size-5" />
-        </button>
+        <Link href="/achievements" className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-sun-soft px-2.5 py-1 text-xs font-bold text-warning">
+            <Flame className="size-3.5" /> {stats.streak}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">Lv {stats.level}</span>
+        </Link>
       </header>
 
-      {open && (
-        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-ink/20" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 right-0 flex w-72 max-w-[85vw] flex-col bg-surface px-3 py-4 shadow-raised">
-            <div className="mb-4 flex items-center justify-between px-2.5">
-              <Logo />
-              <button onClick={() => setOpen(false)} className="rounded-md p-1.5 text-muted hover:bg-primary-soft" aria-label="Close menu">
-                <X className="size-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <NavLinks onNavigate={() => setOpen(false)} />
-            </div>
-            <Footer name={name} day={day} />
-          </div>
+      {/* Mobile tab bar */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-surface/95 backdrop-blur-md lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-label="Main"
+      >
+        <div className="mx-auto grid max-w-md grid-cols-5">
+          {TABS.map((t) => {
+            const active = t.match.some((m) => isActive(path, m));
+            return (
+              <Link
+                key={t.href}
+                href={t.href}
+                aria-current={active ? "page" : undefined}
+                className={cx("flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition-colors", active ? "text-primary" : "text-muted")}
+              >
+                <span className={cx("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-primary-soft")}>
+                  <t.icon className="size-5" strokeWidth={active ? 2.25 : 1.75} />
+                </span>
+                {t.label}
+              </Link>
+            );
+          })}
         </div>
-      )}
+      </nav>
     </>
   );
 }

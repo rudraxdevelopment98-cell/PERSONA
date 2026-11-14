@@ -11,6 +11,7 @@ export async function generateDevelopmentProfile(
   userId: string,
   scores: Record<Dimension, number>,
   reflections: { held_back: string; goal: string } | null,
+  language: "en" | "hinglish" | "hi" = "en",
 ) {
   const ranked = [...DIMENSIONS].sort((a, b) => scores[b] - scores[a]);
   const prompt = [
@@ -23,7 +24,7 @@ export async function generateDevelopmentProfile(
     "Write the development profile.",
   ].join("\n");
 
-  const profile = await generateStructured({ system: PROFILE_SYSTEM, prompt, schema: developmentProfileSchema, effort: "medium" });
+  const profile = await generateStructured({ language, system: PROFILE_SYSTEM, prompt, schema: developmentProfileSchema, effort: "medium" });
   const { error } = await db
     .from("profiles")
     .update({ development_profile: profile, roadmap: profile.roadmap })

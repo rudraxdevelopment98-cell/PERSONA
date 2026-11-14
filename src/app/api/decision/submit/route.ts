@@ -46,7 +46,7 @@ ${userData("reasoning", body.reasoning)}
 
 Evaluate how they decided.`;
 
-  const evaluation = await generateStructured({ system: DECISION_EVAL_SYSTEM, prompt, schema: decisionEvaluationSchema, effort: "medium" });
+  const evaluation = await generateStructured({ language: state.profile.language, system: DECISION_EVAL_SYSTEM, prompt, schema: decisionEvaluationSchema, effort: "medium" });
   const score = rubricTotal(evaluation.rubric);
 
   const { error } = await db
