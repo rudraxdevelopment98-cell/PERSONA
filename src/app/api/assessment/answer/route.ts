@@ -11,20 +11,27 @@ export const POST = apiRoute(schema, async ({ question_id, value }, { db, user, 
   if (!item) throw new HttpError(400, "Unknown question.");
   if (item.kind === "situational" && !item.options.some((o) => o.value === value)) throw new HttpError(400, "Invalid option.");
 
-  let { data: assessment } = await db
-    .from("assessments")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("status", "in_progress")
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const findInProgress = () =>
+    db
+      .from("assessments")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("kind", "baseline")
+      .eq("status", "in_progress")
+      .maybeSingle();
 
+  let { data: assessment } = await findInProgress();
   if (!assessment) {
     const res = await db.from("assessments").insert({ user_id: user.id, kind: "baseline" }).select("id").single();
-    dbError(res.error);
-    assessment = res.data;
+    if (res.error?.code === "23505") {
+      // Another answer created it at the same moment - use that one.
+      assessment = (await findInProgress()).data;
+    } else {
+      dbError(res.error);
+      assessment = res.data;
+    }
   }
+  if (!assessment) throw new HttpError(500, "Could not save your answer. Please try again.");
 
   const { error } = await db
     .from("assessment_responses")

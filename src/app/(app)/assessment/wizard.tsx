@@ -1,14 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, CloudCheck, History } from "lucide-react";
 import { Alert, Button, Card, Label, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
 import { ASSESSMENT_ITEMS, LIKERT_SCALE, type AssessmentItem } from "@/lib/domain/assessment";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { postJSON } from "@/lib/client/api";
 
 const PAGE_SIZE = 5;
+const DRAFT_KEY = "persona90-assessment-draft";
 
 function Question({
   item,
@@ -72,6 +73,28 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
   const [page, setPage] = useState(firstIncomplete === -1 ? pages.length : firstIncomplete);
   const [heldBack, setHeldBack] = useState("");
   const [goal, setGoal] = useState("");
+  const [saving, setSaving] = useState(0);
+  const resumed = useRef(Object.keys(initial).length > 0);
+  // Saves run one after another, in click order, so answers can never race.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+
+  // Reflection drafts are kept in this browser until the assessment is finished.
+  useEffect(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "{}");
+      if (typeof d.heldBack === "string") setHeldBack(d.heldBack);
+      if (typeof d.goal === "string") setGoal(d.goal);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ heldBack, goal }));
+    } catch {
+      /* storage unavailable */
+    }
+  }, [heldBack, goal]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -82,8 +105,11 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
     const prev = answers[item.id];
     setAnswers((a) => ({ ...a, [item.id]: value }));
     setPicked((p) => ({ ...p, [item.id]: optionIndex }));
+    setSaving((n) => n + 1);
+    const save = queue.current.catch(() => {}).then(() => postJSON("/api/assessment/answer", { question_id: item.id, value }));
+    queue.current = save;
     try {
-      await postJSON("/api/assessment/answer", { question_id: item.id, value });
+      await save;
       setError(null);
     } catch (e) {
       setAnswers((a) => {
@@ -93,6 +119,8 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
         return next;
       });
       setError(e instanceof Error ? e.message : "Could not save your answer.");
+    } finally {
+      setSaving((n) => n - 1);
     }
   }
 
@@ -100,7 +128,13 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
     setBusy(true);
     setError(null);
     try {
+      await queue.current.catch(() => {});
       await postJSON("/api/assessment/complete", { held_back: heldBack, goal });
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* storage unavailable */
+      }
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not complete the assessment.");
@@ -119,7 +153,23 @@ export function AssessmentWizard({ initial }: { initial: Record<string, number> 
         <span className="shrink-0 text-xs tabular-nums text-muted">
           {answered}/{ASSESSMENT_ITEMS.length}
         </span>
+        <span className="inline-flex w-20 shrink-0 items-center justify-end gap-1 text-xs font-semibold text-muted" aria-live="polite">
+          {saving > 0 ? (
+            "Saving…"
+          ) : answered > 0 ? (
+            <>
+              <CloudCheck className="size-3.5 text-success" /> Saved
+            </>
+          ) : null}
+        </span>
       </div>
+
+      {resumed.current && (
+        <div className="flex items-center gap-2 rounded-xl bg-accent-soft px-4 py-2.5 text-sm">
+          <History className="size-4 shrink-0 text-accent" />
+          Welcome back - your {Object.keys(initial).length} earlier answers are saved. Continue where you left off.
+        </div>
+      )}
 
       <Card className="p-5 sm:p-6">
         {!isReflection ? (
