@@ -152,6 +152,8 @@ async function* claudeText(p: Provider, system: string, messages: ChatMessage[],
 // Google Gemini
 // ---------------------------------------------------------------------------
 
+type ThinkingLevel = import("@google/genai").ThinkingLevel;
+
 async function geminiClient() {
   if (!process.env.GEMINI_API_KEY) throw new AIError("AI_PROVIDER is 'gemini' but GEMINI_API_KEY is not set.", "not_configured");
   const { GoogleGenAI } = await import("@google/genai");
@@ -161,13 +163,23 @@ async function geminiClient() {
     httpOptions: {
       apiVersion: process.env.GEMINI_API_VERSION || "v1beta",
       // Fail a single slow request well before the platform's function time limit.
-      timeout: 150_000,
+      timeout: 120_000,
       ...(process.env.GEMINI_BASE_URL ? { baseUrl: process.env.GEMINI_BASE_URL } : {}),
     },
   });
 }
 
 const GEMINI_THINKING: Record<Effort, number> = { low: 512, medium: 2048, high: 8192 };
+
+/**
+ * Gemini 2.x takes a token budget; Gemini 3+ takes a thinking level and may
+ * ignore the budget (defaulting to slow, heavy thinking). Keep thinking light:
+ * these tasks need good writing more than long deliberation.
+ */
+function geminiThinking(model: string, effort: Effort) {
+  if (/^gemini-2\./.test(model)) return { thinkingBudget: GEMINI_THINKING[effort] };
+  return { thinkingLevel: (effort === "high" ? "MEDIUM" : "LOW") as ThinkingLevel };
+}
 
 function mapGeminiError(err: unknown): never {
   if (err instanceof AIError) throw err;
@@ -228,6 +240,10 @@ async function withGeminiModelFallback<T>(p: Provider, fn: (model: string) => Pr
       } catch (err) {
         lastErr = err;
         const status = errStatus(err);
+        if (/abort/i.test(errText(err))) {
+          console.warn(`[ai] Gemini model "${model}" timed out; trying another model.`);
+          break;
+        }
         // Overloaded: wait briefly and retry once, then move on to the next model.
         if (status && TRANSIENT.has(status)) {
           console.warn(`[ai] Gemini model "${model}" is busy (${status}); ${attempt === 0 ? "retrying" : "trying another model"}.`);
@@ -275,15 +291,19 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
             maxOutputTokens: maxTokens,
             responseMimeType: "application/json",
             ...(v.schema ? { responseJsonSchema: jsonSchema } : {}),
-            ...(v.thinking ? { thinkingConfig: { thinkingBudget: GEMINI_THINKING[effort] } } : {}),
+            ...(v.thinking ? { thinkingConfig: geminiThinking(model, effort) } : {}),
           },
         });
+        const started = Date.now();
+        let firstAt = 0;
         let text = "";
         let last: GeminiChunk | null = null;
         for await (const chunk of stream) {
+          if (!firstAt && chunk.text) firstAt = Date.now();
           text += chunk.text ?? "";
           last = chunk as GeminiChunk;
         }
+        console.log(`[ai] ${model} structured: first text ${firstAt ? firstAt - started : -1} ms, total ${Date.now() - started} ms, ${text.length} chars`);
         checkGeminiFinish(last);
         return text;
       });
@@ -306,7 +326,7 @@ async function* geminiText(p: Provider, system: string, messages: ChatMessage[],
         config: {
           systemInstruction: system,
           maxOutputTokens: maxTokens,
-          ...(thinking ? { thinkingConfig: { thinkingBudget: GEMINI_THINKING[effort] } } : {}),
+          ...(thinking ? { thinkingConfig: geminiThinking(model, effort) } : {}),
         },
       }),
     );
