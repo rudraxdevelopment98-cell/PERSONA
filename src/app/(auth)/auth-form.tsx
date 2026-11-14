@@ -29,7 +29,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         if (password.length < 10) throw new Error("Use a password of at least 10 characters.");
         const { error } = await authClient.signUp.email({ email, password, name: name.trim().slice(0, 80) || email.split("@")[0] });
         if (error) throw new Error(error.message || "Could not create your account.");
-        router.replace("/assessment");
+        router.replace("/welcome");
+        return;
       } else {
         const { error } = await authClient.signIn.email({ email, password });
         if (error) throw new Error(error.status === 401 ? "Incorrect email or password." : error.message || "Could not sign in.");
@@ -66,7 +67,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-baseline justify-between">
+              <Label htmlFor="password">Password</Label>
+              {mode === "login" && (
+                <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              )}
+            </div>
             <Input
               id="password"
               type="password"
