@@ -216,7 +216,7 @@ function checkGeminiFinish(last: GeminiChunk | null) {
  * replacement named in a 404 is tried next. The first model that works is
  * remembered for the lifetime of the server instance.
  */
-const GEMINI_FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-2.5-flash"];
+const GEMINI_FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash"];
 let workingGeminiModel: string | null = null;
 
 const errStatus = (err: unknown) => (err as { status?: number })?.status;
@@ -245,37 +245,46 @@ async function withGeminiModelFallback<T>(
   attemptMs: number,
   fn: (model: string, signal: AbortSignal) => Promise<T>,
 ): Promise<T> {
-  const queue = [...new Set([workingGeminiModel ?? p.model, p.model, ...GEMINI_FALLBACK_MODELS])];
-  const tried = new Set<string>();
+  const missing = new Set<string>();
   let lastErr: unknown = new AIError("The AI service is very busy right now. Please try again in a minute.", "upstream");
-  while (queue.length > 0) {
-    const remaining = deadline - Date.now();
-    if (remaining < 8_000) break;
-    const model = queue.shift()!;
-    if (tried.has(model)) continue;
-    tried.add(model);
-    try {
-      const result = await fn(model, AbortSignal.timeout(Math.min(attemptMs, remaining - 3_000)));
-      workingGeminiModel = model;
-      return result;
-    } catch (err) {
-      lastErr = err;
-      const status = errStatus(err);
-      if (isTimeout(err)) {
-        console.warn(`[ai] Gemini model "${model}" was too slow; trying another model.`);
-        if (workingGeminiModel === model) workingGeminiModel = null;
-        continue;
+  // Pass 1 uses the normal time per attempt; if every model was busy or slow,
+  // pass 2 retries them with double the time (load spikes are usually short).
+  for (let pass = 0; pass < 2; pass++) {
+    const queue = [...new Set([workingGeminiModel ?? p.model, p.model, ...GEMINI_FALLBACK_MODELS])];
+    const tried = new Set<string>();
+    const perAttempt = attemptMs * (pass + 1);
+    while (queue.length > 0) {
+      const remaining = deadline - Date.now();
+      if (remaining < 8_000) break;
+      const model = queue.shift()!;
+      if (tried.has(model) || missing.has(model)) continue;
+      tried.add(model);
+      try {
+        const result = await fn(model, AbortSignal.timeout(Math.min(perAttempt, remaining - 3_000)));
+        workingGeminiModel = model;
+        return result;
+      } catch (err) {
+        lastErr = err;
+        const status = errStatus(err);
+        if (isTimeout(err)) {
+          console.warn(`[ai] Gemini model "${model}" was too slow (${Math.round(perAttempt / 1000)} s); trying another model.`);
+          if (workingGeminiModel === model) workingGeminiModel = null;
+          continue;
+        }
+        if (status && TRANSIENT.has(status)) {
+          console.warn(`[ai] Gemini model "${model}" is busy (${status}); trying another model.`);
+          if (workingGeminiModel === model) workingGeminiModel = null;
+          continue;
+        }
+        if (status !== 404) throw err;
+        missing.add(model);
+        const suggestion = suggestedGeminiModel(err);
+        if (suggestion && !tried.has(suggestion) && !missing.has(suggestion)) queue.unshift(suggestion);
+        console.warn(`[ai] Gemini model "${model}" is unavailable (${errText(err).slice(0, 300)}); trying ${queue[0] ?? "nothing else"}.`);
       }
-      if (status && TRANSIENT.has(status)) {
-        console.warn(`[ai] Gemini model "${model}" is busy (${status}); trying another model.`);
-        if (workingGeminiModel === model) workingGeminiModel = null;
-        continue;
-      }
-      if (status !== 404) throw err;
-      const suggestion = suggestedGeminiModel(err);
-      if (suggestion && !tried.has(suggestion)) queue.unshift(suggestion);
-      console.warn(`[ai] Gemini model "${model}" is unavailable (${errText(err).slice(0, 300)}); trying ${queue[0] ?? "nothing else"}.`);
     }
+    if (deadline - Date.now() < 8_000) break;
+    if (pass === 0) console.warn("[ai] All Gemini models were busy or slow; retrying with more time.");
   }
   if (isTimeout(lastErr) || (errStatus(lastErr) && TRANSIENT.has(errStatus(lastErr)!))) {
     throw new AIError("The free AI service is very busy right now. Please try again in a few minutes.", "upstream");
