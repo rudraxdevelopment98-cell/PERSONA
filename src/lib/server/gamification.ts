@@ -3,7 +3,8 @@ import type { Db } from "@/lib/db/server";
 import { levelInfo, totalXp, type ActivityCounts } from "@/lib/domain/gamification";
 import { PHASES, currentStreak } from "@/lib/domain/programme";
 
-export type Stats = ActivityCounts & { completedDays: number[]; bestStreak: number; streak: number; xp: number; level: number };
+export type SocialCounts = { friends: number; owned: number; cheers: number; finished: number; team_wins: number };
+export type Stats = ActivityCounts & { completedDays: number[]; bestStreak: number; streak: number; xp: number; level: number; social?: SocialCounts };
 
 export type AchievementDef = { code: string; title: string; description: string; icon: string; met: (s: Stats) => boolean };
 
@@ -30,6 +31,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { code: "phase_1", title: "Foundation complete", description: "24+ sessions in Phase 1.", icon: "trophy", met: (s) => phaseDone(s, 1) },
   { code: "phase_2", title: "Development complete", description: "24+ sessions in Phase 2.", icon: "trophy", met: (s) => phaseDone(s, 2) },
   { code: "phase_3", title: "Transformation complete", description: "24+ sessions in Phase 3.", icon: "trophy", met: (s) => phaseDone(s, 3) },
+  { code: "first_friend", title: "Better together", description: "Connected with your first friend.", icon: "users", met: (s) => (s.social?.friends ?? 0) > 0 },
+  { code: "circle_founder", title: "Circle founder", description: "Started a circle.", icon: "circle", met: (s) => (s.social?.owned ?? 0) > 0 },
+  { code: "cheerleader", title: "Cheerleader", description: "Sent 25 cheers.", icon: "heart", met: (s) => (s.social?.cheers ?? 0) >= 25 },
+  { code: "race_finisher", title: "Race finisher", description: "Finished a race.", icon: "flag", met: (s) => (s.social?.finished ?? 0) > 0 },
+  { code: "team_player", title: "Team player", description: "Won a team race.", icon: "trophy", met: (s) => (s.social?.team_wins ?? 0) > 0 },
 ];
 
 export async function loadStats(db: Db, userId: string, today: number): Promise<Stats> {
@@ -75,8 +81,16 @@ export async function loadStats(db: Db, userId: string, today: number): Promise<
 /** Records newly earned badges. */
 export async function awardAchievements(db: Db, userId: string, today = 90) {
   const stats = await loadStats(db, userId, today);
+  try {
+    const social = await import("./social");
+    stats.social = await social.socialStats(userId);
+  } catch (err) {
+    console.warn("[social] stats failed", (err as Error).message);
+  }
   const earned = ACHIEVEMENTS.filter((a) => a.met(stats)).map(({ code, title, description }) => ({ user_id: userId, code, title, description }));
   if (earned.length > 0) await db.from("achievements").upsert(earned, { onConflict: "user_id,code", ignoreDuplicates: true });
+  // Keep the shareable summary current for friends and circles.
+  await (await import("./social")).refreshSnapshotSafe(userId);
   return stats;
 }
 

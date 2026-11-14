@@ -14,6 +14,11 @@ const TABLES = [
   "achievements",
   "journal_entries",
   "coach_messages",
+  "share_settings",
+  "share_snapshots",
+  "circle_members",
+  "race_participants",
+  "notifications",
 ];
 
 /** Exports every row the user owns as a JSON download. Row Level Security guarantees only their data is returned. */
@@ -32,6 +37,15 @@ export async function GET() {
     const { data } = await db.from(t).select("*").eq("user_id", user.id);
     out[t] = data ?? [];
   }
+  // Social rows where the user is not in a user_id column.
+  const [{ data: invites }, { data: friendships }, { data: cheers }] = await Promise.all([
+    db.from("invites").select("id, kind, circle_id, max_uses, uses, expires_at, revoked_at, created_at").eq("created_by", user.id),
+    db.from("friendships").select("*"),
+    db.from("cheers").select("*"),
+  ]);
+  out.invites = invites ?? [];
+  out.friendships = friendships ?? [];
+  out.cheers = cheers ?? [];
   return new Response(JSON.stringify(out, null, 2), {
     headers: {
       "Content-Type": "application/json",

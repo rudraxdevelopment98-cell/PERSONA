@@ -192,3 +192,36 @@ describe("assessment translations", () => {
     expect(assessmentPack("en")).toBeNull();
   });
 });
+
+import { DEFAULT_SHARE, filterSnapshot, liveStreak, longestRun, raceScore, rankScores, sanitiseItems, type Snapshot } from "./social";
+describe("social", () => {
+  const snap: Snapshot = {
+    user_id: "u", display_name: "Asha", timezone: "UTC", programme_day: 12, phase: 1, sessions_completed: 10, streak: 5, best_streak: 6,
+    last_active_date: "2026-03-10", xp: 640, level: 4, level_name: "Challenger", challenges_completed: 3,
+    badges: [{ code: "baseline", title: "Baseline set", earned_at: "2026-03-01" }], growth: { confidence: 8 }, scores: { confidence: 61 },
+    focus: { title: "Confidence", dimension: "confidence" },
+  };
+  it("shares only granted items", () => {
+    const v = filterSnapshot(snap, ["xp"], "2026-03-10");
+    expect(v.xp).toBe(640);
+    expect(v.scores).toBeUndefined();
+    expect(v.growth).toBeUndefined();
+    expect(v.sessions_completed).toBeUndefined();
+    expect(Object.keys(v)).not.toContain("timezone");
+  });
+  it("defaults to activity, xp and badges and drops unknown items", () => {
+    expect(DEFAULT_SHARE).toEqual(["activity", "xp", "badges"]);
+    expect(sanitiseItems(["scores", "journal", "xp"])).toEqual(["xp", "scores"]);
+  });
+  it("expires a stale streak", () => {
+    expect(liveStreak(5, "2026-03-10", "2026-03-11")).toBe(5);
+    expect(liveStreak(5, "2026-03-10", "2026-03-12")).toBe(0);
+    expect(filterSnapshot(snap, ["activity"], "2026-03-14").streak).toBe(0);
+  });
+  it("scores races and ranks ties", () => {
+    expect(longestRun(["2026-03-01", "2026-03-02", "2026-03-02", "2026-03-04", "2026-03-05", "2026-03-06"])).toBe(3);
+    const e = { sessionDates: [], sessions: 2, checkins: 3, challenges: 1, storiesRead: 2, scenarios: 6, decisions: 1, communication: 0, journal: 2 };
+    expect(raceScore("xp", e)).toBe(3 * 10 + 2 * 15 + 6 * 10 + 2 * 20 + 30 + 15 + 2 * 5);
+    expect(rankScores([{ score: 5 }, { score: 9 }, { score: 5 }, { score: 1 }]).map((r) => r.rank)).toEqual([1, 2, 2, 4]);
+  });
+});

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bell,
   BookOpenCheck,
   ClipboardList,
   Dumbbell,
@@ -16,9 +17,10 @@ import {
   MessagesSquare,
   NotebookPen,
   Settings,
-  Sparkles,
   Trophy,
   UserRound,
+  Users,
+  UsersRound,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { ProgressRing, cx } from "./ui";
@@ -42,6 +44,14 @@ const GROUPS = [
     ],
   },
   {
+    label: "Together",
+    items: [
+      { href: "/friends", label: "Friends", icon: Users },
+      { href: "/circles", label: "Circles", icon: UsersRound },
+      { href: "/inbox", label: "Inbox", icon: Bell },
+    ],
+  },
+  {
     label: "Growth",
     items: [
       { href: "/progress", label: "Progress", icon: LineChart },
@@ -62,8 +72,8 @@ const GROUPS = [
 const TABS = [
   { href: "/dashboard", label: "Home", icon: Home, match: ["/dashboard"] },
   { href: "/today", label: "Today", icon: BookOpenCheck, match: ["/today"] },
-  { href: "/practice", label: "Practice", icon: Dumbbell, match: ["/practice", "/decision-lab", "/communication-lab"] },
-  { href: "/coach", label: "Coach", icon: Sparkles, match: ["/coach"] },
+  { href: "/practice", label: "Practice", icon: Dumbbell, match: ["/practice", "/decision-lab", "/communication-lab", "/coach"] },
+  { href: "/friends", label: "Friends", icon: Users, match: ["/friends", "/circles", "/races", "/inbox"] },
   { href: "/me", label: "Me", icon: UserRound, match: ["/me", "/progress", "/achievements", "/journal", "/programme", "/assessment", "/settings"] },
 ];
 
@@ -92,7 +102,7 @@ function LevelCard({ stats, name, day }: { stats: NavStats; name: string; day: n
   );
 }
 
-export function AppNav({ name, day, stats }: { name: string; day: number; stats: NavStats }) {
+export function AppNav({ name, day, stats, unread = 0 }: { name: string; day: number; stats: NavStats; unread?: number }) {
   const path = usePathname();
 
   return (
@@ -122,6 +132,9 @@ export function AppNav({ name, day, stats }: { name: string; day: number; stats:
                     >
                       <item.icon className="size-[18px] shrink-0" strokeWidth={active ? 2.25 : 1.75} />
                       {item.label}
+                      {item.href === "/inbox" && unread > 0 && (
+                        <span className="ml-auto rounded-full bg-coral px-1.5 text-[11px] font-bold text-white">{unread > 99 ? "99+" : unread}</span>
+                      )}
                     </Link>
                   );
                 })}
@@ -141,12 +154,18 @@ export function AppNav({ name, day, stats }: { name: string; day: number; stats:
         <Link href="/dashboard">
           <Logo />
         </Link>
+        <div className="flex items-center gap-2">
+        <Link href="/inbox" aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"} className="relative rounded-full p-1.5 text-muted hover:bg-bg">
+          <Bell className="size-5" />
+          {unread > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-coral px-1 text-center text-[10px] font-bold leading-4 text-white">{unread > 9 ? "9+" : unread}</span>}
+        </Link>
         <Link href="/achievements" className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-full bg-sun-soft px-2.5 py-1 text-xs font-bold text-warning">
             <Flame className="size-3.5" /> {stats.streak}
           </span>
           <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">Lv {stats.level}</span>
         </Link>
+        </div>
       </header>
 
       {/* Mobile tab bar */}

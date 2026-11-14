@@ -1,4 +1,4 @@
-import { BookOpen, Check, Flag, Flame, GitBranch, MessagesSquare, Mic, PenLine, Star, Target, Trophy, type LucideIcon } from "lucide-react";
+import { BookOpen, Check, CircleDot, Flag, Flame, GitBranch, Heart, MessagesSquare, Mic, PenLine, Star, Target, Trophy, Users, type LucideIcon } from "lucide-react";
 
 const ICONS: Record<string, LucideIcon> = {
   flag: Flag,
@@ -12,6 +12,9 @@ const ICONS: Record<string, LucideIcon> = {
   pen: PenLine,
   star: Star,
   trophy: Trophy,
+  users: Users,
+  circle: CircleDot,
+  heart: Heart,
 };
 
 export function BadgeIcon({ name, className }: { name: string; className?: string }) {

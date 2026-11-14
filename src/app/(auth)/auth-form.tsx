@@ -27,7 +27,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     try {
       if (mode === "signup") {
         if (password.length < 10) throw new Error("Use a password of at least 10 characters.");
-        const { error } = await authClient.signUp.email({ email, password, name: name.trim().slice(0, 80) || email.split("@")[0] });
+        const { error } = await authClient.signUp.email({ email, password, name: name.trim().slice(0, 80) || "Member" });
         if (error) throw new Error(error.message || "Could not create your account.");
         router.replace("/welcome");
         return;
