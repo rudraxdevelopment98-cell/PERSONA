@@ -162,8 +162,8 @@ async function geminiClient() {
     // v1beta carries JSON-schema output and thinking configuration.
     httpOptions: {
       apiVersion: process.env.GEMINI_API_VERSION || "v1beta",
-      // Fail a single slow request well before the platform's function time limit.
-      timeout: 120_000,
+      // Backstop only; each request also carries its own abort signal.
+      timeout: 180_000,
       ...(process.env.GEMINI_BASE_URL ? { baseUrl: process.env.GEMINI_BASE_URL } : {}),
     },
   });
@@ -205,12 +205,12 @@ function checkGeminiFinish(last: GeminiChunk | null) {
 }
 
 /**
- * Models tried in order if the configured one is unavailable (HTTP 404). Google
- * retires models for new accounts over time, so when its error names a
- * replacement model, that model is tried next. The first model that works is
+ * Models tried in order when the configured one is unavailable (404), busy
+ * (5xx) or too slow. Google retires models for new accounts over time, so a
+ * replacement named in a 404 is tried next. The first model that works is
  * remembered for the lifetime of the server instance.
  */
-const GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"];
+const GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash"];
 let workingGeminiModel: string | null = null;
 
 const errStatus = (err: unknown) => (err as { status?: number })?.status;
@@ -221,45 +221,58 @@ function suggestedGeminiModel(err: unknown): string | null {
   return m ? m[1] : null;
 }
 
-const TRANSIENT = new Set([500, 502, 503, 504]);
-const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+const isTimeout = (err: unknown) => /abort|timed? ?out/i.test(errText(err)) || (err as Error)?.name === "TimeoutError";
 
-async function withGeminiModelFallback<T>(p: Provider, fn: (model: string) => Promise<T>): Promise<T> {
+/** Overall time available for one AI operation (functions are allowed 300 s). */
+const OPERATION_BUDGET_MS = 270_000;
+
+/**
+ * Runs `fn` against successive models until one succeeds. Each attempt gets
+ * `attemptMs` (bounded by the overall deadline) and an AbortSignal to enforce it.
+ * Busy, slow and missing models are skipped immediately - no waiting on the same
+ * overloaded model.
+ */
+async function withGeminiModelFallback<T>(
+  p: Provider,
+  deadline: number,
+  attemptMs: number,
+  fn: (model: string, signal: AbortSignal) => Promise<T>,
+): Promise<T> {
   const queue = [...new Set([workingGeminiModel ?? p.model, p.model, ...GEMINI_FALLBACK_MODELS])];
   const tried = new Set<string>();
-  let lastErr: unknown;
+  let lastErr: unknown = new AIError("The AI service is very busy right now. Please try again in a minute.", "upstream");
   while (queue.length > 0) {
+    const remaining = deadline - Date.now();
+    if (remaining < 8_000) break;
     const model = queue.shift()!;
     if (tried.has(model)) continue;
     tried.add(model);
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const result = await fn(model);
-        workingGeminiModel = model;
-        return result;
-      } catch (err) {
-        lastErr = err;
-        const status = errStatus(err);
-        if (/abort/i.test(errText(err))) {
-          console.warn(`[ai] Gemini model "${model}" timed out; trying another model.`);
-          break;
-        }
-        // Overloaded: wait briefly and retry once, then move on to the next model.
-        if (status && TRANSIENT.has(status)) {
-          console.warn(`[ai] Gemini model "${model}" is busy (${status}); ${attempt === 0 ? "retrying" : "trying another model"}.`);
-          if (attempt === 0) {
-            await pause(1500);
-            continue;
-          }
-          break;
-        }
-        if (status !== 404) throw err;
-        const suggestion = suggestedGeminiModel(err);
-        if (suggestion && !tried.has(suggestion)) queue.unshift(suggestion);
-        console.warn(`[ai] Gemini model "${model}" is unavailable (${errText(err).slice(0, 300)}); trying ${queue[0] ?? "nothing else"}.`);
-        break;
+    try {
+      const result = await fn(model, AbortSignal.timeout(Math.min(attemptMs, remaining - 3_000)));
+      workingGeminiModel = model;
+      return result;
+    } catch (err) {
+      lastErr = err;
+      const status = errStatus(err);
+      if (isTimeout(err)) {
+        console.warn(`[ai] Gemini model "${model}" was too slow; trying another model.`);
+        if (workingGeminiModel === model) workingGeminiModel = null;
+        continue;
       }
+      if (status && TRANSIENT.has(status)) {
+        console.warn(`[ai] Gemini model "${model}" is busy (${status}); trying another model.`);
+        if (workingGeminiModel === model) workingGeminiModel = null;
+        continue;
+      }
+      if (status !== 404) throw err;
+      const suggestion = suggestedGeminiModel(err);
+      if (suggestion && !tried.has(suggestion)) queue.unshift(suggestion);
+      console.warn(`[ai] Gemini model "${model}" is unavailable (${errText(err).slice(0, 300)}); trying ${queue[0] ?? "nothing else"}.`);
     }
+  }
+  if (isTimeout(lastErr) || (errStatus(lastErr) && TRANSIENT.has(errStatus(lastErr)!))) {
+    throw new AIError("The free AI service is very busy right now. Please try again in a few minutes.", "upstream");
   }
   throw lastErr;
 }
@@ -277,16 +290,21 @@ const STRUCTURED_VARIANTS = [
 
 async function geminiStructured(p: Provider, system: string, prompt: string, jsonSchema: Record<string, unknown>, effort: Effort, maxTokens: number) {
   const ai = await geminiClient();
+  const deadline = Date.now() + OPERATION_BUDGET_MS;
+  // Long generations (the daily story) get more time per attempt than short ones.
+  const attemptMs = maxTokens > 16_000 ? 150_000 : 50_000;
   let lastErr: unknown;
   for (const v of STRUCTURED_VARIANTS) {
     try {
-      return await withGeminiModelFallback(p, async (model) => {
+      return await withGeminiModelFallback(p, deadline, attemptMs, async (model, signal) => {
+        const started = Date.now();
         const stream = await ai.models.generateContentStream({
           model,
           contents: [
             { role: "user", parts: [{ text: v.schema ? prompt : `${prompt}\n\nRespond with JSON only, matching this JSON Schema:\n${JSON.stringify(jsonSchema)}` }] },
           ],
           config: {
+            abortSignal: signal,
             systemInstruction: system,
             maxOutputTokens: maxTokens,
             responseMimeType: "application/json",
@@ -294,7 +312,6 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
             ...(v.thinking ? { thinkingConfig: geminiThinking(model, effort) } : {}),
           },
         });
-        const started = Date.now();
         let firstAt = 0;
         let text = "";
         let last: GeminiChunk | null = null;
@@ -318,12 +335,14 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
 
 async function* geminiText(p: Provider, system: string, messages: ChatMessage[], effort: Effort, maxTokens: number): AsyncGenerator<string> {
   const ai = await geminiClient();
+  const deadline = Date.now() + OPERATION_BUDGET_MS;
   const open = (thinking: boolean) =>
-    withGeminiModelFallback(p, (model) =>
+    withGeminiModelFallback(p, deadline, 90_000, (model, signal) =>
       ai.models.generateContentStream({
         model,
         contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
         config: {
+          abortSignal: signal,
           systemInstruction: system,
           maxOutputTokens: maxTokens,
           ...(thinking ? { thinkingConfig: geminiThinking(model, effort) } : {}),
