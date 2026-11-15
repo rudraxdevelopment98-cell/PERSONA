@@ -1,5 +1,5 @@
 import "server-only";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { getPool } from "@/lib/db/pool";
 import { notify } from "./social";
 
@@ -28,10 +28,16 @@ export async function requireAdmin(userId: string) {
 }
 
 export async function claimAdmin(userId: string, code: string): Promise<void> {
-  const expected = process.env.ADMIN_SETUP_CODE ?? "";
-  if (expected.length < 16) throw new AdminError("Admin setup is not configured on this server.");
-  const a = Buffer.from(code.trim()), b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) throw new AdminError("That code isn't right.");
+  // The code comes from the server environment, or a stored hash of it.
+  const digest = (v: string) => createHash("sha256").update(`persona90-admin-setup:${v.trim()}`).digest();
+  const env = process.env.ADMIN_SETUP_CODE ?? "";
+  let expected: Buffer | null = env.length >= 16 ? digest(env) : null;
+  if (!expected) {
+    const [row] = await q<{ value: string }>("select value from public.app_settings where key = 'admin_setup_hash'");
+    if (row?.value && /^[0-9a-f]{64}$/.test(row.value)) expected = Buffer.from(row.value, "hex");
+  }
+  if (!expected) throw new AdminError("Admin setup is not configured on this server.");
+  if (!timingSafeEqual(digest(code), expected)) throw new AdminError("That code isn't right.");
   // Only the very first admin can use the setup code.
   const res = await getPool().query(
     "insert into public.admins (user_id) select $1 where not exists (select 1 from public.admins) on conflict do nothing",
