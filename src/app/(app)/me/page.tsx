@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, ClipboardList, LineChart, LogOut, Map, NotebookPen, Settings, Trophy } from "lucide-react";
+import { ChevronRight, ClipboardList, LineChart, LogOut, Map, NotebookPen, Settings, ShieldCheck, Trophy } from "lucide-react";
+import { isAdmin } from "@/lib/server/admin";
 import { Card, IconTile, ProgressBar } from "@/components/ui";
 import { getGamification } from "@/lib/server/gamification";
 import { getUserState } from "@/lib/server/state";
@@ -16,7 +17,8 @@ const LINKS = [
 ];
 
 export default async function MePage() {
-  const [{ state }, { stats, level }] = await Promise.all([getUserState(), getGamification()]);
+  const [{ state, user }, { stats, level }] = await Promise.all([getUserState(), getGamification()]);
+  const links = (await isAdmin(user.id).catch(() => false)) ? [...LINKS, { href: "/admin", label: "Admin", icon: ShieldCheck, tone: "danger" as const }] : LINKS;
   const name = state.profile.display_name || state.email?.split("@")[0] || "You";
   return (
     <>
@@ -53,7 +55,7 @@ export default async function MePage() {
         </div>
       </Card>
       <Card className="divide-y divide-line">
-        {LINKS.map((l) => (
+        {links.map((l) => (
           <Link key={l.href} href={l.href} className="flex items-center gap-3 px-4 py-3 hover:bg-bg">
             <IconTile tone={l.tone} size="sm">
               <l.icon className="size-4" />

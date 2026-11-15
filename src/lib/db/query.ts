@@ -32,6 +32,7 @@ const JSON_COLUMNS = new Set([
   "answers",
   "analysis",
   "introduction",
+  "variety",
   "scenarios",
   "challenge",
   "reflection_questions",
@@ -119,6 +120,12 @@ export class Query<T = Row[]> implements PromiseLike<DbResult<T>> {
   gte(col: string, value: unknown) {
     const c = ident(col);
     this.filters.push({ sql: (p) => `${c} >= ${p(value)}` });
+    return this;
+  }
+
+  lt(col: string, value: unknown) {
+    const c = ident(col);
+    this.filters.push({ sql: (p) => `${c} < ${p(value)}` });
     return this;
   }
 

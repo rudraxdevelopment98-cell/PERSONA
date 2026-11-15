@@ -438,7 +438,8 @@ export async function report(userId: string, target: { userId?: string; circleId
     reason.slice(0, 60),
     details.slice(0, 1000),
   ]);
-  console.warn(`[social] report from ${userId}: ${reason}`);
+  const { notifyAdminsOfReport } = await import("./admin");
+  await notifyAdminsOfReport(reason.slice(0, 60)).catch(() => {});
 }
 
 // ---------------------------------------------------------------------------

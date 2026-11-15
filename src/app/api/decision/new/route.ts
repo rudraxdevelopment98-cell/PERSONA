@@ -26,7 +26,7 @@ export const POST = apiRoute(schema, async ({ category, difficulty }, { db, user
   const scenario = await generateStructured({
     language: state.profile.language,
     system: DECISION_SCENARIO_SYSTEM,
-    prompt: `${context}\n\n## Request\nCategory: ${cat}\nDifficulty: ${diff}\nAvoid these recent scenarios:\n${used || "None"}\n\nCreate the scenario.`,
+    prompt: `${context}\n\n## Request\nCategory: ${cat}\nDifficulty: ${diff}\nAvoid these recent scenarios:\n${used || "None"}\nUse the user's data to choose which behaviour to train, but never reuse their literal situation, workplace or people.\n\nCreate the scenario.`,
     schema: decisionScenarioSchema,
     effort: "low",
   });

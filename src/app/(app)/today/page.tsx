@@ -5,6 +5,8 @@ import { getUserState, todaysFocus } from "@/lib/server/state";
 import type { CheckinRow, ScenarioResponseRow, SessionRow, StoryRow } from "@/lib/server/types";
 import { CheckinFlow } from "./checkin";
 import { SessionFlow, type ClientScenario } from "./session";
+import type { EpisodeInfo } from "./episode";
+import { GENRES, WORLDS, byId } from "@/lib/domain/variety";
 
 export const metadata = { title: "Daily Development" };
 export const maxDuration = 300;
@@ -47,10 +49,36 @@ export default async function TodayPage() {
       situation: sc.situation,
       question: sc.question,
       skill: sc.skill,
+      format: (sc as { format?: string | null }).format ?? null,
       options: response ? sc.options : sc.options.map((o) => ({ id: o.id, text: o.text })),
       response: response ? { choice_id: response.choice_id, reasoning: response.reasoning, score: response.score, evaluation: response.evaluation } : null,
     };
   });
+
+  // Story season info: earlier episodes of the same season give the "Previously" recap.
+  let episode: EpisodeInfo | null = null;
+  const v = session?.variety;
+  if (session && v) {
+    const { data: earlier } = await db
+      .from("daily_sessions")
+      .select("day_number, variety")
+      .eq("user_id", user.id)
+      .order("day_number", { ascending: true });
+    const previously = ((earlier ?? []) as Pick<SessionRow, "day_number" | "variety">[])
+      .filter((e) => e.day_number < session.day_number && e.variety?.season === v.season && e.variety.episode_summary)
+      .map((e) => ({ episode: e.variety!.episode, title: e.variety!.episode_title, summary: e.variety!.episode_summary! }));
+    episode = {
+      season: v.season,
+      episode: v.episode,
+      finale: v.finale,
+      world: byId(WORLDS, v.world)?.label ?? v.world,
+      genre: byId(GENRES, v.genre)?.label ?? v.genre,
+      previously,
+      teaser: v.teaser || null,
+      nextWorlds: (v.next_world_options ?? []).map((id) => ({ id, label: byId(WORLDS, id)?.label ?? id })),
+      chosenWorld: state.profile.next_world ?? null,
+    };
+  }
 
   return (
     <>
@@ -83,6 +111,7 @@ export default async function TodayPage() {
           }}
           story={story ? { title: story.title, body: story.body, word_count: story.word_count, insights: story.insights } : null}
           scenarios={scenarios}
+          episode={episode}
         />
       )}
     </>

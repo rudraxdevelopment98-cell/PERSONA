@@ -80,6 +80,8 @@ export const dailySessionSchema = z.object({
     central_conflict: z.string(),
     turning_point: z.string(),
     concepts: z.array(z.string()),
+    recurring_cast: z.string(),
+    season_arc: z.string(),
   }),
   scenarios: z.array(sessionScenarioSchema),
   challenge: z.object({
@@ -98,6 +100,8 @@ export const storySchema = z.object({
   title: z.string(),
   body: z.string(),
   insights: z.array(z.object({ title: z.string(), explanation: z.string() })),
+  episode_summary: z.string(),
+  next_episode_teaser: z.string(),
 });
 export type StoryContent = z.infer<typeof storySchema>;
 

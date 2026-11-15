@@ -6,6 +6,8 @@ import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { apiRoute, dbError, HttpError, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
 import { todaysFocus } from "@/lib/server/state";
+import { planDay, recipeText } from "@/lib/server/variety";
+import { SCENARIO_FORMATS, byId } from "@/lib/domain/variety";
 
 export const maxDuration = 300;
 
@@ -36,7 +38,9 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
 
   const focus = todaysFocus(state);
   const context = await buildAIContext(db, state, { checkins: 3 });
-  const used = (pastStories ?? []).map((s) => `- "${s.title}": ${s.body.slice(0, 160).replace(/\s+/g, " ")}…`).join("\n");
+  const plan = await planDay(db, user.id, state.day, state.profile.next_world ?? null);
+  const v = plan.variety;
+  const used = (pastStories ?? []).map((s) => `- "${s.title}": ${s.body.slice(0, 120).replace(/\s+/g, " ")}…`).join("\n");
   const prompt = `${context}
 
 ## Today
@@ -44,8 +48,13 @@ Day ${focus.day} of 90, Phase ${focus.phase.number} (${focus.phase.name}).
 Focus: ${focus.title} - train ${DIMENSION_META[focus.dimension].label} (${focus.dimension}).${focus.personalised ? " This is a personalised day targeting one of the user's weakest areas." : ""}
 Set every scenario's "skill" to "${focus.dimension}" unless a scenario clearly trains a different dimension.
 
-## Stories already used (do not repeat themes, settings or names)
+${recipeText(v, plan.previously)}
+
+## Already used (do not repeat)
+Earlier stories (other seasons - avoid their plots and names):
 ${used || "None yet."}
+Recent challenges: ${plan.usedChallenges.join("; ") || "none"}
+Recent scenarios: ${plan.usedScenarios.join("; ") || "none"}
 
 Plan today's session.`;
 
@@ -54,8 +63,13 @@ Plan today's session.`;
   // The story is written in two focused calls from the plan's brief: the first
   // half builds to the turning point, the second half resolves it.
   const brief = content.story_brief;
+  const cast = v.episode > 1 && v.cast ? v.cast : brief.recurring_cast;
+  const arc = v.episode > 1 && v.arc ? v.arc : brief.season_arc;
   const briefText = `## Story brief
-Title: ${brief.title}
+Season ${v.season}, Episode ${v.episode}${v.finale ? " (SEASON FINALE - close the arc)" : " (end on a cliffhanger for tomorrow)"}
+${plan.previously.length ? `Previously this season:\n${plan.previously.join("\n")}\n` : ""}Recurring cast:\n${cast}
+Season arc: ${arc}
+Episode title: ${brief.title}
 Setting: ${brief.setting}
 Protagonist: ${brief.protagonist}
 Supporting characters: ${brief.supporting_characters}
@@ -80,6 +94,14 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
     maxTokens: 24000,
   });
   const story = { title: part2.title || brief.title, body: `${part1.text.trim()}\n\n${part2.body.trim()}`, insights: part2.insights };
+  const variety = {
+    ...v,
+    cast,
+    arc,
+    episode_title: story.title,
+    episode_summary: part2.episode_summary,
+    teaser: v.finale ? "" : part2.next_episode_teaser,
+  };
 
   // Some models still write short; expand once if it is well under target.
   if (countWords(story.body) < 1000) {
@@ -100,8 +122,9 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
   }
 
   const ids = ["a", "b", "c", "d"];
-  const scenarios = content.scenarios.slice(0, 3).map((s) => ({
+  const scenarios = content.scenarios.slice(0, 3).map((s, i) => ({
     ...s,
+    format: byId(SCENARIO_FORMATS, v.formats[i])?.label ?? null,
     options: s.options.slice(0, 4).map((o, i) => ({ ...o, id: ids[i] })),
   }));
   if (scenarios.length < 3 || scenarios.some((s) => s.options.length < 3)) throw new HttpError(502, "The session was incomplete. Please try again.");
@@ -118,6 +141,7 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
       scenarios,
       challenge: content.challenge,
       reflection_questions: reflection,
+      variety,
     })
     .select("id")
     .single();
@@ -137,5 +161,7 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
     target_skills: [focus.dimension],
   });
   dbError(saved.error);
+  // A chosen world applies to one new season only.
+  if (v.episode === 1 && state.profile.next_world) await db.from("profiles").update({ next_world: null }).eq("id", user.id);
   return { sessionId: session!.id };
 });

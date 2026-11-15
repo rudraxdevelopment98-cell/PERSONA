@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
+import { APIError } from "better-auth/api";
 import { getPool } from "@/lib/db/pool";
 
 const vercelUrls = [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
@@ -42,4 +43,15 @@ export const auth = betterAuth({
   rateLimit: { enabled: true, storage: "database", window: 60, max: 60 },
   advanced: { database: { generateId: () => crypto.randomUUID() } },
   plugins: [nextCookies()],
+  databaseHooks: {
+    session: {
+      create: {
+        // Suspended accounts cannot sign in.
+        before: async (session) => {
+          const { rows } = await getPool().query("select 1 from public.profiles where id = $1 and suspended_at is not null", [session.userId]);
+          if (rows.length) throw new APIError("FORBIDDEN", { message: "This account has been suspended. If you think this is a mistake, contact support." });
+        },
+      },
+    },
+  },
 });

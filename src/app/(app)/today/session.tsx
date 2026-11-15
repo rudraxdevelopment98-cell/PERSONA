@@ -16,6 +16,7 @@ export type ClientScenario = {
   situation: string;
   question: string;
   skill: Dimension;
+  format?: string | null;
   options: { id: string; text: string; consequence?: string; quality?: "strong" | "reasonable" | "weak" }[];
   response: { choice_id: string; reasoning: string; score: number | null; evaluation: ScenarioEvaluation | null } | null;
 };
@@ -36,6 +37,7 @@ type ClientSession = {
 };
 
 type Story = { title: string; body: string; word_count: number; insights: { title: string; explanation: string }[] };
+import { EpisodeTag, NextEpisode, Previously, type EpisodeInfo } from "./episode";
 
 function Section({
   n,
@@ -102,7 +104,7 @@ const RUBRIC_LABELS: Record<string, string> = {
   practicality: "Practicality",
 };
 
-function StoryReader({ sessionId, story, initialProgress, completed, onComplete }: { sessionId: string; story: Story; initialProgress: number; completed: boolean; onComplete: () => void }) {
+function StoryReader({ sessionId, story, initialProgress, completed, onComplete, episode }: { sessionId: string; story: Story; initialProgress: number; completed: boolean; onComplete: () => void; episode: EpisodeInfo | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(completed ? 100 : initialProgress);
   const sent = useRef(initialProgress);
@@ -159,6 +161,11 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete 
         <span className="shrink-0 text-xs tabular-nums text-muted">{progress}%</span>
       </div>
       <article className="px-5 py-8 sm:px-10">
+        {episode && (
+          <div className="mb-3">
+            <EpisodeTag info={episode} />
+          </div>
+        )}
         <p className="text-xs font-medium uppercase tracking-wide text-muted">
           Story · {story.word_count.toLocaleString()} words · about {minutes} min
         </p>
@@ -228,7 +235,10 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
   const r = scenario.response;
   return (
     <Card>
-      <CardHeader title={`Scenario ${index + 1}: ${scenario.title}`} action={r?.score != null ? <Badge tone="primary">{r.score}/100</Badge> : undefined} />
+      <CardHeader
+        title={`Scenario ${index + 1}: ${scenario.title}`}
+        action={r?.score != null ? <Badge tone="primary">{r.score}/100</Badge> : scenario.format ? <Badge tone="accent">{scenario.format}</Badge> : undefined}
+      />
       <div className="space-y-4 px-5 py-4">
         <p className="text-sm leading-relaxed">{scenario.situation}</p>
         <p className="text-sm font-medium">{scenario.question}</p>
@@ -441,7 +451,17 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
   );
 }
 
-export function SessionFlow({ session: initial, story, scenarios: initialScenarios }: { session: ClientSession; story: Story | null; scenarios: ClientScenario[] }) {
+export function SessionFlow({
+  session: initial,
+  story,
+  scenarios: initialScenarios,
+  episode = null,
+}: {
+  session: ClientSession;
+  story: Story | null;
+  scenarios: ClientScenario[];
+  episode?: EpisodeInfo | null;
+}) {
   const router = useRouter();
   const [session, setSession] = useState(initial);
   const [scenarios, setScenarios] = useState(initialScenarios);
@@ -457,6 +477,7 @@ export function SessionFlow({ session: initial, story, scenarios: initialScenari
           {session.challenge_status === "pending" ? "Remember to record your real-world challenge once you've tried it." : "See you tomorrow."}
         </Alert>
       )}
+      {session.completed && episode && <NextEpisode info={episode} />}
 
       <Section n={1} title="Introduction" minutes="3 min" locked={false} done={started} lockedText="">
         <Card className="p-5 sm:p-6">
@@ -482,13 +503,17 @@ export function SessionFlow({ session: initial, story, scenarios: initialScenari
 
       <Section n={2} title="Story" minutes="10 min" locked={!started} done={session.story_completed} lockedText="Read the introduction first.">
         {story ? (
+          <div className="space-y-3">
+          {episode && <Previously info={episode} />}
           <StoryReader
+            episode={episode}
             sessionId={session.id}
             story={story}
             initialProgress={session.story_progress}
             completed={session.story_completed}
             onComplete={() => setSession((s) => ({ ...s, story_completed: true, story_progress: 100 }))}
           />
+          </div>
         ) : (
           <Alert tone="danger">The story for this session could not be loaded.</Alert>
         )}

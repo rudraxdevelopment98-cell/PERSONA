@@ -17,6 +17,7 @@ import {
   MessagesSquare,
   NotebookPen,
   Settings,
+  ShieldCheck,
   Trophy,
   UserRound,
   Users,
@@ -104,8 +105,27 @@ function LevelCard({ stats, name, day }: { stats: NavStats; name: string; day: n
   );
 }
 
-export function AppNav({ name, day, stats, unread = 0, language = "en" }: { name: string; day: number; stats: NavStats; unread?: number; language?: Language }) {
+export function AppNav({
+  name,
+  day,
+  stats,
+  unread = 0,
+  language = "en",
+  adminReports = null,
+}: {
+  name: string;
+  day: number;
+  stats: NavStats;
+  unread?: number;
+  language?: Language;
+  /** Open report count for admins; null for everyone else. */
+  adminReports?: number | null;
+}) {
   const path = usePathname();
+  const groups =
+    adminReports == null
+      ? GROUPS
+      : GROUPS.map((g) => (g.label === "Account" ? { ...g, items: [...g.items, { href: "/admin", label: "Admin", icon: ShieldCheck }] } : g));
 
   return (
     <>
@@ -116,7 +136,7 @@ export function AppNav({ name, day, stats, unread = 0, language = "en" }: { name
         </Link>
         <LevelCard stats={stats} name={name} day={day} />
         <nav className="mt-5 flex-1 space-y-5 overflow-y-auto">
-          {GROUPS.map((g) => (
+          {groups.map((g) => (
             <div key={g.label}>
               <p className="mb-1.5 px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted/80">{g.label}</p>
               <div className="space-y-0.5">
@@ -134,6 +154,9 @@ export function AppNav({ name, day, stats, unread = 0, language = "en" }: { name
                     >
                       <item.icon className="size-[18px] shrink-0" strokeWidth={active ? 2.25 : 1.75} />
                       {item.label}
+                      {item.href === "/admin" && (adminReports ?? 0) > 0 && (
+                        <span className="ml-auto rounded-full bg-danger px-1.5 text-[11px] font-bold text-white">{adminReports}</span>
+                      )}
                       {item.href === "/inbox" && unread > 0 && (
                         <span className="ml-auto rounded-full bg-coral px-1.5 text-[11px] font-bold text-white">{unread > 99 ? "99+" : unread}</span>
                       )}

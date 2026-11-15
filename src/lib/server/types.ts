@@ -1,3 +1,4 @@
+import type { SessionVariety } from "./variety";
 import type { Dimension } from "@/lib/domain/dimensions";
 import type {
   CheckinAnalysis,
@@ -21,6 +22,8 @@ export type ProfileRow = {
   roadmap: unknown;
   coach_journal_access: boolean;
   language: "en" | "hinglish" | "hi";
+  next_world?: string | null;
+  suspended_at?: string | null;
   created_at: string;
 };
 
@@ -46,6 +49,7 @@ export type CheckinRow = {
   questions: CheckinQuestion[];
   answers: CheckinAnswer[] | null;
   analysis: CheckinAnalysis | null;
+  lens?: string | null;
   created_at: string;
   completed_at: string | null;
 };
@@ -70,6 +74,7 @@ export type SessionRow = {
   reflection_feedback: ReflectionFeedback | null;
   completed_at: string | null;
   created_at: string;
+  variety: SessionVariety | null;
 };
 
 export type StoryRow = {

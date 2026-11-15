@@ -246,3 +246,49 @@ describe("assessment depth", () => {
     expect(isCompleteForDepth(quick, "standard")).toBe(false);
   });
 });
+
+import { CHALLENGE_TYPES, SCENARIO_FORMATS, WORLDS, checkinLens, dayRecipe, newSeason, nextWorldOptions, pickDistinct, seasonFor } from "./variety";
+describe("variety engine", () => {
+  it("splits the programme into weekly seasons with finales", () => {
+    expect(seasonFor(1)).toEqual({ season: 1, position: 1, finale: false });
+    expect(seasonFor(7)).toEqual({ season: 1, position: 7, finale: true });
+    expect(seasonFor(8)).toEqual({ season: 2, position: 1, finale: false });
+    expect(seasonFor(90)).toMatchObject({ season: 13, finale: true });
+  });
+  it("is stable for a user and day, and differs across days", () => {
+    const r = { formats: [], arenas: [], challenges: [], reflections: [] };
+    expect(dayRecipe("u1", 5, r)).toEqual(dayRecipe("u1", 5, r));
+    const days = new Set(Array.from({ length: 10 }, (_, i) => JSON.stringify(dayRecipe("u1", i + 1, r))));
+    expect(days.size).toBeGreaterThan(5);
+  });
+  it("picks distinct formats and avoids recent ones", () => {
+    const recent: string[] = SCENARIO_FORMATS.slice(0, 5).map((f) => f.id);
+    const d = dayRecipe("u2", 3, { formats: recent, arenas: [], challenges: [CHALLENGE_TYPES[0].id], reflections: [] });
+    expect(new Set(d.formats).size).toBe(3);
+    expect(d.formats.some((f) => recent.includes(f))).toBe(false);
+    expect(d.challenge).not.toBe(CHALLENGE_TYPES[0].id);
+  });
+  it("never reuses a recent world unless asked, and honours the user's choice", () => {
+    const recent: string[] = WORLDS.slice(0, 20).map((w) => w.id);
+    expect(recent).not.toContain(newSeason("u3", 4, { worlds: recent, genres: [] }).world);
+    expect(newSeason("u3", 4, { worlds: [], genres: [] }, "mars").world).toBe("mars");
+    expect(nextWorldOptions("u3", 2, recent).every((w) => !recent.includes(w))).toBe(true);
+  });
+  it("falls back gracefully when everything was used", () => {
+    const all = WORLDS.map((w) => w.id);
+    expect(pickDistinct(WORLDS, "s", all, 2)).toHaveLength(2);
+    expect(typeof checkinLens("u", 1, [])).toBe("string");
+  });
+});
+
+describe("variety: consecutive days", () => {
+  it("never repeats a scenario format on back-to-back days", async () => {
+    const { dayRecipe } = await import("./variety");
+    let prev: string[] = [];
+    for (let d = 1; d <= 90; d++) {
+      const r = dayRecipe("user-x", d, { formats: prev, arenas: [], challenges: [], reflections: [] });
+      expect(r.formats.some((f) => prev.includes(f))).toBe(false);
+      prev = r.formats;
+    }
+  });
+});

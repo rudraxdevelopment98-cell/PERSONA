@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Alert, Button, Card, CardHeader, Spinner, Textarea, cx } from "@/components/ui";
+import { CHECKIN_LENSES, byId } from "@/lib/domain/variety";
 import type { CheckinAnalysis, CheckinQuestion } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import type { CheckinRow } from "@/lib/server/types";
@@ -43,6 +44,7 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
   const [analysis, setAnalysis] = useState<CheckinAnalysis | null>(initial?.analysis ?? null);
   const [busy, setBusy] = useState<null | "start" | "submit" | "session">(null);
   const [error, setError] = useState<string | null>(null);
+  const lensLabel = byId(CHECKIN_LENSES, checkin?.lens)?.label ?? null;
 
   async function run<T>(kind: "start" | "submit" | "session", fn: () => Promise<T>) {
     setBusy(kind);
@@ -103,7 +105,11 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
     });
     return (
       <Card>
-        <CardHeader title={`Check-in · Day ${checkin.day_number}`} description="Be specific - concrete examples make your session more useful." />
+        <CardHeader
+          title={`Check-in · Day ${checkin.day_number}`}
+          description="Be specific - concrete examples make your session more useful."
+          action={lensLabel ? <span className="whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">Today&apos;s angle: {lensLabel}</span> : undefined}
+        />
         <div className="divide-y divide-line">
           {checkin.questions.map((q, i) => (
             <div key={q.id} className="px-5 py-5">

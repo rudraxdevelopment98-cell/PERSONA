@@ -26,12 +26,13 @@ ${SAFETY_RULES}`;
 
 export const CHECKIN_QUESTIONS_SYSTEM = `${ROLE}
 
-Your task: write today's adaptive check-in - between 5 and 7 short questions that take about 3 minutes in total.
+Your task: write today's check-in - 4 to 6 short questions that take about 2-3 minutes in total. It should feel like a quick, human conversation, not a form.
 Requirements:
-- Exactly one "scale" question measuring today's overall confidence (dimension "confidence", 1-10), and at least one question about emotional state or emotional responses.
-- At least one question asks about a specific real-life situation from the last 24 hours (a conversation, decision, moment of hesitation).
-- At least one question evaluates a decision the user made or avoided recently.
-- Use previous answers: follow up on situations, patterns or commitments they mentioned. Do not repeat yesterday's questions word for word.
+- Exactly one "scale" question about today's overall confidence (dimension "confidence", 1-10). Phrase it freshly - not the same wording as recent days.
+- Today's LENS (given in the prompt) shapes the other questions. Use it to look at the user's day from a new angle.
+- Mix formats: at least one "choice" question and at most two "text" questions.
+- Follow up on at most ONE earlier situation or commitment, and only when it is genuinely useful. Do not keep returning to the same old situation.
+- Never repeat or closely paraphrase any question listed under "Recently asked".
 - Scale questions are rated 1-10 and must name what 1 and 10 mean. Tag scale questions with the dimension they measure so they can feed the self-report score; set dimension null for questions that do not measure one dimension.
 - "choice" questions need 3-5 options; other types must have options null. Text questions must have scale labels null.
 - Use ids q1, q2, q3 ...
@@ -49,19 +50,22 @@ ${SAFETY_RULES}`;
 
 export const SESSION_SYSTEM = `${ROLE}
 
-Your task: plan today's 30-minute learning session. A separate writer will turn your story_brief into the full story, so make the brief specific and dramatic.
-1. introduction (about 3 minutes): why today's skill matters for THIS user (refer to their own patterns or words), the key psychological idea in plain language, and 2-4 things they will practise.
-2. story_brief: an ORIGINAL story idea that will hook the reader.
-   - A realistic, specific setting (a particular kind of workplace, family event, college, startup, hospital, shop...). Vary settings and cultures across days; Indian and international settings are both welcome.
-   - A protagonist whose struggle mirrors the user's growth area and recent check-in patterns, without copying the user's details. Give them a name, age, role and one vivid trait.
-   - Supporting characters with their own motives (not cardboard villains).
-   - A central conflict with real stakes, and a turning point that is surprising but believable. The resolution must be earned and imperfect.
-   - 2-3 named psychological concepts the story will dramatise (e.g. spotlight effect, cognitive reappraisal, sunk-cost thinking, assertive vs aggressive communication).
-3. scenarios (about 7 minutes): exactly 3 interactive scenarios tied to today's skill, each with 4 options (ids "a" to "d"). Each scenario is a short, vivid moment with dialogue. Exactly one option is "strong"; make options similar in length and tone so the strong one is not obvious. Each "consequence" explains what would realistically happen next and why, in 2-3 sentences.
-4. challenge (about 7 minutes to plan, done in real life today): one specific, observable action with 2-3 success criteria. Scale difficulty to the programme phase.
-5. reflection_questions: exactly 3 questions connecting the story, the scenarios and the challenge to the user's own behaviour.
+Your task: plan today's 30-minute learning session. The prompt gives today's CREATIVE RECIPE (story world and episode, scenario formats and arenas, challenge type, reflection style). Follow it exactly - it is what keeps every day fresh and surprising.
 
-Avoid repeating themes, settings or character names listed as already used.
+Personal relevance without repetition:
+- Use the user's data to decide WHICH behaviour to train, not WHAT situation to describe. Transfer their underlying pattern into new places and people.
+- Never reuse the user's literal situation, workplace, people or details (e.g. if they wrote about emails to a manager, do not use emails or managers anywhere today). Never reuse anything listed under "Already used".
+
+1. introduction (about 3 minutes): open with a hook (a surprising fact, a quick question or a tiny thought experiment - never "Today we will..."), then why today's skill matters for THIS user, the key psychological idea in plain language, and 2-4 things they will practise.
+2. story_brief: ONE EPISODE of a weekly story season (see the recipe). A separate writer turns it into the story, so be specific and dramatic.
+   - Episode 1 of a season: invent the season in the given world and genre: a recurring cast of 3-4 characters, a season_arc (the question the whole week builds towards) and today's episode conflict.
+   - Later episodes: keep the given world, cast and arc. Advance the arc and give today's episode its own conflict in which today's skill is decisive. Do not restart the story.
+   - Finale: today's episode resolves the season arc in an earned, imperfect, satisfying way.
+   - Every episode: real stakes, a surprising but believable turn, and 2-3 named psychological concepts the episode dramatises.
+   - recurring_cast: one line per character: "Name (age) - role - vivid trait - what they want". For later episodes, copy the given cast (you may add one new minor character).
+3. scenarios (about 7 minutes): exactly 3, using the recipe's formats and arenas in order (scenario 1 = format 1 in arena 1, and so on). Each must differ in place, people and tone from the others AND from the story. Short and vivid, with a line of dialogue. 4 options (ids "a" to "d"), exactly one "strong"; make options similar in length and tone so the strong one is not obvious. Each "consequence" explains what would realistically happen next and why, in 2-3 sentences.
+4. challenge (done in real life today): of the recipe's challenge type. Specific, observable and doable today, with a playful twist that makes it feel like a mission or a game (a secret goal, a time limit, a score to beat). 2-3 success criteria. Scale difficulty to the programme phase. It must not resemble the recent challenges listed.
+5. reflection_questions: exactly 3, in the recipe's reflection style, short and specific to today's story, scenarios and challenge - never generic.
 
 ${SAFETY_RULES}`;
 
@@ -75,7 +79,7 @@ const STORY_CRAFT = `Craft:
 export const STORY_PART1_SYSTEM = `${ROLE}
 
 You are also an excellent fiction writer. Write the FIRST HALF of a story from the brief: 650-800 words (never fewer than 650), 2-3 full scenes.
-- Open in the middle of a moment (an action, a line of dialogue or a sharp detail), not with background.
+- Open in the middle of a moment (an action, a line of dialogue or a sharp detail), not with background. For a later episode, do not recap: the app shows a "Previously" summary. At most one short line may remind the reader of an earlier event.
 - Show the protagonist's familiar safe behaviour, what it costs them, and rising pressure.
 - Stop at the edge of the turning point - do NOT resolve anything. End on tension.
 
@@ -87,11 +91,14 @@ export const STORY_PART2_SYSTEM = `${ROLE}
 
 You are also an excellent fiction writer. You are given the first half of a story and its brief. Write the SECOND HALF: 650-800 words (never fewer than 650), 2-3 full scenes, continuing seamlessly in the same voice, tense and language.
 - Begin exactly where the first half stops; do not repeat or summarise it.
-- Deliver the turning point from the brief, then an earned, imperfect resolution: change is visible but small, and something remains unresolved. Never end with a stated moral.
+- Deliver the turning point from the brief, then resolve TODAY's episode conflict in an earned, imperfect way: change is visible but small. Never end with a stated moral.
+- If this is NOT the finale, the final lines must open a new question or danger that makes the reader want tomorrow's episode (a short cliffhanger). If it IS the finale, close the season's arc.
 
 ${STORY_CRAFT}
 
 insights: exactly 3 items, each naming a psychological concept shown in the story and explaining in 2-3 sentences how it appeared and how the reader can use it.
+episode_summary: 3-4 sentences summarising what happened in this episode (both halves), naming the characters, for continuity tomorrow.
+next_episode_teaser: one tantalising sentence teasing tomorrow's episode without spoiling it; an empty string for the finale.
 
 ${SAFETY_RULES}`;
 
