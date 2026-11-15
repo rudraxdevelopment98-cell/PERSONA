@@ -3,6 +3,7 @@ import { Badge, Card, CardHeader } from "@/components/ui";
 import type { DevelopmentProfile } from "@/lib/ai/schemas";
 import { DIMENSION_META, DIMENSIONS, type Dimension } from "@/lib/domain/dimensions";
 import { PHASES } from "@/lib/domain/programme";
+import type { AssessmentDepth } from "@/lib/domain/assessment";
 import { RegenerateProfile } from "./regenerate";
 
 export function ProfileView({ profile }: { profile: DevelopmentProfile }) {
@@ -84,7 +85,13 @@ export function ProfileView({ profile }: { profile: DevelopmentProfile }) {
   );
 }
 
-export function AssessmentResults({ scores, profile }: { scores: Record<Dimension, number>; profile: DevelopmentProfile | null }) {
+const HOW: Record<AssessmentDepth, string> = {
+  quick: "Each skill was measured with one real-life situation, scored 1–5. That's a quick first read - expect these to move as the app sees how you actually practise.",
+  standard: "Each skill has one situation and two behavioural statements (one of them reverse-scored, so agreeing with it lowers the score), each scored 1–5.",
+  deep: "Each dimension has three behavioural statements and one situation, each scored 1–5. Some statements are reverse-scored, so agreeing with them lowers the score.",
+};
+
+export function AssessmentResults({ scores, profile, depth = "deep" }: { scores: Record<Dimension, number>; profile: DevelopmentProfile | null; depth?: AssessmentDepth }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-5">
@@ -97,7 +104,7 @@ export function AssessmentResults({ scores, profile }: { scores: Record<Dimensio
         <Card className="md:col-span-2">
           <CardHeader title="How these scores work" />
           <div className="space-y-3 px-5 py-4 text-sm leading-relaxed text-muted">
-            <p>Each dimension has three behavioural statements and one situation, each scored 1–5. Some statements are reverse-scored, so agreeing with them lowers the score.</p>
+            <p>{HOW[depth]}</p>
             <p className="rounded-md bg-bg px-3 py-2 font-mono text-xs text-ink">score = (average item score − 1) ÷ 4 × 100</p>
             <p>These are self-development indicators, not clinical or psychometric measurements. They describe current habits, not who you are.</p>
             <p>From now on, your scores also include how you perform in exercises and how consistently you practise. The Progress page explains how.</p>

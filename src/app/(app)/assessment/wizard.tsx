@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, CloudCheck, History } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CloudCheck, History, Layers, SlidersHorizontal } from "lucide-react";
 import { Alert, Button, Card, Label, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
-import { ASSESSMENT_ITEMS, LIKERT_SCALE, type AssessmentItem } from "@/lib/domain/assessment";
+import { DEPTH_INFO, LIKERT_SCALE, itemsForDepth, type AssessmentDepth, type AssessmentItem } from "@/lib/domain/assessment";
+import { depthCopy } from "@/lib/domain/assessment-depth-i18n";
+import { DepthPicker } from "./depth-picker";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { assessmentPack, type AssessmentLang } from "@/lib/domain/assessment-i18n";
 import { postJSON } from "@/lib/client/api";
@@ -67,24 +69,47 @@ function Question({
   );
 }
 
-export function AssessmentWizard({ initial, language = "en" }: { initial: Record<string, number>; language?: AssessmentLang }) {
+export function AssessmentWizard({
+  initial,
+  language = "en",
+  depth = "deep",
+  mode = "baseline",
+  askHeldBack = true,
+}: {
+  initial: Record<string, number>;
+  language?: AssessmentLang;
+  depth?: AssessmentDepth;
+  /** "deepen" adds the extra questions of a deeper level to a completed baseline. */
+  mode?: "baseline" | "deepen";
+  askHeldBack?: boolean;
+}) {
   const pack = assessmentPack(language);
   const ui = pack?.ui;
+  const t = depthCopy(language);
   const router = useRouter();
+  const [changing, setChanging] = useState(false);
+  const ITEMS = useMemo(
+    () => (mode === "deepen" ? itemsForDepth(depth).filter((i) => initial[i.id] == null) : itemsForDepth(depth)),
+    // The question set is fixed for this visit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [depth, mode],
+  );
+  const heldBackRequired = mode === "baseline" && DEPTH_INFO[depth].heldBackRequired;
+  const showHeldBack = mode === "baseline" || askHeldBack;
   const [answers, setAnswers] = useState<Record<string, number>>(initial);
   // Situational items can share option values, so remember which option index was picked.
   const [picked, setPicked] = useState<Record<string, number>>({});
   const pages = useMemo(() => {
     const out: AssessmentItem[][] = [];
-    for (let i = 0; i < ASSESSMENT_ITEMS.length; i += PAGE_SIZE) out.push(ASSESSMENT_ITEMS.slice(i, i + PAGE_SIZE));
+    for (let i = 0; i < ITEMS.length; i += PAGE_SIZE) out.push(ITEMS.slice(i, i + PAGE_SIZE));
     return out;
-  }, []);
+  }, [ITEMS]);
   const firstIncomplete = pages.findIndex((p) => p.some((i) => answers[i.id] == null));
   const [page, setPage] = useState(firstIncomplete === -1 ? pages.length : firstIncomplete);
   const [heldBack, setHeldBack] = useState("");
   const [goal, setGoal] = useState("");
   const [saving, setSaving] = useState(0);
-  const resumed = useRef(Object.keys(initial).length > 0);
+  const resumed = useRef(mode === "baseline" && Object.keys(initial).length > 0);
   // Saves run one after another, in click order, so answers can never race.
   const queue = useRef<Promise<unknown>>(Promise.resolve());
 
@@ -108,7 +133,7 @@ export function AssessmentWizard({ initial, language = "en" }: { initial: Record
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const answered = Object.keys(answers).length;
+  const answered = ITEMS.filter((i) => answers[i.id] != null).length;
   const isReflection = page === pages.length;
 
   async function answer(item: AssessmentItem, value: number, optionIndex: number) {
@@ -139,12 +164,14 @@ export function AssessmentWizard({ initial, language = "en" }: { initial: Record
     setError(null);
     try {
       await queue.current.catch(() => {});
-      await postJSON("/api/assessment/complete", { held_back: heldBack, goal });
+      if (mode === "deepen") await postJSON("/api/assessment/upgrade", { depth, held_back: heldBack || undefined });
+      else await postJSON("/api/assessment/complete", { held_back: heldBack, goal });
       try {
         localStorage.removeItem(DRAFT_KEY);
       } catch {
         /* storage unavailable */
       }
+      if (mode === "deepen") router.replace("/assessment");
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not complete the assessment.");
@@ -159,9 +186,9 @@ export function AssessmentWizard({ initial, language = "en" }: { initial: Record
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <ProgressBar value={(answered / (ASSESSMENT_ITEMS.length + 1)) * 100} />
+        <ProgressBar value={(answered / (ITEMS.length + 1)) * 100} />
         <span className="shrink-0 text-xs tabular-nums text-muted">
-          {answered}/{ASSESSMENT_ITEMS.length}
+          {answered}/{ITEMS.length}
         </span>
         <span className="inline-flex w-20 shrink-0 items-center justify-end gap-1 text-xs font-semibold text-muted" aria-live="polite">
           {saving > 0 ? (
@@ -173,6 +200,27 @@ export function AssessmentWizard({ initial, language = "en" }: { initial: Record
           ) : null}
         </span>
       </div>
+
+      {mode === "baseline" && !changing && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm">
+          <span className="inline-flex items-center gap-2 font-semibold">
+            <Layers className="size-4 text-primary" /> {t.lengthLabel(depth)}
+          </span>
+          <button type="button" onClick={() => setChanging(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            <SlidersHorizontal className="size-3.5" /> {t.changeLength}
+          </button>
+        </div>
+      )}
+      {mode === "deepen" && (
+        <div className="flex items-center gap-2 rounded-xl bg-primary-soft px-4 py-2.5 text-sm font-semibold text-primary">
+          <Layers className="size-4 shrink-0" /> {t.deeperIntro(depth, ITEMS.length)}
+        </div>
+      )}
+      {changing && (
+        <Card className="p-5">
+          <DepthPicker language={language} current={depth} onCancel={() => setChanging(false)} />
+        </Card>
+      )}
 
       {resumed.current && (
         <div className="flex items-center gap-2 rounded-xl bg-accent-soft px-4 py-2.5 text-sm">
@@ -207,14 +255,21 @@ export function AssessmentWizard({ initial, language = "en" }: { initial: Record
         ) : (
           <div className="space-y-5">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">{ui?.finalPart ?? "Final part · In your own words"}</p>
-            <div>
-              <Label htmlFor="held">{ui?.heldBack ?? "Describe a recent situation where you held back from saying or doing something. What stopped you?"}</Label>
-              <Textarea id="held" value={heldBack} onChange={(e) => setHeldBack(e.target.value)} maxLength={2000} rows={4} />
-            </div>
-            <div>
-              <Label htmlFor="goal">{ui?.goal ?? "What would you like to be noticeably different about how you think or act after 90 days?"}</Label>
-              <Textarea id="goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={2000} rows={4} />
-            </div>
+            {showHeldBack && (
+              <div>
+                <Label htmlFor="held">
+                  {ui?.heldBack ?? "Describe a recent situation where you held back from saying or doing something. What stopped you?"}
+                  {!heldBackRequired && <span className="ml-1 font-normal text-muted">{t.optional}</span>}
+                </Label>
+                <Textarea id="held" value={heldBack} onChange={(e) => setHeldBack(e.target.value)} maxLength={2000} rows={4} />
+              </div>
+            )}
+            {mode === "baseline" && (
+              <div>
+                <Label htmlFor="goal">{ui?.goal ?? "What would you like to be noticeably different about how you think or act after 90 days?"}</Label>
+                <Textarea id="goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={2000} rows={4} />
+              </div>
+            )}
             <p className="text-xs text-muted">{ui?.privateNote ?? "These answers personalise your profile and stories. They are never shared."}</p>
           </div>
         )}
@@ -231,7 +286,16 @@ export function AssessmentWizard({ initial, language = "en" }: { initial: Record
             {ui?.continue ?? "Continue"} <ArrowRight className="size-4" />
           </Button>
         ) : (
-          <Button onClick={finish} disabled={busy || heldBack.trim().length < 10 || goal.trim().length < 10 || answered < ASSESSMENT_ITEMS.length}>
+          <Button
+            onClick={finish}
+            disabled={
+              busy ||
+              answered < ITEMS.length ||
+              (heldBackRequired && heldBack.trim().length < 10) ||
+              (heldBack.trim().length > 0 && heldBack.trim().length < 10) ||
+              (mode === "baseline" && goal.trim().length < 10)
+            }
+          >
             {busy ? <Spinner /> : <Check className="size-4" />} {busy ? (ui?.building ?? "Building your profile…") : (ui?.finish ?? "Finish assessment")}
           </Button>
         )}

@@ -251,6 +251,48 @@ export function scoreAssessment(answers: AssessmentAnswer[]): Record<Dimension, 
 }
 
 export function isAssessmentComplete(answers: AssessmentAnswer[]): boolean {
-  const answered = new Set(answers.map((a) => a.question_id));
-  return ASSESSMENT_ITEMS.every((i) => answered.has(i.id));
+  return isCompleteForDepth(answers, "deep");
 }
+
+// ---------------------------------------------------------------------------
+// Assessment depth. Each shorter set is a subset of the longer one, so a user
+// can start quick and "go deeper" later without re-answering anything.
+// ---------------------------------------------------------------------------
+
+export const DEPTHS = ["quick", "standard", "deep"] as const;
+export type AssessmentDepth = (typeof DEPTHS)[number];
+
+/**
+ * Per dimension: quick = the situation item; standard = + one positively and one
+ * reverse-worded statement (balanced against "agree with everything"); deep = all four.
+ */
+function inDepth(item: AssessmentItem, depth: AssessmentDepth): boolean {
+  if (depth === "deep" || item.kind === "situational") return true;
+  if (depth === "quick") return false;
+  const statements = ASSESSMENT_ITEMS.filter((i): i is LikertItem => i.dimension === item.dimension && i.kind === "likert");
+  const positive = statements.find((i) => !i.reverse);
+  const reversed = statements.find((i) => i.reverse);
+  return item === positive || item === reversed;
+}
+
+export function itemsForDepth(depth: AssessmentDepth): AssessmentItem[] {
+  return ASSESSMENT_ITEMS.filter((i) => inDepth(i, depth));
+}
+
+export const DEPTH_INFO: Record<AssessmentDepth, { questions: number; minutes: number; perSkill: number; heldBackRequired: boolean }> = {
+  quick: { questions: itemsForDepth("quick").length, minutes: 3, perSkill: 1, heldBackRequired: false },
+  standard: { questions: itemsForDepth("standard").length, minutes: 7, perSkill: 3, heldBackRequired: false },
+  deep: { questions: itemsForDepth("deep").length, minutes: 12, perSkill: 4, heldBackRequired: true },
+};
+
+export function isDepth(v: unknown): v is AssessmentDepth {
+  return typeof v === "string" && (DEPTHS as readonly string[]).includes(v);
+}
+
+export function isCompleteForDepth(answers: AssessmentAnswer[], depth: AssessmentDepth): boolean {
+  const answered = new Set(answers.map((a) => a.question_id));
+  return itemsForDepth(depth).every((i) => answered.has(i.id));
+}
+
+/** Days after the start during which a quick/standard baseline can still be deepened. */
+export const UPGRADE_WINDOW_DAYS = 7;

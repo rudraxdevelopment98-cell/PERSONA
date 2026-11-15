@@ -28,9 +28,10 @@ export type AssessmentRow = {
   id: string;
   user_id: string;
   kind: "baseline" | "checkpoint";
+  depth: "quick" | "standard" | "deep";
   status: "in_progress" | "completed";
   scores: Record<Dimension, number> | null;
-  reflections: { held_back: string; goal: string } | null;
+  reflections: { held_back?: string; goal: string } | null;
   started_at: string;
   completed_at: string | null;
 };

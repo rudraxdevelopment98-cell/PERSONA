@@ -68,7 +68,7 @@ export async function buildAIContext(
 
   if (state.baseline?.reflections) {
     lines.push(
-      `\n## In their own words (assessment)\n${userData("held back", clip(state.baseline.reflections.held_back, 800))}\n${userData("90-day goal", clip(state.baseline.reflections.goal, 600))}`,
+      `\n## In their own words (assessment)\n${state.baseline.reflections.held_back ? `${userData("held back", clip(state.baseline.reflections.held_back, 800))}\n` : ""}${userData("90-day goal", clip(state.baseline.reflections.goal, 600))}`,
     );
   }
 

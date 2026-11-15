@@ -225,3 +225,24 @@ describe("social", () => {
     expect(rankScores([{ score: 5 }, { score: 9 }, { score: 5 }, { score: 1 }]).map((r) => r.rank)).toEqual([1, 2, 2, 4]);
   });
 });
+
+import { DEPTH_INFO, isCompleteForDepth, itemsForDepth } from "./assessment";
+describe("assessment depth", () => {
+  it("nests quick in standard in deep with balanced items per skill", () => {
+    const q = itemsForDepth("quick"), s = itemsForDepth("standard"), d = itemsForDepth("deep");
+    expect([q.length, s.length, d.length]).toEqual([10, 30, 40]);
+    expect(q.every((i) => s.includes(i)) && s.every((i) => d.includes(i))).toBe(true);
+    for (const dim of DIMENSIONS) {
+      expect(q.filter((i) => i.dimension === dim)).toHaveLength(1);
+      const st = s.filter((i) => i.dimension === dim);
+      expect(st).toHaveLength(3);
+      expect(st.filter((i) => i.kind === "likert" && i.reverse)).toHaveLength(1);
+    }
+    expect(DEPTH_INFO.standard.questions).toBe(30);
+  });
+  it("checks completeness per depth", () => {
+    const quick = itemsForDepth("quick").map((i) => ({ question_id: i.id, value: 3 }));
+    expect(isCompleteForDepth(quick, "quick")).toBe(true);
+    expect(isCompleteForDepth(quick, "standard")).toBe(false);
+  });
+});

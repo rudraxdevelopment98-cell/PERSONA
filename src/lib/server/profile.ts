@@ -4,21 +4,27 @@ import { generateStructured } from "@/lib/ai/client";
 import { PROFILE_SYSTEM, userData } from "@/lib/ai/prompts";
 import { developmentProfileSchema } from "@/lib/ai/schemas";
 import { DIMENSION_META, DIMENSIONS, type Dimension } from "@/lib/domain/dimensions";
+import { DEPTH_INFO, type AssessmentDepth } from "@/lib/domain/assessment";
 import { dbError } from "./api";
 
 export async function generateDevelopmentProfile(
   db: Db,
   userId: string,
   scores: Record<Dimension, number>,
-  reflections: { held_back: string; goal: string } | null,
+  reflections: { held_back?: string; goal: string } | null,
   language: "en" | "hinglish" | "hi" = "en",
+  depth: AssessmentDepth = "deep",
 ) {
+  const info = DEPTH_INFO[depth];
   const ranked = [...DIMENSIONS].sort((a, b) => scores[b] - scores[a]);
   const prompt = [
-    "Baseline assessment scores (0-100):",
+    `Baseline assessment scores (0-100), from the ${depth} assessment (${info.perSkill} question${info.perSkill === 1 ? "" : "s"} per skill).`,
+    depth === "deep"
+      ? ""
+      : "These scores are a rough first read from few questions: describe them as provisional, avoid over-interpreting small differences, and lean on the user's own words.",
     ...ranked.map((d) => `- ${DIMENSION_META[d].label} (${d}): ${scores[d]}`),
     "",
-    reflections ? userData("a recent situation where I held back", reflections.held_back) : "",
+    reflections?.held_back ? userData("a recent situation where I held back", reflections.held_back) : "",
     reflections ? userData("what I want to be different after 90 days", reflections.goal) : "",
     "",
     "Write the development profile.",
