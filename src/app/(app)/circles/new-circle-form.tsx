@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createCircleAction } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card, CardHeader, Input, Label } from "@/components/ui";
+import { UpgradeHint } from "@/components/upgrade";
 
 const EMOJI = ["👥", "🚀", "📚", "💼", "🔥", "🎯", "🌱", "🏆", "💡", "🧠"];
 
@@ -10,6 +11,7 @@ export function NewCircleForm() {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("👥");
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState(false);
   const [pending, start] = useTransition();
   return (
     <Card>
@@ -21,7 +23,10 @@ export function NewCircleForm() {
           setError(null);
           start(async () => {
             const res = await createCircleAction({ name, emoji });
-            if (res?.error) setError(res.error);
+            if (res?.error) {
+              setError(res.error);
+              setUpgrade(Boolean(res.upgrade));
+            }
           });
         }}
       >
@@ -43,7 +48,8 @@ export function NewCircleForm() {
             </button>
           ))}
         </div>
-        {error && <Alert tone="danger">{error}</Alert>}
+        {error && <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>}
+        <UpgradeHint show={upgrade} />
         <Button disabled={pending || name.trim().length < 2}>{pending ? "Creating..." : "Create circle"}</Button>
       </form>
     </Card>

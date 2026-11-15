@@ -1,3 +1,6 @@
+import { UsageChip } from "@/components/upgrade";
+import { getPlan, usage } from "@/lib/server/plan";
+import { FREE_LIMITS } from "@/lib/domain/plans";
 import { BaselineGate } from "@/components/baseline-gate";
 import { Badge, Card, CardHeader, PageHeader, Stat } from "@/components/ui";
 import { DECISION_CATEGORIES, decisionStats } from "@/lib/domain/labs";
@@ -9,8 +12,11 @@ export const metadata = { title: "Decision Lab" };
 
 export default async function DecisionLabPage() {
   const { db, user, state } = await getUserState();
+  const [plan, used] = await Promise.all([getPlan(user.id), usage(user.id)]);
+  const chip = plan.unlimitedAI ? null : <UsageChip used={used.decisions} limit={FREE_LIMITS.decisionsPerWeek} period="week" />;
   const header = (
     <PageHeader
+      action={chip}
       title="Decision Lab"
       description="Practise realistic decisions with real trade-offs. You are evaluated on how you reason - your criteria, alternatives, risks and ownership - not on picking a 'right' answer. Time to first choice and changes of mind are recorded to reveal hesitation patterns."
     />

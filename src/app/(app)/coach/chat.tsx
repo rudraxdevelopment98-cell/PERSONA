@@ -1,5 +1,6 @@
 "use client";
 
+import { UpgradeHint } from "@/components/upgrade";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowUp, Trash2 } from "lucide-react";
 import { Alert, Button, Card, Spinner, Textarea, cx } from "@/components/ui";
@@ -34,6 +35,7 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState(false);
   const [clearing, startClear] = useTransition();
   const bottom = useRef<HTMLDivElement>(null);
 
@@ -45,6 +47,7 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
     const content = text.trim();
     if (!content || streaming) return;
     setError(null);
+    setUpgrade(false);
     setInput("");
     const assistantId = crypto.randomUUID();
     setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content }, { id: assistantId, role: "assistant", content: "" }]);
@@ -53,6 +56,7 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
       const res = await fetch("/api/coach", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: content }) });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
+        setUpgrade(Boolean(data.upgrade));
         throw new Error(data.error ?? "The coach is unavailable.");
       }
       const reader = res.body.getReader();
@@ -92,7 +96,8 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
       </div>
       {error && (
         <div className="px-4 pb-2 sm:px-6">
-          <Alert tone="danger">{error}</Alert>
+          <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>
+          <UpgradeHint show={upgrade} />
         </div>
       )}
       <form

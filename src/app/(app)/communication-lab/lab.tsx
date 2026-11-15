@@ -1,5 +1,6 @@
 "use client";
 
+import { UpgradeHint, isUpgradeError } from "@/components/upgrade";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Gauge, Keyboard, Mic, MicOff, RotateCcw, Timer, Waves } from "lucide-react";
@@ -55,6 +56,7 @@ export function CommunicationLab({
   const [result, setResult] = useState<{ evaluation: CommunicationEvaluation; score: number; metrics: SpeechMetrics | null; reply: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState(false);
   const speech = useSpeech(language === "hi" ? "hi-IN" : "en-IN");
   const voiceMode = mode === "voice" && speech.supported;
   const spoken = `${speech.transcript} ${speech.interim}`.trim();
@@ -71,6 +73,7 @@ export function CommunicationLab({
       setResult(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not create the exercise.");
+      setUpgrade(isUpgradeError(e));
     } finally {
       setBusy(null);
     }
@@ -127,7 +130,12 @@ export function CommunicationLab({
         })}
       </div>
 
-      {error && !current && <Alert tone="danger">{error}</Alert>}
+      {error && !current && (
+        <div>
+          <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>
+          <UpgradeHint show={upgrade} />
+        </div>
+      )}
 
       {current && (
         <Card className="animate-rise">

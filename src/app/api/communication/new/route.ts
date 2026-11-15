@@ -1,3 +1,4 @@
+import { assertWithinLimit } from "@/lib/server/plan";
 import { ARENAS } from "@/lib/domain/variety";
 import { z } from "zod";
 import { generateStructured } from "@/lib/ai/client";
@@ -14,6 +15,7 @@ const schema = z.object({ exercise_type: z.enum(COMMUNICATION_EXERCISES.map((e) 
 const pickArena = () => ARENAS[Math.floor(Math.random() * ARENAS.length)];
 
 export const POST = apiRoute(schema, async ({ exercise_type }, { db, user, state }) => {
+  await assertWithinLimit(user.id, "communication");
   requireBaseline(state);
   await enforceHourlyLimit(db, user.id, "exercise_completions", 15);
   const ex = EXERCISE_BY_ID.get(exercise_type)!;

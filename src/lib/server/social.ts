@@ -497,6 +497,7 @@ async function assertMember(userId: string, circleId: string) {
 }
 
 export async function createCircle(userId: string, name: string, emoji: string | null) {
+  await (await import("./plan")).assertWithinLimit(userId, "circle");
   const [{ owned, joined }] = await q<{ owned: number; joined: number }>(
     "select count(*) filter (where role = 'owner')::int as owned, count(*)::int as joined from public.circle_members where user_id = $1",
     [userId],
@@ -621,6 +622,7 @@ export async function createRace(
   input: { circleId: string | null; friendId: string | null; kind: RaceKind; days: number; teams: boolean; title?: string },
 ) {
   if (!RACE_KINDS.some((k) => k.id === input.kind)) throw new SocialError("Unknown race type.");
+  await (await import("./plan")).assertWithinLimit(userId, "race");
   if (input.circleId) await assertMember(userId, input.circleId);
   else if (!input.friendId || !(await areFriends(userId, input.friendId))) throw new SocialError("Pick a friend or a circle for the race.");
   const [{ n }] = await q<{ n: number }>("select count(*)::int as n from public.races where created_by = $1 and created_at > now() - interval '1 day'", [userId]);

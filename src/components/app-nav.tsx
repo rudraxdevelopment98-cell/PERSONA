@@ -18,6 +18,7 @@ import {
   NotebookPen,
   Settings,
   ShieldCheck,
+  Gem,
   Trophy,
   UserRound,
   Users,
@@ -82,7 +83,7 @@ const TABS = [
 
 const isActive = (path: string, href: string) => path === href || path.startsWith(`${href}/`);
 
-function LevelCard({ stats, name, day }: { stats: NavStats; name: string; day: number }) {
+function LevelCard({ stats, name, day, pro }: { stats: NavStats; name: string; day: number; pro: boolean }) {
   return (
     <Link href="/achievements" className="block rounded-2xl bg-primary p-4 text-white shadow-raised transition hover:brightness-110">
       <div className="flex items-center gap-3">
@@ -90,7 +91,10 @@ function LevelCard({ stats, name, day }: { stats: NavStats; name: string; day: n
           <span className="text-base font-extrabold">{stats.level}</span>
         </ProgressRing>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold">{name}</p>
+          <p className="flex items-center gap-1.5 truncate text-sm font-bold">
+            {name}
+            {pro && <span className="rounded-full bg-amber-300 px-1.5 text-[10px] font-extrabold text-primary">PRO</span>}
+          </p>
           <p className="text-xs text-white/70">{stats.levelName}</p>
         </div>
       </div>
@@ -112,6 +116,7 @@ export function AppNav({
   unread = 0,
   language = "en",
   adminReports = null,
+  pro = false,
 }: {
   name: string;
   day: number;
@@ -120,12 +125,21 @@ export function AppNav({
   language?: Language;
   /** Open report count for admins; null for everyone else. */
   adminReports?: number | null;
+  pro?: boolean;
 }) {
   const path = usePathname();
-  const groups =
-    adminReports == null
-      ? GROUPS
-      : GROUPS.map((g) => (g.label === "Account" ? { ...g, items: [...g.items, { href: "/admin", label: "Admin", icon: ShieldCheck }] } : g));
+  const groups = GROUPS.map((g) =>
+    g.label === "Account"
+      ? {
+          ...g,
+          items: [
+            ...g.items,
+            { href: "/pricing", label: pro ? "Your plan · Pro" : "Go Pro", icon: Gem },
+            ...(adminReports == null ? [] : [{ href: "/admin", label: "Admin", icon: ShieldCheck }]),
+          ],
+        }
+      : g,
+  );
 
   return (
     <>
@@ -134,7 +148,7 @@ export function AppNav({
         <Link href="/dashboard" className="mb-5 px-2">
           <Logo />
         </Link>
-        <LevelCard stats={stats} name={name} day={day} />
+        <LevelCard stats={stats} name={name} day={day} pro={pro} />
         <nav className="mt-5 flex-1 space-y-5 overflow-y-auto">
           {groups.map((g) => (
             <div key={g.label}>

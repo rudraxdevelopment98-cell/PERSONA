@@ -1,3 +1,6 @@
+import { UsageChip } from "@/components/upgrade";
+import { getPlan, usage } from "@/lib/server/plan";
+import { FREE_LIMITS } from "@/lib/domain/plans";
 import Link from "next/link";
 import { BaselineGate } from "@/components/baseline-gate";
 import { PageHeader } from "@/components/ui";
@@ -8,8 +11,11 @@ export const metadata = { title: "AI Coach" };
 
 export default async function CoachPage() {
   const { db, user, state } = await getUserState();
+  const [plan, used] = await Promise.all([getPlan(user.id), usage(user.id)]);
+  const chip = plan.unlimitedAI ? null : <UsageChip used={used.coachToday} limit={FREE_LIMITS.coachPerDay} period="day" />;
   const header = (
     <PageHeader
+      action={chip}
       title="AI Coach"
       description={
         <>

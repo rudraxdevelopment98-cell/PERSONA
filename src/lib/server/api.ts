@@ -1,4 +1,5 @@
 import "server-only";
+import { UpgradeRequired } from "./plan";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AIError, runWithUserAI } from "@/lib/ai/client";
@@ -45,6 +46,7 @@ export function apiRoute<S extends z.ZodType>(schema: S, handler: (body: z.infer
       return NextResponse.json(result ?? { ok: true });
     } catch (err) {
       if (err instanceof HttpError) return NextResponse.json({ error: err.message }, { status: err.status });
+      if (err instanceof UpgradeRequired) return NextResponse.json({ error: err.message, upgrade: true }, { status: 402 });
       if (err instanceof AIError) {
         const status = err.code === "not_configured" ? 503 : err.code === "refusal" ? 422 : 502;
         return NextResponse.json({ error: err.message }, { status });

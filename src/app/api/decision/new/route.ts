@@ -1,3 +1,4 @@
+import { assertWithinLimit } from "@/lib/server/plan";
 import { z } from "zod";
 import { generateStructured } from "@/lib/ai/client";
 import { DECISION_SCENARIO_SYSTEM } from "@/lib/ai/prompts";
@@ -14,6 +15,7 @@ const schema = z.object({
 });
 
 export const POST = apiRoute(schema, async ({ category, difficulty }, { db, user, state }) => {
+  await assertWithinLimit(user.id, "decision");
   requireBaseline(state);
   await enforceHourlyLimit(db, user.id, "decision_logs", 12);
 

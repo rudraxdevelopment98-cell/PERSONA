@@ -1,3 +1,4 @@
+import { UpgradeRequired, assertWithinLimit } from "@/lib/server/plan";
 import { z } from "zod";
 import { AIError, runWithUserAI, streamText } from "@/lib/ai/client";
 import { getUserAI } from "@/lib/server/ai-connection";
@@ -27,6 +28,12 @@ export async function POST(request: Request) {
     .eq("role", "user")
     .gte("created_at", since);
   if ((count ?? 0) >= 40) return Response.json({ error: "You've reached the hourly message limit." }, { status: 429 });
+  try {
+    await assertWithinLimit(user.id, "coach");
+  } catch (err) {
+    if (err instanceof UpgradeRequired) return Response.json({ error: err.message, upgrade: true }, { status: 402 });
+    throw err;
+  }
 
   const state = await loadUserState(db, user.id, user.email);
   const [{ data: history }, context] = await Promise.all([

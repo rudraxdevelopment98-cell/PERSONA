@@ -5,6 +5,7 @@ import { Flag } from "lucide-react";
 import { createRaceAction } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card, CardHeader, Input, Label, Select } from "@/components/ui";
 import { RACE_KINDS } from "@/lib/domain/social";
+import { UpgradeHint } from "@/components/upgrade";
 
 export function RaceStarter({ friendId = null, circleId = null, name }: { friendId?: string | null; circleId?: string | null; name: string }) {
   const [kind, setKind] = useState<string>("sessions");
@@ -12,6 +13,7 @@ export function RaceStarter({ friendId = null, circleId = null, name }: { friend
   const [teams, setTeams] = useState(false);
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState(false);
   const [pending, start] = useTransition();
   const k = RACE_KINDS.find((x) => x.id === kind)!;
 
@@ -25,7 +27,10 @@ export function RaceStarter({ friendId = null, circleId = null, name }: { friend
           setError(null);
           start(async () => {
             const res = await createRaceAction({ friendId, circleId, kind, days, teams, title: title || undefined });
-            if (res?.error) setError(res.error);
+            if (res?.error) {
+              setError(res.error);
+              setUpgrade(Boolean(res.upgrade));
+            }
           });
         }}
       >
@@ -56,7 +61,12 @@ export function RaceStarter({ friendId = null, circleId = null, name }: { friend
             Team race - split joiners into two balanced teams
           </label>
         )}
-        {error && <div className="sm:col-span-2"><Alert tone="danger">{error}</Alert></div>}
+        {error && (
+          <div className="sm:col-span-2">
+            <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>
+            <UpgradeHint show={upgrade} />
+          </div>
+        )}
         <div className="sm:col-span-2">
           <Button disabled={pending}>{pending ? "Starting..." : "Start race"}</Button>
           <p className="mt-2 text-xs text-muted">Only activity during the race counts, so everyone starts at zero. Scores are counts only - never what you wrote.</p>

@@ -1,3 +1,6 @@
+import { UsageChip } from "@/components/upgrade";
+import { getPlan, usage } from "@/lib/server/plan";
+import { FREE_LIMITS } from "@/lib/domain/plans";
 import { BaselineGate } from "@/components/baseline-gate";
 import { Badge, Card, CardHeader, PageHeader } from "@/components/ui";
 import { COMMUNICATION_EXERCISES, EXERCISE_BY_ID } from "@/lib/domain/labs";
@@ -9,8 +12,11 @@ export const metadata = { title: "Communication Lab" };
 
 export default async function CommunicationLabPage() {
   const { db, user, state } = await getUserState();
+  const [plan, used] = await Promise.all([getPlan(user.id), usage(user.id)]);
+  const chip = plan.unlimitedAI ? null : <UsageChip used={used.communication} limit={FREE_LIMITS.communicationPerWeek} period="week" />;
   const header = (
     <PageHeader
+      action={chip}
       title="Communication Lab"
       eyebrow="Practice"
       description="Say no, disagree, take criticism - out loud or in writing. Each reply is scored on clarity, assertiveness, empathy and composure, and you get a stronger version in your own voice."

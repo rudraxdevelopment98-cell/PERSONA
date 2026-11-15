@@ -9,8 +9,9 @@ import { RACE_KINDS, SHARE_ITEM_IDS, type RaceKind, type ShareItem } from "@/lib
 import { requestOrigin } from "@/lib/server/origin";
 import { removeSubscription, saveSubscription, vapidKeys } from "@/lib/server/push";
 import * as social from "@/lib/server/social";
+import { UpgradeRequired } from "@/lib/server/plan";
 
-type Result<T = object> = ({ error?: undefined } & T) | ({ error: string } & Partial<T>);
+type Result<T = object> = ({ error?: undefined; upgrade?: undefined } & T) | ({ error: string; upgrade?: boolean } & Partial<T>);
 
 async function run<T extends object>(fn: (userId: string) => Promise<T>, revalidate: string[] = []): Promise<Result<T>> {
   const { user } = await requireUser();
@@ -20,6 +21,7 @@ async function run<T extends object>(fn: (userId: string) => Promise<T>, revalid
     return out;
   } catch (err) {
     if (err instanceof social.SocialError) return { error: err.message };
+    if (err instanceof UpgradeRequired) return { error: err.message, upgrade: true };
     console.error("[social action]", err);
     return { error: "Something went wrong. Please try again." };
   }
@@ -49,7 +51,7 @@ export async function acceptInviteAction(token: string) {
   if (!z.string().min(10).max(64).safeParse(token).success) return { error: "This invite link isn't valid." };
   const res = await run((userId) => social.redeemInvite(userId, token), ["/"]);
   (await cookies()).delete("p90_invite");
-  if (res.error !== undefined) return { error: res.error };
+  if (res.error !== undefined) return { error: res.error, upgrade: res.upgrade };
   redirect(res.circleId ? `/circles/${res.circleId}` : "/friends?joined=1");
 }
 
@@ -116,7 +118,7 @@ export async function createCircleAction(input: { name: string; emoji?: string |
   const parsed = circleSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid circle." };
   const res = await run((userId) => social.createCircle(userId, parsed.data.name, parsed.data.emoji || null).then((circleId) => ({ circleId })), ["/circles"]);
-  if (res.error !== undefined) return { error: res.error };
+  if (res.error !== undefined) return { error: res.error, upgrade: res.upgrade };
   redirect(`/circles/${res.circleId}`);
 }
 
@@ -129,7 +131,7 @@ export async function renameCircleAction(circleId: string, input: { name: string
 export async function leaveCircleAction(circleId: string) {
   if (!uuid.safeParse(circleId).success) return { error: "Invalid circle." };
   const res = await run(async (userId) => (await social.leaveCircle(userId, circleId), {}), ["/circles"]);
-  if (res.error !== undefined) return { error: res.error };
+  if (res.error !== undefined) return { error: res.error, upgrade: res.upgrade };
   redirect("/circles");
 }
 
@@ -163,7 +165,7 @@ export async function createRaceAction(input: { circleId?: string | null; friend
       .createRace(userId, { circleId: d.circleId ?? null, friendId: d.friendId ?? null, kind: d.kind as RaceKind, days: d.days, teams: Boolean(d.teams), title: d.title })
       .then((raceId) => ({ raceId })),
   );
-  if (res.error !== undefined) return { error: res.error };
+  if (res.error !== undefined) return { error: res.error, upgrade: res.upgrade };
   redirect(`/races/${res.raceId}`);
 }
 

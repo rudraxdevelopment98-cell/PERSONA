@@ -6,6 +6,11 @@ export async function postJSON<T = unknown>(url: string, body: unknown = {}): Pr
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string }).error ?? `Request failed (${res.status})`);
+  if (!res.ok) {
+    const err = new Error((data as { error?: string }).error ?? `Request failed (${res.status})`) as Error & { upgrade?: boolean };
+    // 402: a free-plan limit was reached; screens show an upgrade link.
+    err.upgrade = Boolean((data as { upgrade?: boolean }).upgrade);
+    throw err;
+  }
   return data as T;
 }

@@ -76,3 +76,46 @@ export async function broadcastAction(input: { title: string; body: string; url:
     await admin.broadcast(u, parsed.data);
   });
 }
+
+export async function savePaymentsAction(input: { env: string; clientToken: string; priceMonth: string; priceYear: string; apiKey: string; webhookSecret: string }) {
+  const parsed = z
+    .object({
+      env: z.enum(["sandbox", "production"]),
+      clientToken: z.string().trim().max(200),
+      priceMonth: z.string().trim().max(100),
+      priceYear: z.string().trim().max(100),
+      apiKey: z.string().trim().max(300),
+      webhookSecret: z.string().trim().max(300),
+    })
+    .safeParse(input);
+  if (!parsed.success) return { error: "Check the payment settings." };
+  return run(async (u) => {
+    await admin.requireAdmin(u);
+    const { saveConfig } = await import("@/lib/server/payments");
+    await saveConfig({ ...parsed.data, apiKey: parsed.data.apiKey || undefined, webhookSecret: parsed.data.webhookSecret || undefined });
+    await admin.audit(u, "payments.configure", { label: parsed.data.env });
+  });
+}
+
+export async function createCouponAction(input: { code: string; days: number; maxUses: number; expiresInDays: number | null; note: string }) {
+  const parsed = z
+    .object({
+      code: z.string().trim().min(4).max(32),
+      days: z.number().int().min(1).max(3650),
+      maxUses: z.number().int().min(1).max(100000),
+      expiresInDays: z.number().int().min(1).max(3650).nullable(),
+      note: z.string().max(200),
+    })
+    .safeParse(input);
+  if (!parsed.success) return { error: "Check the code details." };
+  return run((u) => admin.createCoupon(u, parsed.data));
+}
+
+export async function deleteCouponAction(code: string) {
+  return run((u) => admin.deleteCoupon(u, String(code).slice(0, 40)));
+}
+
+export async function grantProAction(email: string, days: number) {
+  if (!z.string().email().safeParse(email).success || !Number.isInteger(days) || days < 1 || days > 3650) return { error: "Enter an email and 1-3650 days." };
+  return run((u) => admin.grantProByEmail(u, email, days));
+}

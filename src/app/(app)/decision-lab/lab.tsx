@@ -1,5 +1,6 @@
 "use client";
 
+import { UpgradeHint, isUpgradeError } from "@/components/upgrade";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Badge, Button, Card, CardHeader, Label, Select, Spinner, Textarea, cx } from "@/components/ui";
@@ -29,6 +30,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
   const [result, setResult] = useState<{ evaluation: DecisionEvaluation; score: number } | null>(null);
   const [busy, setBusy] = useState<null | "new" | "submit">(null);
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState(false);
 
   const shownAt = useRef(0);
   const firstChoiceAt = useRef<number | null>(null);
@@ -59,6 +61,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
       setResult(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not create a scenario.");
+      setUpgrade(isUpgradeError(e));
     } finally {
       setBusy(null);
     }
@@ -83,6 +86,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not submit.");
+      setUpgrade(false);
     } finally {
       setBusy(null);
     }
@@ -113,7 +117,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
             {busy === "new" && <Spinner />} {busy === "new" ? "Creating…" : current ? "New scenario" : "Generate scenario"}
           </Button>
         </div>
-        {error && !s && <div className="mt-4"><Alert tone="danger">{error}</Alert></div>}
+        {error && !s && <div className="mt-4"><Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert><UpgradeHint show={upgrade} /></div>}
       </Card>
 
       {s && (
@@ -165,7 +169,12 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                   </Label>
                   <input id="confidence" type="range" min={1} max={10} value={confidence} onChange={(e) => setConfidence(Number(e.target.value))} className="w-full" />
                 </div>
-                {error && <Alert tone="danger">{error}</Alert>}
+                {error && (
+                  <div>
+                    <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>
+                    <UpgradeHint show={upgrade} />
+                  </div>
+                )}
                 <div className="flex justify-end">
                   <Button onClick={submit} disabled={!choice || reasoning.trim().length < 20 || busy !== null}>
                     {busy === "submit" && <Spinner />} {busy === "submit" ? "Evaluating…" : "Commit to decision"}

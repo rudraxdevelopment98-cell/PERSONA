@@ -375,3 +375,42 @@ export async function listAdmins() {
        from public.admins a join "user" u on u.id = a.user_id left join public.profiles p on p.id = a.user_id order by a.created_at`,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Plans
+// ---------------------------------------------------------------------------
+
+export async function createCoupon(actor: string, input: { code: string; days: number; maxUses: number; expiresInDays: number | null; note: string }) {
+  await requireAdmin(actor);
+  const code = input.code.trim().toUpperCase();
+  if (!/^[A-Z0-9-]{4,32}$/.test(code)) throw new AdminError("Codes use 4-32 letters, numbers or dashes.");
+  const res = await getPool().query(
+    `insert into public.coupons (code, days, max_uses, expires_at, note, created_by)
+     values ($1, $2, $3, case when $4::int is null then null else now() + make_interval(days => $4::int) end, $5, $6) on conflict do nothing`,
+    [code, input.days, input.maxUses, input.expiresInDays, input.note.slice(0, 200) || null, actor],
+  );
+  if (!res.rowCount) throw new AdminError("That code already exists.");
+  await audit(actor, "coupon.create", { label: code }, `${input.days} days × ${input.maxUses}`);
+}
+
+export async function listCoupons() {
+  return q<{ code: string; days: number; max_uses: number; uses: number; expires_at: string | null; note: string | null; created_at: string }>(
+    "select code, days, max_uses, uses, expires_at, note, created_at from public.coupons order by created_at desc limit 50",
+  );
+}
+
+export async function deleteCoupon(actor: string, code: string) {
+  await requireAdmin(actor);
+  await q("delete from public.coupons where code = $1", [code]);
+  await audit(actor, "coupon.delete", { label: code });
+}
+
+export async function grantProByEmail(actor: string, email: string, days: number) {
+  await requireAdmin(actor);
+  const [u] = await q<{ id: string }>('select id from "user" where lower(email) = lower($1)', [email.trim()]);
+  if (!u) throw new AdminError("No account with that email.");
+  const { grantPro } = await import("./plan");
+  await grantPro(u.id, days, "admin");
+  await notify(u.id, "gift", { title: "🎁 You've got PERSONA 90 Pro", body: `${days} days of Pro have been added to your account. Enjoy unlimited practice!`, url: "/pricing" }).catch(() => {});
+  await audit(actor, "plan.grant", { user: u.id, label: await labelFor(u.id) }, `${days} days`);
+}
