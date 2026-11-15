@@ -119,3 +119,17 @@ export async function grantProAction(email: string, days: number) {
   if (!z.string().email().safeParse(email).success || !Number.isInteger(days) || days < 1 || days > 3650) return { error: "Enter an email and 1-3650 days." };
   return run((u) => admin.grantProByEmail(u, email, days));
 }
+
+export async function saveAiTiersAction(free: string, pro: string) {
+  if (typeof free !== "string" || typeof pro !== "string") return { error: "Pick a model for each plan." };
+  return run((u) => admin.saveAiTiers(u, free.slice(0, 80), pro.slice(0, 80)));
+}
+
+export async function testModelAction(choiceId: string) {
+  const { user } = await requireUser();
+  try {
+    return await admin.testModel(user.id, String(choiceId).slice(0, 80));
+  } catch (err) {
+    return { ok: false as const, ms: 0, error: err instanceof admin.AdminError ? err.message : "Test failed." };
+  }
+}

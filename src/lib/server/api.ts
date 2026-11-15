@@ -1,8 +1,8 @@
 import "server-only";
-import { UpgradeRequired } from "./plan";
+import { UpgradeRequired, getPlan } from "./plan";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { AIError, runWithUserAI } from "@/lib/ai/client";
+import { AIError, runWithAIContext, runWithUserAI } from "@/lib/ai/client";
 import { getUserAI } from "./ai-connection";
 import { dbForUser, getSessionUser, type Db, type SessionUser } from "@/lib/db/server";
 import { loadUserState, type UserState } from "./state";
@@ -40,9 +40,13 @@ export function apiRoute<S extends z.ZodType>(schema: S, handler: (body: z.infer
       const parsed = schema.safeParse(json);
       if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message ?? "Invalid request.");
 
-      const [state, ai] = await Promise.all([loadUserState(db, user.id, user.email), getUserAI(db, user.id)]);
-      // Every AI call in this request uses the user's own provider if they connected one.
-      const result = await runWithUserAI(ai, () => handler(parsed.data, { db, user, state }));
+      const [state, ai, plan] = await Promise.all([loadUserState(db, user.id, user.email), getUserAI(db, user.id), getPlan(user.id)]);
+      // Every AI call in this request uses the user's own provider if they connected one,
+      // otherwise the model for their plan; calls are metered against this feature.
+      const feature = new URL(request.url).pathname.replace(/^\/api\//, "").replace(/\//g, ".");
+      const result = await runWithAIContext({ userId: user.id, feature, tier: plan.plan }, () =>
+        runWithUserAI(ai, () => handler(parsed.data, { db, user, state })),
+      );
       return NextResponse.json(result ?? { ok: true });
     } catch (err) {
       if (err instanceof HttpError) return NextResponse.json({ error: err.message }, { status: err.status });

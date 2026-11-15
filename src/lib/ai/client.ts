@@ -30,6 +30,72 @@ export function runWithUserAI<T>(ai: UserAIOverride | null, fn: () => T): T {
   return userAI.run(ai, fn);
 }
 
+/** Who and what an AI call is for (set per request), used for metering and plan tiers. */
+export type AIContext = { userId: string | null; feature: string; tier: "free" | "pro" };
+const aiContext = new AsyncLocalStorage<AIContext>();
+export function runWithAIContext<T>(ctx: AIContext, fn: () => T): T {
+  return aiContext.run(ctx, fn);
+}
+
+/** Token counts reported by the provider for the call in progress. */
+type Meter = { model?: string; input?: number; output?: number };
+const meterStore = new AsyncLocalStorage<Meter>();
+function meter(model: string, input?: number, output?: number) {
+  const m = meterStore.getStore();
+  if (!m) return;
+  m.model = model;
+  if (input != null) m.input = input;
+  if (output != null) m.output = output;
+}
+
+type TierChoice = { provider: "default" | "gemini" | "gateway"; model: string };
+let tierCache: { at: number; value: { free?: TierChoice; pro?: TierChoice } } | null = null;
+
+/** Admin-chosen models per plan (cached briefly; each server bundle keeps its own copy). */
+async function tierConfig(): Promise<{ free?: TierChoice; pro?: TierChoice }> {
+  if (tierCache && Date.now() - tierCache.at < 10_000) return tierCache.value;
+  try {
+    const { getPool } = await import("@/lib/db/pool");
+    const { rows } = await getPool().query("select value from public.app_settings where key = 'ai_tiers'");
+    tierCache = { at: Date.now(), value: rows[0]?.value ?? {} };
+  } catch {
+    tierCache = { at: Date.now(), value: {} };
+  }
+  return tierCache.value;
+}
+
+export function clearTierCache() {
+  tierCache = null;
+}
+
+/** The provider for this request: the user's own key, else their plan's model, else the app default. */
+async function resolveProvider(): Promise<Provider> {
+  const own = userAI.getStore();
+  if (own) return { kind: own.provider, model: own.model, apiKey: own.apiKey };
+  const ctx = aiContext.getStore();
+  const choice = (await tierConfig())[ctx?.tier ?? "free"];
+  if (choice && choice.provider !== "default" && choice.model) return { kind: choice.provider, model: choice.model };
+  return appProvider();
+}
+
+async function recordUsage(p: Provider, m: Meter, approxIn: number, approxOut: number, ok: boolean) {
+  try {
+    const ctx = aiContext.getStore();
+    const model = m.model ?? p.model;
+    const input = m.input ?? Math.ceil(approxIn / 3.5);
+    const output = m.output ?? Math.ceil(approxOut / 3.5);
+    const byo = Boolean(p.apiKey);
+    const { costUSD } = await import("@/lib/domain/ai-pricing");
+    const { getPool } = await import("@/lib/db/pool");
+    await getPool().query(
+      "insert into public.ai_usage (user_id, feature, tier, provider, model, input_tokens, output_tokens, cost_usd, ok) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+      [ctx?.userId ?? null, (ctx?.feature ?? "other").slice(0, 60), byo ? "byo" : (ctx?.tier ?? "system"), p.kind, model.slice(0, 80), input, output, byo ? 0 : costUSD(model, input, output), ok],
+    );
+  } catch (err) {
+    console.warn("[ai] usage not recorded:", (err as Error).message);
+  }
+}
+
 const DEFAULT_MODELS: Record<"gemini" | "anthropic" | "gateway", string> = {
   gemini: "gemini-3.6-flash",
   anthropic: "claude-opus-5-5",
@@ -153,7 +219,8 @@ async function claudeStructured(p: Provider, system: string, prompt: string, jso
       messages: [{ role: "user", content: prompt }],
       output_config: { effort, format: { type: "json_schema", schema: jsonSchema } },
     });
-    const message = (await stream.finalMessage()) as { stop_reason: string | null; content: { type: string; text?: string }[] };
+    const message = (await stream.finalMessage()) as { stop_reason: string | null; content: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+    meter(p.model, message.usage?.input_tokens, message.usage?.output_tokens);
     if (message.stop_reason === "refusal") throw new AIError("The AI declined to generate this content. Try rephrasing your input.", "refusal");
     if (message.stop_reason === "max_tokens") throw new AIError("The AI response was cut off. Please try again.", "truncated");
     return message.content.flatMap((b) => (b.type === "text" && b.text ? [b.text] : [])).join("");
@@ -361,6 +428,8 @@ async function geminiStructured(p: Provider, system: string, prompt: string, jso
           last = chunk as GeminiChunk;
         }
         console.log(`[ai] ${model} structured: first text ${firstAt ? firstAt - started : -1} ms, total ${Date.now() - started} ms, ${text.length} chars`);
+        const um = (last as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number } } | null)?.usageMetadata;
+        meter(model, um?.promptTokenCount, um ? (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0) : undefined);
         checkGeminiFinish(last);
         return text;
       });
@@ -477,7 +546,8 @@ async function oaiStructured(p: Provider, system: string, prompt: string, jsonSc
         throw err;
       }
     }
-    const data = (await res.json()) as { choices?: OaiChoice[] };
+    const data = (await res.json()) as { choices?: OaiChoice[]; usage?: { prompt_tokens?: number; completion_tokens?: number } };
+    meter(p.model, data.usage?.prompt_tokens, data.usage?.completion_tokens);
     const choice = data.choices?.[0];
     if (choice?.message?.refusal || choice?.finish_reason === "content_filter") {
       throw new AIError("The AI declined to generate this content. Try rephrasing your input.", "refusal");
@@ -543,18 +613,43 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   effort?: Effort;
   maxTokens?: number;
   language?: Language | null;
+  /** Admin model test only: use exactly this model, with no fallback. */
+  modelOverride?: { kind: "gemini" | "gateway"; model: string };
 }): Promise<z.infer<S>> {
-  const p = activeProvider();
   const system = opts.system + languageInstruction(opts.language);
   const jsonSchema = toOutputSchema(z.toJSONSchema(opts.schema, { io: "input" })) as Record<string, unknown>;
   const effort = opts.effort ?? "medium";
   const maxTokens = opts.maxTokens ?? 16000;
-  const text =
-    p.kind === "gemini"
-      ? await geminiStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens)
-      : p.kind === "openai" || p.kind === "openrouter"
-        ? await oaiStructured(p, system, opts.prompt, jsonSchema, maxTokens)
-        : await claudeStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens);
+  const call = async (p: Provider) => {
+    const m: Meter = {};
+    try {
+      const text = await meterStore.run(m, () =>
+        p.kind === "gemini"
+          ? geminiStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens)
+          : p.kind === "openai" || p.kind === "openrouter"
+            ? oaiStructured(p, system, opts.prompt, jsonSchema, maxTokens)
+            : claudeStructured(p, system, opts.prompt, jsonSchema, effort, maxTokens),
+      );
+      await recordUsage(p, m, system.length + opts.prompt.length, (text ?? "").length, true);
+      return text;
+    } catch (err) {
+      await recordUsage(p, m, system.length + opts.prompt.length, 0, false);
+      throw err;
+    }
+  };
+  if (opts.modelOverride) return parseAndValidate(await call({ kind: opts.modelOverride.kind, model: opts.modelOverride.model }), opts.schema);
+  const p = await resolveProvider();
+  let text: string;
+  try {
+    text = await call(p);
+  } catch (err) {
+    // A plan-tier model that fails falls back to the app default once.
+    const def = appProvider();
+    const fallback = !p.apiKey && (p.kind !== def.kind || p.model !== def.model) && !(err instanceof AIError && err.code === "refusal");
+    if (!fallback) throw err;
+    console.warn(`[ai] ${p.kind}/${p.model} failed (${(err as Error).message}); using the default model.`);
+    text = await call(def);
+  }
   return parseAndValidate(text, opts.schema);
 }
 
@@ -566,11 +661,27 @@ export async function* streamText(opts: {
   maxTokens?: number;
   language?: Language | null;
 }): AsyncGenerator<string> {
-  const p = activeProvider();
+  const p = await resolveProvider();
   const system = opts.system + languageInstruction(opts.language);
   const effort = opts.effort ?? "medium";
   const maxTokens = opts.maxTokens ?? 8000;
-  if (p.kind === "gemini") yield* geminiText(p, system, opts.messages, effort, maxTokens);
-  else if (p.kind === "openai" || p.kind === "openrouter") yield* oaiText(p, system, opts.messages, maxTokens);
-  else yield* claudeText(p, system, opts.messages, effort, maxTokens);
+  const inChars = system.length + opts.messages.reduce((a, m) => a + m.content.length, 0);
+  let outChars = 0;
+  let ok = false;
+  try {
+    const gen =
+      p.kind === "gemini"
+        ? geminiText(p, system, opts.messages, effort, maxTokens)
+        : p.kind === "openai" || p.kind === "openrouter"
+          ? oaiText(p, system, opts.messages, maxTokens)
+          : claudeText(p, system, opts.messages, effort, maxTokens);
+    for await (const chunk of gen) {
+      outChars += chunk.length;
+      yield chunk;
+    }
+    ok = true;
+  } finally {
+    // Streams are metered from text length (close to the token count).
+    await recordUsage(p, {}, inChars, outChars, ok);
+  }
 }

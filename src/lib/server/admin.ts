@@ -414,3 +414,104 @@ export async function grantProByEmail(actor: string, email: string, days: number
   await notify(u.id, "gift", { title: "🎁 You've got PERSONA 90 Pro", body: `${days} days of Pro have been added to your account. Enjoy unlimited practice!`, url: "/pricing" }).catch(() => {});
   await audit(actor, "plan.grant", { user: u.id, label: await labelFor(u.id) }, `${days} days`);
 }
+
+// ---------------------------------------------------------------------------
+// AI models and costs
+// ---------------------------------------------------------------------------
+
+export async function aiTiers(): Promise<{ free: string; pro: string }> {
+  const [r] = await q<{ value: { free?: { provider: string; model: string }; pro?: { provider: string; model: string } } }>("select value from public.app_settings where key = 'ai_tiers'");
+  const id = (c?: { provider: string; model: string }) => (!c || c.provider === "default" ? "default" : `${c.provider}:${c.model}`);
+  return { free: id(r?.value.free), pro: id(r?.value.pro) };
+}
+
+export async function saveAiTiers(actor: string, free: string, pro: string) {
+  await requireAdmin(actor);
+  const { TIER_CHOICES } = await import("@/lib/domain/ai-pricing");
+  const pick = (id: string) => {
+    const c = TIER_CHOICES.find((t) => t.id === id);
+    if (!c) throw new AdminError("Unknown model.");
+    return { provider: c.provider, model: c.model };
+  };
+  const value = { free: pick(free), pro: pick(pro) };
+  await q("insert into public.app_settings (key, value) values ('ai_tiers', $1) on conflict (key) do update set value = excluded.value", [JSON.stringify(value)]);
+  const { clearTierCache } = await import("@/lib/ai/client");
+  clearTierCache();
+  await audit(actor, "ai.tiers", { label: `free=${free} pro=${pro}` });
+}
+
+export async function aiCosts() {
+  const [tot] = await q<{ cost: number; calls: number; failed: number; input: number; output: number }>(
+    `select coalesce(sum(cost_usd), 0)::float8 as cost, count(*)::int as calls, count(*) filter (where not ok)::int as failed,
+            coalesce(sum(input_tokens), 0)::float8 as input, coalesce(sum(output_tokens), 0)::float8 as output
+       from public.ai_usage where created_at > now() - interval '30 days'`,
+  );
+  const daily = await q<{ d: string; cost: number; calls: number }>(
+    `select to_char(d, 'YYYY-MM-DD') as d,
+       coalesce((select sum(cost_usd) from public.ai_usage where created_at::date = d), 0)::float8 as cost,
+       (select count(*)::int from public.ai_usage where created_at::date = d) as calls
+     from generate_series(current_date - 13, current_date, interval '1 day') d order by d`,
+  );
+  const byFeature = await q<{ k: string; cost: number; calls: number; tokens: number }>(
+    `select feature as k, sum(cost_usd)::float8 as cost, count(*)::int as calls, sum(input_tokens + output_tokens)::float8 as tokens
+       from public.ai_usage where created_at > now() - interval '30 days' group by feature order by cost desc limit 15`,
+  );
+  const byTier = await q<{ k: string; cost: number; calls: number; users: number }>(
+    `select tier as k, sum(cost_usd)::float8 as cost, count(*)::int as calls, count(distinct user_id)::int as users
+       from public.ai_usage where created_at > now() - interval '30 days' group by tier order by cost desc`,
+  );
+  const byModel = await q<{ k: string; cost: number; calls: number }>(
+    `select provider || ' · ' || model as k, sum(cost_usd)::float8 as cost, count(*)::int as calls
+       from public.ai_usage where created_at > now() - interval '30 days' group by 1 order by cost desc limit 10`,
+  );
+  const topUsers = await q<{ id: string; name: string; cost: number; calls: number; tier: string }>(
+    `select a.user_id as id, coalesce(nullif(p.display_name, ''), 'Member') as name, sum(a.cost_usd)::float8 as cost, count(*)::int as calls,
+            max(a.tier) as tier
+       from public.ai_usage a left join public.profiles p on p.id = a.user_id
+      where a.created_at > now() - interval '30 days' and a.user_id is not null group by a.user_id, p.display_name order by cost desc limit 10`,
+  );
+  // Cost of one completed daily session = check-in + session AI calls / sessions completed (30 days).
+  const [perSession] = await q<{ cost: number; sessions: number }>(
+    `select coalesce((select sum(cost_usd) from public.ai_usage where created_at > now() - interval '30 days'
+              and (feature like 'checkin.%' or feature like 'session.%')), 0)::float8 as cost,
+            (select count(*)::int from public.daily_sessions where completed_at > now() - interval '30 days') as sessions`,
+  );
+  return { tot, daily, byFeature, byTier, byModel, topUsers, perSession };
+}
+
+/** Runs one tiny request on a model to check it is reachable, and reports time and cost. */
+export async function testModel(actor: string, choiceId: string) {
+  await requireAdmin(actor);
+  const { TIER_CHOICES, costUSD, SESSION_TOKENS_ESTIMATE } = await import("@/lib/domain/ai-pricing");
+  const c = TIER_CHOICES.find((t) => t.id === choiceId);
+  if (!c) throw new AdminError("Unknown model.");
+  const ai = await import("@/lib/ai/client");
+  const { z } = await import("zod");
+  const started = Date.now();
+  try {
+    const out = await ai.runWithAIContext({ userId: actor, feature: "admin.test", tier: "pro" }, () =>
+      ai.generateStructured({
+        system: "You are a test endpoint. Reply briefly.",
+        prompt: "Return one short motivational sentence for someone starting a 90-day self-development programme.",
+        schema: z.object({ sentence: z.string() }),
+        effort: "low",
+        maxTokens: 400,
+        modelOverride: c.provider === "default" ? undefined : { kind: c.provider, model: c.model },
+      }),
+    );
+    const [last] = await q<{ model: string; provider: string }>(
+      "select model, provider from public.ai_usage where user_id = $1 and feature = 'admin.test' and ok order by id desc limit 1",
+      [actor],
+    );
+    const used = last ? `${last.provider} · ${last.model}` : "unknown";
+    return {
+      ok: true as const,
+      ms: Date.now() - started,
+      sentence: out.sentence,
+      used,
+      estimateSession: c.provider === "default" ? null : costUSD(c.model, SESSION_TOKENS_ESTIMATE.input, SESSION_TOKENS_ESTIMATE.output),
+    };
+  } catch (err) {
+    return { ok: false as const, ms: Date.now() - started, error: (err as Error).message.slice(0, 300) };
+  }
+}

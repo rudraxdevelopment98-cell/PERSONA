@@ -1,6 +1,6 @@
-import { UpgradeRequired, assertWithinLimit } from "@/lib/server/plan";
+import { UpgradeRequired, assertWithinLimit, getPlan } from "@/lib/server/plan";
 import { z } from "zod";
-import { AIError, runWithUserAI, streamText } from "@/lib/ai/client";
+import { AIError, runWithAIContext, runWithUserAI, streamText } from "@/lib/ai/client";
 import { getUserAI } from "@/lib/server/ai-connection";
 import { COACH_SYSTEM } from "@/lib/ai/prompts";
 import { buildAIContext } from "@/lib/server/context";
@@ -53,7 +53,8 @@ export async function POST(request: Request) {
 
   const ai = await getUserAI(db, user.id);
   // start() runs synchronously inside runWithUserAI, so the whole stream uses the user's provider.
-  const body = runWithUserAI(ai, () => new ReadableStream({
+  const tier = (await getPlan(user.id)).plan;
+  const body = runWithAIContext({ userId: user.id, feature: "coach", tier }, () => runWithUserAI(ai, () => new ReadableStream({
     async start(controller) {
       let reply = "";
       try {
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
         controller.close();
       }
     },
-  }));
+  })));
 
   return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 }
