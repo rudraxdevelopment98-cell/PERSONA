@@ -1,6 +1,6 @@
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
+    <span className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap ${className}`}>
       <span className="relative flex size-8 items-center justify-center rounded-xl bg-primary text-sm font-extrabold text-white">
         P<span className="absolute bottom-1.5 right-1.5 size-1.5 rounded-full bg-accent" />
       </span>

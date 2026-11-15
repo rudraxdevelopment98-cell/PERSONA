@@ -24,10 +24,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         name={name}
         day={state.day}
         unread={unread}
+        language={state.profile.language}
         stats={{ level: level.level, levelName: level.name, progress: level.progress, toNext: level.toNext, xp: stats.xp, streak: stats.streak }}
       />
       <main className="lg:pl-64">
-        <div className="pb-safe mx-auto max-w-5xl px-4 pt-6 sm:px-6 lg:pt-10">
+        <div className="pb-safe mx-auto max-w-5xl px-4 pt-6 sm:px-6 lg:pt-8">
           {invite && (
             <InviteBanner
               token={invite.token}

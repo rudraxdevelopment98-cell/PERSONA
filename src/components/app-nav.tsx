@@ -23,6 +23,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Logo } from "./logo";
+import { LanguageMenu } from "./language-menu";
+import type { Language } from "@/lib/ai/prompts";
 import { ProgressRing, cx } from "./ui";
 
 export type NavStats = { level: number; levelName: string; progress: number; toNext: number; xp: number; streak: number };
@@ -102,7 +104,7 @@ function LevelCard({ stats, name, day }: { stats: NavStats; name: string; day: n
   );
 }
 
-export function AppNav({ name, day, stats, unread = 0 }: { name: string; day: number; stats: NavStats; unread?: number }) {
+export function AppNav({ name, day, stats, unread = 0, language = "en" }: { name: string; day: number; stats: NavStats; unread?: number; language?: Language }) {
   const path = usePathname();
 
   return (
@@ -149,21 +151,31 @@ export function AppNav({ name, day, stats, unread = 0 }: { name: string; day: nu
         </form>
       </aside>
 
+      {/* Desktop top bar */}
+      <header className="sticky top-0 z-20 hidden h-14 items-center justify-end gap-2 border-b border-line/70 bg-surface/85 px-6 backdrop-blur-md lg:ml-64 lg:flex">
+        <LanguageMenu value={language} />
+        <Link href="/inbox" aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"} className="relative rounded-full p-1.5 text-muted hover:bg-bg hover:text-ink">
+          <Bell className="size-5" />
+          {unread > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-coral px-1 text-center text-[10px] font-bold leading-4 text-white">{unread > 9 ? "9+" : unread}</span>}
+        </Link>
+      </header>
+
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line/70 bg-surface/90 px-4 backdrop-blur-md lg:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-line/70 bg-surface/90 px-3 backdrop-blur-md min-[380px]:px-4 lg:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <Link href="/dashboard">
           <Logo />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+        <LanguageMenu value={language} />
         <Link href="/inbox" aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"} className="relative rounded-full p-1.5 text-muted hover:bg-bg">
           <Bell className="size-5" />
           {unread > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-coral px-1 text-center text-[10px] font-bold leading-4 text-white">{unread > 9 ? "9+" : unread}</span>}
         </Link>
-        <Link href="/achievements" className="flex items-center gap-2">
+        <Link href="/achievements" className="flex shrink-0 items-center gap-1.5">
           <span className="inline-flex items-center gap-1 rounded-full bg-sun-soft px-2.5 py-1 text-xs font-bold text-warning">
             <Flame className="size-3.5" /> {stats.streak}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">Lv {stats.level}</span>
+          <span className="hidden items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary min-[380px]:inline-flex">Lv {stats.level}</span>
         </Link>
         </div>
       </header>

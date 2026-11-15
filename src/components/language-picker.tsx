@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Languages } from "lucide-react";
 import { setLanguage } from "@/app/(app)/settings/actions";
 import { LANGUAGE_LABELS, type Language } from "@/lib/ai/prompts";
@@ -12,6 +12,8 @@ export function LanguagePicker({ value }: { value: Language }) {
   const router = useRouter();
   const [lang, setLang] = useState(value);
   const [pending, start] = useTransition();
+  // Stay in sync when the language is changed elsewhere (e.g. the header menu).
+  useEffect(() => setLang(value), [value]);
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Languages className="size-4 text-muted" />
