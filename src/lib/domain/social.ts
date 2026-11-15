@@ -56,11 +56,11 @@ export type SharedView = {
   focus?: Snapshot["focus"];
 };
 
-/** A streak is only current if the last completed session was today or yesterday (owner's calendar). */
+/** A streak is current if the last session was today, yesterday, or the day before (a weekly rest day). */
 export function liveStreak(streak: number, lastActive: string | null, today: string): number {
   if (!lastActive) return 0;
   const days = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${lastActive}T00:00:00Z`)) / 86_400_000);
-  return days <= 1 ? streak : 0;
+  return days <= 2 ? streak : 0;
 }
 
 export function filterSnapshot(s: Snapshot, items: ShareItem[], ownerToday: string): SharedView {

@@ -9,6 +9,8 @@ import { PROGRAMME_LENGTH } from "@/lib/domain/programme";
 import { overallScore } from "@/lib/domain/scoring";
 import { ACHIEVEMENTS, getGamification } from "@/lib/server/gamification";
 import { getUserState, todaysFocus } from "@/lib/server/state";
+import { GENRES, WORLDS, byId, seasonFor } from "@/lib/domain/variety";
+import { REST_WINDOW } from "@/lib/domain/programme";
 import type { CheckinRow, SessionRow } from "@/lib/server/types";
 
 export const metadata = { title: "Home" };
@@ -43,6 +45,14 @@ export default async function Dashboard() {
       .maybeSingle(),
     db.from("achievements").select("code, earned_at").eq("user_id", user.id).order("earned_at", { ascending: false }).limit(4),
   ]);
+  // Latest story episode, for the "Your series" card.
+  const { data: latestRows } = await db
+    .from("daily_sessions")
+    .select("day_number, variety, completed_at")
+    .eq("user_id", user.id)
+    .order("day_number", { ascending: false })
+    .limit(1);
+  const latest = (latestRows?.[0] ?? null) as Pick<SessionRow, "day_number" | "variety" | "completed_at"> | null;
 
   const c = checkin as Pick<CheckinRow, "completed_at" | "analysis"> | null;
   const s = session as Pick<SessionRow, "id" | "story_completed_at" | "scenarios_completed_at" | "challenge_status" | "completed_at"> | null;
@@ -60,6 +70,23 @@ export default async function Dashboard() {
   const nextIndex = steps.findIndex((x) => !x.done);
   const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: state.profile.timezone }).format(new Date()));
   const badgeDefs = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
+  const restUsed = stats.restDays.some((d) => state.day - d < REST_WINDOW);
+
+  // Series card: today's episode if built, otherwise a teaser of the next one.
+  const lv = latest?.variety ?? null;
+  const series = lv
+    ? latest!.day_number === state.day
+      ? { label: `Season ${lv.season} · Episode ${lv.episode}${lv.finale ? " · Finale" : ""}`, title: lv.episode_title ?? "Today's episode", line: latest!.completed_at ? (lv.teaser || "Season finale done - pick the next world on Today.") : "Your episode is ready.", cta: latest!.completed_at ? "See today" : "Continue" }
+      : {
+          label: (() => {
+            const next = seasonFor(state.day);
+            return next.season === lv.season ? `Up next · Season ${lv.season} · Episode ${lv.episode + 1}` : `Up next · Season ${next.season} begins`;
+          })(),
+          title: seasonFor(state.day).season === lv.season ? (lv.teaser || "The story continues today.") : "A new world, new characters.",
+          line: `${byId(WORLDS, lv.world)?.label ?? ""} · ${byId(GENRES, lv.genre)?.label ?? ""}`,
+          cta: "Start today",
+        }
+    : null;
 
   return (
     <div className="space-y-5">
@@ -83,6 +110,12 @@ export default async function Dashboard() {
               <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-teal-300">
                 <Zap className="size-3.5" /> {stats.xp} XP · Level {level.level}
               </span>
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-sky-200"
+                title="Miss one day and your streak survives - once every 7 days."
+              >
+                ❄️ {restUsed ? "Rest day used this week" : "1 rest day available"}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -102,6 +135,22 @@ export default async function Dashboard() {
           </div>
         </div>
       </section>
+
+      {series && (
+        <Link href="/today" className="group block">
+          <Card className="flex items-center gap-4 p-4 transition group-hover:-translate-y-0.5 group-hover:shadow-raised sm:p-5">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-2xl">🎬</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold uppercase tracking-wider text-accent">{series.label}</p>
+              <p className="mt-0.5 font-serif text-lg font-semibold leading-snug">{series.title}</p>
+              <p className="text-sm text-muted">{series.line}</p>
+            </div>
+            <span className="hidden shrink-0 items-center gap-1 text-sm font-bold text-primary sm:inline-flex">
+              {series.cta} <ArrowRight className="size-4" />
+            </span>
+          </Card>
+        </Link>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Today's path */}

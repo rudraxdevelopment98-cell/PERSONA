@@ -38,6 +38,7 @@ type ClientSession = {
 
 type Story = { title: string; body: string; word_count: number; insights: { title: string; explanation: string }[] };
 import { EpisodeTag, NextEpisode, Previously, type EpisodeInfo } from "./episode";
+import { CelebrationOverlay, type Celebration } from "./celebration";
 
 function Section({
   n,
@@ -386,7 +387,7 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
   );
 }
 
-function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (answers: string[], feedback: ReflectionFeedback | null) => void }) {
+function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (answers: string[], feedback: ReflectionFeedback | null, celebration: Celebration | null) => void }) {
   const [answers, setAnswers] = useState<string[]>(session.reflection_answers ?? session.reflection_questions.map(() => ""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -395,8 +396,8 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
     setBusy(true);
     setError(null);
     try {
-      const res = await postJSON<{ feedback: ReflectionFeedback | null }>("/api/session/reflect", { session_id: session.id, answers });
-      onDone(answers, res.feedback);
+      const res = await postJSON<{ feedback: ReflectionFeedback | null; celebration?: Celebration }>("/api/session/reflect", { session_id: session.id, answers });
+      onDone(answers, res.feedback, res.celebration ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not submit.");
     } finally {
@@ -465,6 +466,7 @@ export function SessionFlow({
   const router = useRouter();
   const [session, setSession] = useState(initial);
   const [scenarios, setScenarios] = useState(initialScenarios);
+  const [celebrate, setCelebrate] = useState<Celebration | null>(null);
   const [started, setStarted] = useState(initial.story_progress > 0 || initial.story_completed);
   const intro = session.introduction;
   const scenariosDone = scenarios.every((s) => s.response);
@@ -557,12 +559,14 @@ export function SessionFlow({
       <Section n={5} title="Reflection" minutes="3 min" locked={!scenariosDone} done={session.completed} lockedText="Complete the scenarios first.">
         <ReflectionCard
           session={session}
-          onDone={(answers, feedback) => {
+          onDone={(answers, feedback, celebration) => {
             setSession((s) => ({ ...s, reflection_answers: answers, reflection_feedback: feedback, completed: true }));
+            if (celebration) setCelebrate(celebration);
             router.refresh();
           }}
         />
       </Section>
+      {celebrate && <CelebrationOverlay data={celebrate} onClose={() => setCelebrate(null)} />}
     </div>
   );
 }

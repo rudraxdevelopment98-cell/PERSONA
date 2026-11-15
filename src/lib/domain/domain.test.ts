@@ -215,7 +215,8 @@ describe("social", () => {
   });
   it("expires a stale streak", () => {
     expect(liveStreak(5, "2026-03-10", "2026-03-11")).toBe(5);
-    expect(liveStreak(5, "2026-03-10", "2026-03-12")).toBe(0);
+    expect(liveStreak(5, "2026-03-10", "2026-03-12")).toBe(5); // rest day
+    expect(liveStreak(5, "2026-03-10", "2026-03-13")).toBe(0);
     expect(filterSnapshot(snap, ["activity"], "2026-03-14").streak).toBe(0);
   });
   it("scores races and ranks ties", () => {
@@ -290,5 +291,27 @@ describe("variety: consecutive days", () => {
       expect(r.formats.some((f) => prev.includes(f))).toBe(false);
       prev = r.formats;
     }
+  });
+});
+
+import { bestStreakWithRest, streakWithRest } from "./programme";
+describe("streak with weekly rest day", () => {
+  it("keeps the streak through one missed day", () => {
+    expect(streakWithRest([1, 2, 3, 5, 6], 6)).toEqual({ streak: 5, restDays: [4] });
+    expect(streakWithRest([1, 2, 3], 5)).toEqual({ streak: 3, restDays: [4] }); // yesterday was the rest day
+    expect(streakWithRest([1, 2, 3], 4)).toEqual({ streak: 3, restDays: [] }); // today not done yet
+  });
+  it("allows only one rest day per 7 days", () => {
+    expect(streakWithRest([1, 2, 4, 5, 7, 8], 8).streak).toBe(4); // rests at 6 and 3 are too close: stops at 3
+    expect(streakWithRest([1, 3, 4, 5, 6, 7, 8, 9, 11], 11)).toEqual({ streak: 9, restDays: [2, 10] });
+  });
+  it("breaks on two missed days in a row", () => {
+    expect(streakWithRest([1, 2, 3], 6).streak).toBe(0);
+    expect(streakWithRest([1, 2, 5, 6], 6).streak).toBe(2);
+  });
+  it("computes the best streak with the same rule", () => {
+    expect(bestStreakWithRest([1, 2, 3, 5, 6, 7])).toBe(6);
+    expect(bestStreakWithRest([1, 2, 4, 5, 7, 8])).toBe(4);
+    expect(bestStreakWithRest([])).toBe(0);
   });
 });

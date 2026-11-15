@@ -24,6 +24,7 @@ export type ProfileRow = {
   language: "en" | "hinglish" | "hi";
   next_world?: string | null;
   suspended_at?: string | null;
+  reminders_enabled?: boolean;
   created_at: string;
 };
 

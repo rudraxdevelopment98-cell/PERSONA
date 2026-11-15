@@ -198,3 +198,10 @@ export async function savePushAction(sub: { endpoint: string; keys: { p256dh: st
 export async function removePushAction(endpoint: string) {
   return run(async (userId) => (await removeSubscription(userId, String(endpoint).slice(0, 1000)), {}));
 }
+
+export async function setRemindersAction(enabled: boolean) {
+  const { db, user } = await requireUser();
+  const { error } = await db.from("profiles").update({ reminders_enabled: Boolean(enabled) }).eq("id", user.id);
+  if (error) return { error: "Could not save." };
+  return {};
+}

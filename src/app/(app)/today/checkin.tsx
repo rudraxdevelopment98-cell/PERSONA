@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Alert, Button, Card, CardHeader, Spinner, Textarea, cx } from "@/components/ui";
 import { CHECKIN_LENSES, byId } from "@/lib/domain/variety";
+import { WritingEpisode } from "./writing-episode";
 import type { CheckinAnalysis, CheckinQuestion } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import type { CheckinRow } from "@/lib/server/types";
@@ -37,6 +38,18 @@ function ScaleInput({ q, value, onChange }: { q: CheckinQuestion; value?: number
   );
 }
 
+// One in-flight build per page, shared by the automatic start and the button.
+let sessionBuild: Promise<unknown> | null = null;
+function startSessionBuild() {
+  if (!sessionBuild) {
+    sessionBuild = postJSON("/api/session/generate").catch((e) => {
+      sessionBuild = null;
+      throw e;
+    });
+  }
+  return sessionBuild;
+}
+
 export function CheckinFlow({ checkin: initial, hasSession }: { checkin: CheckinRow | null; hasSession: boolean }) {
   const router = useRouter();
   const [checkin, setCheckin] = useState(initial);
@@ -45,6 +58,18 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
   const [busy, setBusy] = useState<null | "start" | "submit" | "session">(null);
   const [error, setError] = useState<string | null>(null);
   const lensLabel = byId(CHECKIN_LENSES, checkin?.lens)?.label ?? null;
+  const [buildStarted, setBuildStarted] = useState<number | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // Start writing the session in the background while the user reads the insight.
+  function prebuild() {
+    if (hasSession) return;
+    setBuildStarted((t) => t ?? Date.now());
+    startSessionBuild().then(
+      () => setReady(true),
+      () => setBuildStarted(null),
+    );
+  }
 
   async function run<T>(kind: "start" | "submit" | "session", fn: () => Promise<T>) {
     setBusy(kind);
@@ -60,6 +85,13 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
 
   const start = () => run("start", async () => setCheckin((await postJSON<{ checkin: CheckinRow }>("/api/checkin/start")).checkin));
 
+  // Check-in already done (e.g. the page was reopened): start writing straight away.
+  useEffect(() => {
+    if (initial?.completed_at && !hasSession) prebuild();
+    // Runs once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = () =>
     run("submit", async () => {
       const res = await postJSON<{ analysis: CheckinAnalysis | null; analysisError: string | null }>("/api/checkin/submit", {
@@ -67,13 +99,15 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
       });
       setCheckin({ ...checkin!, completed_at: new Date().toISOString() });
       setAnalysis(res.analysis);
+      prebuild();
       if (res.analysisError) setError(`Your answers were saved. ${res.analysisError}`);
     });
 
   const buildSession = () =>
     run("session", async () => {
+      setBuildStarted((t) => t ?? Date.now());
       try {
-        await postJSON("/api/session/generate");
+        await startSessionBuild();
       } catch (e) {
         // The session may have been created even if the response was lost; reload to check.
         router.refresh();
@@ -182,7 +216,28 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
         </Card>
       )}
       {error && <Alert tone={analysis ? "danger" : "warning"}>{error}</Alert>}
-      {!hasSession && (
+      {!hasSession && (ready || buildStarted !== null) && (
+        <Card className="p-6">
+          {ready ? (
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-semibold">Your episode is ready 🎬</h2>
+                <p className="mt-1 text-sm text-muted">Story, scenarios and today&apos;s mission are waiting.</p>
+              </div>
+              <Button onClick={() => router.refresh()} className="motion-safe:animate-pulse">
+                <Sparkles className="size-4" /> Open today&apos;s session <ArrowRight className="size-4" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <h2 className="mb-1 font-semibold">Writing today&apos;s episode…</h2>
+              <p className="mb-4 text-sm text-muted">Built from your check-in. Read your insight above while you wait - this takes a minute or two.</p>
+              <WritingEpisode startedAt={buildStarted!} />
+            </>
+          )}
+        </Card>
+      )}
+      {!hasSession && !ready && buildStarted === null && (
         <Card className="p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

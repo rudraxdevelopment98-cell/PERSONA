@@ -5,6 +5,8 @@ import { reflectionFeedbackSchema } from "@/lib/ai/schemas";
 import { apiRoute, dbError, HttpError } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
 import { recomputeScores } from "@/lib/server/progress";
+import { ACHIEVEMENTS, loadStats } from "@/lib/server/gamification";
+import { levelInfo } from "@/lib/domain/gamification";
 import type { SessionRow } from "@/lib/server/types";
 
 export const maxDuration = 300;
@@ -23,6 +25,10 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { db, user,
   if (!session.story_completed_at) throw new HttpError(409, "Finish the story first.");
   if (!session.scenarios_completed_at) throw new HttpError(409, "Complete all scenarios first.");
   if (answers.length !== session.reflection_questions.length) throw new HttpError(400, "Please answer every reflection question.");
+
+  const day = Math.max(1, state.day);
+  const before = await loadStats(db, user.id, day);
+  const startedAt = new Date().toISOString();
 
   let feedback = null;
   try {
@@ -45,5 +51,25 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { db, user,
     .eq("id", session.id);
   dbError(error);
   await recomputeScores(db, user.id, "session");
-  return { feedback };
+
+  // Everything the celebration screen shows, from real activity.
+  const after = await loadStats(db, user.id, day);
+  const { data: fresh } = await db.from("achievements").select("code, earned_at").eq("user_id", user.id).gte("earned_at", startedAt);
+  const defs = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
+  const lvBefore = levelInfo(before.xp), lvAfter = levelInfo(after.xp);
+  const celebration = {
+    xpGained: Math.max(0, after.xp - before.xp),
+    xp: after.xp,
+    level: lvAfter.level,
+    levelName: lvAfter.name,
+    levelUp: lvAfter.level > lvBefore.level,
+    progress: lvAfter.progress,
+    toNext: lvAfter.toNext,
+    streak: after.streak,
+    sessions: after.sessionsCompleted,
+    badges: (fresh ?? []).map((b) => defs.get(b.code)).filter(Boolean).map((d) => ({ title: d!.title, icon: d!.icon, description: d!.description })),
+    teaser: session.variety?.finale ? null : (session.variety?.teaser ?? null),
+    finale: Boolean(session.variety?.finale),
+  };
+  return { feedback, celebration };
 });

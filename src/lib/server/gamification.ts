@@ -1,10 +1,10 @@
 import "server-only";
 import type { Db } from "@/lib/db/server";
 import { levelInfo, totalXp, type ActivityCounts } from "@/lib/domain/gamification";
-import { PHASES, currentStreak } from "@/lib/domain/programme";
+import { PHASES, bestStreakWithRest, streakWithRest } from "@/lib/domain/programme";
 
 export type SocialCounts = { friends: number; owned: number; cheers: number; finished: number; team_wins: number };
-export type Stats = ActivityCounts & { completedDays: number[]; bestStreak: number; streak: number; xp: number; level: number; social?: SocialCounts };
+export type Stats = ActivityCounts & { completedDays: number[]; bestStreak: number; streak: number; restDays: number[]; xp: number; level: number; social?: SocialCounts };
 
 export type AchievementDef = { code: string; title: string; description: string; icon: string; met: (s: Stats) => boolean };
 
@@ -56,12 +56,9 @@ export async function loadStats(db: Db, userId: string, today: number): Promise<
     .filter((s) => s.completed_at)
     .map((s) => s.day_number as number)
     .sort((a, b) => a - b);
-  let run = 0;
-  let bestStreak = 0;
-  completedDays.forEach((d, i) => {
-    run = i > 0 && d === completedDays[i - 1] + 1 ? run + 1 : 1;
-    bestStreak = Math.max(bestStreak, run);
-  });
+  // A missed day is forgiven once a week (rest day), so one slip doesn't wipe the streak.
+  const bestStreak = bestStreakWithRest(completedDays);
+  const current = streakWithRest(completedDays, today);
   const counts: ActivityCounts = {
     assessments,
     checkins,
@@ -75,7 +72,7 @@ export async function loadStats(db: Db, userId: string, today: number): Promise<
     journalEntries,
   };
   const xp = totalXp(counts);
-  return { ...counts, completedDays, bestStreak, streak: currentStreak(completedDays, today), xp, level: levelInfo(xp).level };
+  return { ...counts, completedDays, bestStreak, streak: current.streak, restDays: current.restDays, xp, level: levelInfo(xp).level };
 }
 
 /** Records newly earned badges. */

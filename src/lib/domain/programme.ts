@@ -122,3 +122,58 @@ export function currentStreak(completedDays: number[], today: number): number {
   }
   return streak;
 }
+
+/**
+ * Streak rules with a weekly rest day: missing ONE day doesn't break the
+ * streak, at most once in any 7-day window. Rest days don't count towards
+ * the streak; they only keep it alive.
+ */
+export const REST_WINDOW = 7;
+
+export function streakWithRest(completedDays: number[], today: number): { streak: number; restDays: number[] } {
+  const done = new Set(completedDays);
+  const restDays: number[] = [];
+  let d = done.has(today) ? today : today - 1;
+  let streak = 0;
+  while (d >= 1) {
+    if (done.has(d)) {
+      streak++;
+      d--;
+      continue;
+    }
+    // A single missed day can be bridged if the day before it was done and
+    // no other rest day falls within the same 7-day window.
+    const lastRest = restDays[restDays.length - 1];
+    if (streak > 0 || d === today - 1) {
+      if (done.has(d - 1) && (lastRest === undefined || lastRest - d >= REST_WINDOW)) {
+        restDays.push(d);
+        d--;
+        continue;
+      }
+    }
+    break;
+  }
+  return { streak, restDays: restDays.sort((a, b) => a - b) };
+}
+
+/** Longest streak ever, using the same rest-day rule. */
+export function bestStreakWithRest(completedDays: number[]): number {
+  const days = [...new Set(completedDays)].sort((a, b) => a - b);
+  let best = 0, run = 0, lastRest = -Infinity;
+  days.forEach((d, i) => {
+    if (i === 0) run = 1;
+    else {
+      const gap = d - days[i - 1];
+      if (gap === 1) run++;
+      else if (gap === 2 && d - 1 - lastRest >= REST_WINDOW) {
+        run++;
+        lastRest = d - 1;
+      } else {
+        run = 1;
+        lastRest = -Infinity;
+      }
+    }
+    best = Math.max(best, run);
+  });
+  return best;
+}

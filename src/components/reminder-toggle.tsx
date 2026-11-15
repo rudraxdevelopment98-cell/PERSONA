@@ -1,0 +1,32 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { setRemindersAction } from "@/app/(app)/friends/actions";
+
+/** Opt in/out of the daily evening reminder (sent only if today's session isn't done). */
+export function ReminderToggle({ initial }: { initial: boolean }) {
+  const [on, setOn] = useState(initial);
+  const [pending, start] = useTransition();
+  return (
+    <label className="flex items-start gap-3 text-sm">
+      <input
+        type="checkbox"
+        className="mt-0.5 size-4 accent-[var(--color-primary)]"
+        checked={on}
+        disabled={pending}
+        onChange={(e) => {
+          const v = e.target.checked;
+          setOn(v);
+          start(async () => {
+            const res = await setRemindersAction(v);
+            if (res.error) setOn(!v);
+          });
+        }}
+      />
+      <span>
+        <span className="block font-semibold">Daily evening reminder</span>
+        <span className="block text-xs text-muted">If you haven&apos;t done today&apos;s session, we send one nudge in the evening with a teaser of your next episode. Never more than once a day.</span>
+      </span>
+    </label>
+  );
+}

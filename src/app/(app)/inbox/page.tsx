@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { PushToggle } from "@/components/social";
+import { ReminderToggle } from "@/components/reminder-toggle";
+import { getUserState } from "@/lib/server/state";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/db/server";
 import { listNotifications, markAllRead } from "@/lib/server/social";
@@ -19,6 +21,7 @@ function ago(iso: string) {
 
 export default async function InboxPage() {
   const { user } = await requireUser();
+  const { state } = await getUserState();
   const items = await listNotifications(user.id);
   // Opening the inbox reads everything; this render still highlights what was new.
   if (items.some((i) => !i.read_at)) await markAllRead(user.id);
@@ -46,7 +49,10 @@ export default async function InboxPage() {
         </Card>
         <Card>
           <CardHeader title="Phone notifications" description="Get these on your phone or computer, even when the app is closed." />
-          <div className="px-5 pb-5"><PushToggle /></div>
+          <div className="space-y-4 px-5 pb-5">
+            <PushToggle />
+            <ReminderToggle initial={state.profile.reminders_enabled !== false} />
+          </div>
         </Card>
       </div>
     </>
