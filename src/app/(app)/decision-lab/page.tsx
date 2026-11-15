@@ -1,3 +1,5 @@
+import { pickSponsor } from "@/lib/server/sponsors";
+import { SponsorCard } from "@/components/sponsor-card";
 import { UsageChip } from "@/components/upgrade";
 import { getPlan, usage } from "@/lib/server/plan";
 import { FREE_LIMITS } from "@/lib/domain/plans";
@@ -13,6 +15,7 @@ export const metadata = { title: "Decision Lab" };
 export default async function DecisionLabPage() {
   const { db, user, state } = await getUserState();
   const [plan, used] = await Promise.all([getPlan(user.id), usage(user.id)]);
+  const sponsor = await pickSponsor(user.id, "labs", { language: state.profile.language, day: state.today });
   const chip = plan.unlimitedAI ? null : <UsageChip used={used.decisions} limit={FREE_LIMITS.decisionsPerWeek} period="week" />;
   const header = (
     <PageHeader
@@ -34,6 +37,7 @@ export default async function DecisionLabPage() {
       {header}
       <div className="space-y-6">
         <DecisionLab pending={pending ? { id: pending.id, scenario: pending.scenario, category: pending.category, difficulty: pending.difficulty } : null} />
+        {sponsor && <SponsorCard s={sponsor} />}
 
         <Card>
           <CardHeader title="Your decision patterns" description="Calculated from your completed decisions only." />

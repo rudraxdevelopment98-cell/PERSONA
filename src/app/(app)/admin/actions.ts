@@ -133,3 +133,38 @@ export async function testModelAction(choiceId: string) {
     return { ok: false as const, ms: 0, error: err instanceof admin.AdminError ? err.message : "Test failed." };
   }
 }
+
+const campaignSchema = z.object({
+  sponsorName: z.string().trim().min(2, "Sponsor name is required.").max(80),
+  category: z.enum(["book", "podcast", "course", "app", "event", "other"]),
+  title: z.string().trim().min(2, "Title is required.").max(80),
+  body: z.string().trim().min(2, "Text is required.").max(220),
+  ctaLabel: z.string().trim().min(2).max(30),
+  url: z.string().trim().url("Enter a full https:// link.").max(400),
+  placements: z.array(z.enum(["dashboard", "after_session", "labs"])).min(1, "Pick at least one place."),
+  languages: z.array(z.enum(["en", "hinglish", "hi"])).nullable(),
+  days: z.number().int().min(1).max(3650).nullable(),
+  maxViews: z.number().int().min(1).max(100_000_000).nullable(),
+  weight: z.number().int().min(1).max(10),
+});
+
+export async function createCampaignAction(input: unknown) {
+  const parsed = campaignSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the campaign." };
+  return run((u) => admin.createCampaign(u, parsed.data));
+}
+
+export async function setCampaignActiveAction(campaignId: string, active: boolean) {
+  if (!uuid.safeParse(campaignId).success) return { error: "Invalid campaign." };
+  return run((u) => admin.setCampaignActive(u, campaignId, Boolean(active)));
+}
+
+export async function deleteCampaignAction(campaignId: string) {
+  if (!uuid.safeParse(campaignId).success) return { error: "Invalid campaign." };
+  return run((u) => admin.deleteCampaign(u, campaignId));
+}
+
+export async function setSponsorRequestAction(requestId: string, status: string) {
+  if (!uuid.safeParse(requestId).success || !["new", "contacted", "done", "declined"].includes(status)) return { error: "Invalid request." };
+  return run((u) => admin.setSponsorRequestStatus(u, requestId, status));
+}

@@ -1,7 +1,7 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth", "/about", "/api/auth", "/api/recovery", "/i", "/api/cron", "/api/payments", "/pricing"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth", "/about", "/api/auth", "/api/recovery", "/i", "/api/cron", "/api/payments", "/pricing", "/advertise"];
 
 /**
  * Fast, optimistic redirect based on the presence of a session cookie. Every

@@ -6,6 +6,8 @@ import type { CheckinRow, ScenarioResponseRow, SessionRow, StoryRow } from "@/li
 import { CheckinFlow } from "./checkin";
 import { SessionFlow, type ClientScenario } from "./session";
 import type { EpisodeInfo } from "./episode";
+import { pickSponsor } from "@/lib/server/sponsors";
+import { SponsorCard } from "@/components/sponsor-card";
 import { GENRES, WORLDS, byId } from "@/lib/domain/variety";
 
 export const metadata = { title: "Daily Development" };
@@ -80,6 +82,8 @@ export default async function TodayPage() {
     };
   }
 
+  const sponsor = session?.completed_at ? await pickSponsor(user.id, "after_session", { language: state.profile.language, skill: focus.dimension, day: state.today }) : null;
+
   return (
     <>
       <PageHeader
@@ -114,6 +118,7 @@ export default async function TodayPage() {
           episode={episode}
         />
       )}
+      {sponsor && <div className="mt-8"><SponsorCard s={sponsor} /></div>}
     </>
   );
 }

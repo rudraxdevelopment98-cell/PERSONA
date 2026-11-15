@@ -140,6 +140,7 @@ const TABS = [
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/plans", label: "Plans" },
   { href: "/admin/ai", label: "AI & costs" },
+  { href: "/admin/sponsors", label: "Sponsors" },
   { href: "/admin/broadcast", label: "Announce" },
   { href: "/admin/log", label: "Admins & log" },
 ];

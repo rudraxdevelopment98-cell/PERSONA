@@ -11,6 +11,8 @@ import { ACHIEVEMENTS, getGamification } from "@/lib/server/gamification";
 import { getUserState, todaysFocus } from "@/lib/server/state";
 import { GENRES, WORLDS, byId, seasonFor } from "@/lib/domain/variety";
 import { REST_WINDOW } from "@/lib/domain/programme";
+import { pickSponsor } from "@/lib/server/sponsors";
+import { SponsorCard } from "@/components/sponsor-card";
 import type { CheckinRow, SessionRow } from "@/lib/server/types";
 
 export const metadata = { title: "Home" };
@@ -71,6 +73,7 @@ export default async function Dashboard() {
   const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: state.profile.timezone }).format(new Date()));
   const badgeDefs = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
   const restUsed = stats.restDays.some((d) => state.day - d < REST_WINDOW);
+  const sponsor = await pickSponsor(user.id, "dashboard", { language: state.profile.language, skill: focus.dimension, day: state.today });
 
   // Series card: today's episode if built, otherwise a teaser of the next one.
   const lv = latest?.variety ?? null;
@@ -151,6 +154,8 @@ export default async function Dashboard() {
           </Card>
         </Link>
       )}
+
+      {sponsor && <SponsorCard s={sponsor} />}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Today's path */}

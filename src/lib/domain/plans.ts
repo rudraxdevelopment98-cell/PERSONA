@@ -11,7 +11,7 @@ export const FREE_LIMITS = {
 export const TRIAL_DAYS = 7;
 
 /** Default display prices (USD). The checkout shows the local price and tax for the buyer's country. */
-export const DISPLAY_PRICES = { month: 4.99, year: 29 } as const;
+export const DISPLAY_PRICES = { month: 6.99, year: 49.99 } as const;
 
 export const FEATURES: { label: string; free: string | boolean; pro: string | boolean }[] = [
   { label: "Daily 30-minute session (check-in, story episode, scenarios, challenge, reflection)", free: true, pro: true },

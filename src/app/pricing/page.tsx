@@ -41,7 +41,10 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           features={FEATURES}
           justPaid={sp.checkout === "success"}
         />
-        <p className="mx-auto mt-10 max-w-2xl text-center text-xs text-muted">
+        <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-muted">
+          Have a book, podcast or course that helps people grow? <Link href="/advertise" className="font-semibold text-primary hover:underline">Advertise with us</Link>
+        </p>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">
           Payments are processed by Paddle, our reseller and Merchant of Record, in your local currency with taxes included where they apply. Cancel any time - Pro stays active until the end of the period you paid for.
         </p>
       </main>

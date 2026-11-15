@@ -1,3 +1,5 @@
+import { pickSponsor } from "@/lib/server/sponsors";
+import { SponsorCard } from "@/components/sponsor-card";
 import { UsageChip } from "@/components/upgrade";
 import { getPlan, usage } from "@/lib/server/plan";
 import { FREE_LIMITS } from "@/lib/domain/plans";
@@ -13,6 +15,7 @@ export const metadata = { title: "Communication Lab" };
 export default async function CommunicationLabPage() {
   const { db, user, state } = await getUserState();
   const [plan, used] = await Promise.all([getPlan(user.id), usage(user.id)]);
+  const sponsor = await pickSponsor(user.id, "labs", { language: state.profile.language, day: state.today });
   const chip = plan.unlimitedAI ? null : <UsageChip used={used.communication} limit={FREE_LIMITS.communicationPerWeek} period="week" />;
   const header = (
     <PageHeader
@@ -44,6 +47,7 @@ export default async function CommunicationLabPage() {
           pending={pending ? { id: pending.id, exercise_type: pending.exercise_type, prompt: pending.prompt } : null}
           language={state.profile.language}
         />
+        {sponsor && <SponsorCard s={sponsor} />}
 
         {completed.length > 0 && (
           <Card>

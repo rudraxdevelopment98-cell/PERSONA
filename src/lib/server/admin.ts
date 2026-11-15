@@ -515,3 +515,83 @@ export async function testModel(actor: string, choiceId: string) {
     return { ok: false as const, ms: Date.now() - started, error: (err as Error).message.slice(0, 300) };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Sponsors
+// ---------------------------------------------------------------------------
+
+export type CampaignInput = {
+  sponsorName: string;
+  category: string;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  url: string;
+  placements: string[];
+  languages: string[] | null;
+  days: number | null;
+  maxViews: number | null;
+  weight: number;
+};
+
+export async function createCampaign(actor: string, c: CampaignInput) {
+  await requireAdmin(actor);
+  if (!/^https:\/\/[^\s]+$/.test(c.url)) throw new AdminError("The link must start with https://");
+  await q(
+    `insert into public.sponsor_campaigns (sponsor_name, category, title, body, cta_label, url, placements, languages, ends_at, max_views, weight, created_by)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, case when $9::int is null then null else now() + make_interval(days => $9::int) end, $10, $11, $12)`,
+    [c.sponsorName, c.category, c.title, c.body, c.ctaLabel, c.url, c.placements, c.languages, c.days, c.maxViews, c.weight, actor],
+  );
+  await audit(actor, "sponsor.create", { label: `${c.sponsorName}: ${c.title}` });
+}
+
+export async function setCampaignActive(actor: string, id: string, active: boolean) {
+  await requireAdmin(actor);
+  await q("update public.sponsor_campaigns set active = $2 where id = $1", [id, active]);
+  await audit(actor, active ? "sponsor.resume" : "sponsor.pause", { label: id.slice(0, 8) });
+}
+
+export async function deleteCampaign(actor: string, id: string) {
+  await requireAdmin(actor);
+  await q("delete from public.sponsor_campaigns where id = $1", [id]);
+  await audit(actor, "sponsor.delete", { label: id.slice(0, 8) });
+}
+
+export async function listCampaigns() {
+  return q<{
+    id: string;
+    sponsor_name: string;
+    category: string;
+    title: string;
+    body: string;
+    cta_label: string;
+    url: string;
+    placements: string[];
+    languages: string[] | null;
+    ends_at: string | null;
+    max_views: number | null;
+    weight: number;
+    active: boolean;
+    views: number;
+    clicks: number;
+    views_30d: number;
+    clicks_30d: number;
+  }>(
+    `select c.*, coalesce(sum(s.views), 0)::int as views, coalesce(sum(s.clicks), 0)::int as clicks,
+            coalesce(sum(s.views) filter (where s.day > current_date - 30), 0)::int as views_30d,
+            coalesce(sum(s.clicks) filter (where s.day > current_date - 30), 0)::int as clicks_30d
+       from public.sponsor_campaigns c left join public.sponsor_stats s on s.campaign_id = c.id
+      group by c.id order by c.active desc, c.created_at desc limit 100`,
+  );
+}
+
+export async function listSponsorRequests() {
+  return q<{ id: string; name: string; email: string; category: string; link: string | null; budget: string | null; message: string | null; status: string; created_at: string }>(
+    "select * from public.sponsor_requests order by (status = 'new') desc, created_at desc limit 100",
+  );
+}
+
+export async function setSponsorRequestStatus(actor: string, id: string, status: string) {
+  await requireAdmin(actor);
+  await q("update public.sponsor_requests set status = $2 where id = $1", [id, status]);
+}
