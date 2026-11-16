@@ -17,7 +17,17 @@ export async function buildAIContext(
   db: Db,
   state: UserState,
   /** lean: a smaller context for quick feedback calls (cheaper; the essentials only). */
-  opts: { includeJournal?: boolean; checkins?: number; lean?: boolean } = {},
+  opts: {
+    includeJournal?: boolean;
+    checkins?: number;
+    lean?: boolean;
+    /**
+     * abstract: for CREATING new content (sessions, scenarios, exercises, questions).
+     * Sends behaviour patterns only, never the user's own stories or answers, so the
+     * model trains the same skill in fresh situations instead of retelling their case.
+     */
+    abstract?: boolean;
+  } = {},
 ): Promise<string> {
   const uid = state.userId;
   const [checkinsRes, scenariosRes, decisionsRes, exercisesRes, sessionsRes, journalRes] = await Promise.all([
@@ -67,14 +77,24 @@ export async function buildAIContext(
     lines.push(`Growth areas: ${dp.growth_areas.map((g) => `${DIMENSION_META[g.dimension].label} (${g.likely_pattern})`).join("; ")}`);
   }
 
-  if (state.baseline?.reflections) {
+  if (state.baseline?.reflections && !opts.abstract) {
     lines.push(
       `\n## In their own words (assessment)\n${state.baseline.reflections.held_back ? `${userData("held back", clip(state.baseline.reflections.held_back, 800))}\n` : ""}${userData("90-day goal", clip(state.baseline.reflections.goal, 600))}`,
     );
   }
 
   const checkins = (checkinsRes.data ?? []) as Pick<CheckinRow, "checkin_date" | "day_number" | "questions" | "answers" | "analysis">[];
-  if (checkins.length > 0) {
+  if (checkins.length > 0 && opts.abstract) {
+    // Patterns and mood only: what to train, not what happened.
+    const pats = [...new Set(checkins.flatMap((c) => c.analysis?.patterns ?? []))].slice(0, 4);
+    const moods = checkins.map((c) => c.analysis?.emotional_state).filter(Boolean).slice(0, 2);
+    lines.push(`\n## Recent behaviour (abstracted from check-ins)`);
+    if (pats.length) lines.push(`Patterns: ${pats.join("; ")}`);
+    if (moods.length) lines.push(`Recent mood: ${moods.join("; ")}`);
+    lines.push(
+      "The user's real situations are deliberately not shown. Train these behaviours in completely different places, people and stakes. Never mention their own job, studies, family members or past events.",
+    );
+  } else if (checkins.length > 0) {
     lines.push(`\n## Recent check-ins (newest first)`);
     for (const c of checkins) {
       const qa = (c.questions ?? [])
@@ -97,7 +117,7 @@ export async function buildAIContext(
   if (sessions.length > 0) {
     lines.push(`\n## Recent sessions`);
     for (const s of sessions) {
-      const notes = s.challenge_notes ? ` ${userData("challenge notes", clip(s.challenge_notes, 400))}` : "";
+      const notes = s.challenge_notes && !opts.abstract ? ` ${userData("challenge notes", clip(s.challenge_notes, 400))}` : "";
       lines.push(`- Day ${s.day_number}: ${DIMENSION_META[s.focus_skill as keyof typeof DIMENSION_META]?.label ?? s.focus_skill}; ${s.completed_at ? "completed" : "not completed"}; challenge ${s.challenge_status}.${notes}`);
     }
   }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Lightbulb, Mic, PenLine, Sparkles, Target, TrendingUp, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Lightbulb, Mic, Leaf, PenLine, Sparkles, Target, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
@@ -95,7 +95,7 @@ export default async function Dashboard() {
     { href: "/communication-lab", label: "Speak", icon: Mic, tone: "bg-coral-soft text-coral" },
     { href: "/coach", label: "Coach", icon: Sparkles, tone: "bg-accent-soft text-accent" },
     { href: "/journal", label: "Journal", icon: PenLine, tone: "bg-sun-soft text-warning" },
-    { href: "/progress", label: "Progress", icon: TrendingUp, tone: "bg-primary-soft text-primary" },
+    { href: "/calm", label: "Calm", icon: Leaf, tone: "bg-primary-soft text-primary" },
   ];
   const delta = Math.round((overall - baselineOverall) * 10) / 10;
 

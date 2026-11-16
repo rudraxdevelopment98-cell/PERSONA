@@ -24,7 +24,8 @@ export const POST = apiRoute(schema, async ({ session_id, progress, complete }, 
   const update: Record<string, unknown> = { story_progress: Math.max(session.story_progress, progress) };
   if (complete && !session.story_completed_at) {
     if (progress < 95) throw new HttpError(400, "Read to the end of the story first.");
-    const { data: story } = await db.from("generated_stories").select("word_count").eq("session_id", session_id).single();
+    const { data: story } = await db.from("generated_stories").select("word_count, choice, part2_at").eq("session_id", session_id).single();
+    if (story?.choice && !story.part2_at) throw new HttpError(400, "Make the choice in the story first - the ending depends on it.");
     const elapsed = Date.now() - Date.parse(session.created_at);
     if (elapsed < minReadingMs(story?.word_count ?? 1000)) {
       throw new HttpError(400, "Take your time with the story - it is the core of today's session.");

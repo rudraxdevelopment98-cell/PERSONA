@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, Check, Lock, Target } from "lucide-react";
 import { DeepFeedback } from "@/components/feedback";
 import { ListenButton, type AIVoice } from "@/components/listen-button";
+import { StoryChoice, type StoryChoiceData } from "./story-choice";
 import { RubricTable } from "@/components/rubric";
 import { Alert, Badge, Button, Card, CardHeader, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
 import type { ReflectionFeedback, ScenarioEvaluation } from "@/lib/ai/schemas";
@@ -37,7 +38,15 @@ type ClientSession = {
   completed: boolean;
 };
 
-type Story = { title: string; body: string; word_count: number; insights: { title: string; explanation: string }[] };
+type Story = {
+  title: string;
+  body: string;
+  word_count: number;
+  insights: { title: string; explanation: string }[];
+  choice?: StoryChoiceData | null;
+  chosen?: string | null;
+  choice_feedback?: string | null;
+};
 import { EpisodeTag, NextEpisode, Previously, type EpisodeInfo } from "./episode";
 import { CelebrationOverlay, type Celebration } from "./celebration";
 
@@ -155,6 +164,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
   }
 
   const minutes = Math.max(1, Math.round(story.word_count / 220));
+  const awaitingChoice = Boolean(story.choice && !story.chosen && !completed);
   const paragraphs = story.body
     .split(/\n\s*\n/)
     .map((p) => p.trim())
@@ -195,6 +205,16 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
             </p>
           ))}
         </div>
+        {awaitingChoice && <StoryChoice sessionId={sessionId} choice={story.choice!} />}
+        {story.chosen && story.choice && (
+          <div className="mt-6 max-w-[65ch] rounded-2xl border border-line bg-bg p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-primary">
+              Tumhari choice · {story.choice.options.find((o) => o.id === story.chosen)?.vibe ?? ""}
+            </p>
+            <p className="mt-1 font-semibold">{story.choice.options.find((o) => o.id === story.chosen)?.text}</p>
+            {story.choice_feedback && <p className="mt-2 text-sm leading-relaxed text-muted">{story.choice_feedback}</p>}
+          </div>
+        )}
       </article>
       {completed ? (
         <div className="border-t border-line px-5 py-5 sm:px-10">
@@ -211,7 +231,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
       ) : (
         <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10">
           {error ? <Alert tone="warning">{error}</Alert> : <span />}
-          <Button onClick={markRead} disabled={progress < 95 || busy}>
+          <Button onClick={markRead} disabled={progress < 95 || busy || awaitingChoice}>
             {busy && <Spinner />} I&apos;ve finished reading
           </Button>
         </div>

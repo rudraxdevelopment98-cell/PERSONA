@@ -6,6 +6,9 @@ import { decisionScenarioSchema } from "@/lib/ai/schemas";
 import { DECISION_CATEGORIES, DECISION_DIFFICULTIES } from "@/lib/domain/labs";
 import { apiRoute, dbError, enforceHourlyLimit, HttpError, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
+import { ARENAS, TWISTS } from "@/lib/domain/variety";
+
+const any = <T,>(a: readonly T[]) => a[Math.floor(Math.random() * a.length)];
 
 export const maxDuration = 300;
 
@@ -21,14 +24,16 @@ export const POST = apiRoute(schema, async ({ category, difficulty }, { db, user
 
   const { data: recent } = await db.from("decision_logs").select("scenario").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
   const used = (recent ?? []).map((r) => `- ${r.scenario?.title}`).join("\n");
-  const context = await buildAIContext(db, state, { checkins: 2, lean: true });
+  const context = await buildAIContext(db, state, { checkins: 2, lean: true, abstract: true });
+  const arena = any(ARENAS);
+  const twist = any(TWISTS);
   const cat = DECISION_CATEGORIES.find((c) => c.id === category)!.label;
   const diff = DECISION_DIFFICULTIES.find((d) => d.id === difficulty)!.label;
 
   const scenario = await generateStructured({
     language: state.profile.language,
     system: DECISION_SCENARIO_SYSTEM,
-    prompt: `${context}\n\n## Request\nCategory: ${cat}\nDifficulty: ${diff}\nAvoid these recent scenarios:\n${used || "None"}\nUse the user's data to choose which behaviour to train, but never reuse their literal situation, workplace or people.\n\nCreate the scenario.`,
+    prompt: `${context}\n\n## Request\nCategory: ${cat}\nDifficulty: ${diff}\nLife area: ${arena.detail}\nTwist: ${twist.label} - ${twist.detail}\nMake it vivid and a little dramatic: named people, one line of dialogue, real stakes.\nAvoid these recent scenarios:\n${used || "None"}\nUse the user's data to choose which behaviour to train, but never reuse their literal situation, workplace or people.\n\nCreate the scenario.`,
     schema: decisionScenarioSchema,
     effort: "low",
   });

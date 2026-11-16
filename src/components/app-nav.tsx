@@ -13,7 +13,7 @@ export type NavStats = { level: number; levelName: string; progress: number; toN
 /** The five places in the app. Everything else lives one tap inside one of them. */
 const TABS = [
   { href: "/dashboard", label: "Home", icon: Home, match: ["/dashboard", "/welcome"] },
-  { href: "/practice", label: "Practice", icon: Dumbbell, match: ["/practice", "/decision-lab", "/communication-lab", "/coach"] },
+  { href: "/practice", label: "Practice", icon: Dumbbell, match: ["/practice", "/decision-lab", "/communication-lab", "/coach", "/calm"] },
   { href: "/today", label: "Today", icon: Play, match: ["/today"], hero: true },
   { href: "/friends", label: "Friends", icon: Users, match: ["/friends", "/circles", "/races"] },
   { href: "/me", label: "Me", icon: null, match: ["/me", "/progress", "/achievements", "/journal", "/programme", "/assessment", "/settings"] },

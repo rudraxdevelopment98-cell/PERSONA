@@ -1,6 +1,6 @@
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
-import { Badge, Card, CardHeader, Delta, PageHeader, Stat, cx } from "@/components/ui";
+import { Card, CardHeader, Delta, PageHeader, Stat, cx } from "@/components/ui";
 import { DIMENSION_META, type Dimension } from "@/lib/domain/dimensions";
 import { PROGRAMME_LENGTH } from "@/lib/domain/programme";
 import { CONSISTENCY_MIN_DAYS, DEMONSTRATED_FULL_WEIGHT_AT, WEIGHTS, DISCIPLINE_CONSISTENCY_WEIGHT, historyByDay, overallScore, strengthsAndGrowthAreas } from "@/lib/domain/scoring";

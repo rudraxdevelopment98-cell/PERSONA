@@ -11,10 +11,24 @@ import { CHECKIN_LENSES, byId, checkinLens } from "@/lib/domain/variety";
 export const maxDuration = 300;
 
 function normalise(questions: CheckinQuestion[]): CheckinQuestion[] {
-  return questions.slice(0, 6).map((q, i) => ({
+  // The mood meter (scale) always opens the deck; it feeds the confidence score, so add one if missing.
+  const scale = questions.find((q) => q.type === "scale") ?? {
+    id: "q0",
+    text: "Aaj ka confidence meter kahan hai?",
+    type: "scale" as const,
+    dimension: "confidence" as const,
+    scale_low_label: "Bilkul low",
+    scale_high_label: "Full josh",
+    options: null,
+    style: "emoji" as const,
+    purpose: "Daily confidence rating",
+  };
+  const ordered = [scale, ...questions.filter((q) => q !== scale && q.type !== "scale")].slice(0, 6);
+  return ordered.map((q, i) => ({
     ...q,
     id: `q${i + 1}`,
-    options: q.type === "choice" ? (q.options ?? []).slice(0, 5) : null,
+    options: q.type === "choice" ? (q.options ?? []).slice(0, q.style === "this_or_that" ? 2 : 5) : null,
+    style: q.type === "scale" ? "emoji" : q.type === "text" || !q.style || q.style === "emoji" ? "normal" : q.style,
     scale_low_label: q.type === "scale" ? (q.scale_low_label ?? "Not at all") : null,
     scale_high_label: q.type === "scale" ? (q.scale_high_label ?? "Completely") : null,
   }));
@@ -34,7 +48,7 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
   if (existing) return { checkin: existing };
 
   const focus = todaysFocus(state);
-  const context = await buildAIContext(db, state, { checkins: 3 });
+  const context = await buildAIContext(db, state, { checkins: 3, abstract: true });
   const { data: recentRows } = await db
     .from("daily_checkins")
     .select("questions, lens")
@@ -56,11 +70,11 @@ ${asked.join("\n") || "None yet."}
 Write today's check-in questions.`;
 
   let questions: CheckinQuestion[] = [];
-  for (let attempt = 0; attempt < 2 && questions.length < 4; attempt++) {
+  for (let attempt = 0; attempt < 2 && questions.length < 3; attempt++) {
     const out = await generateStructured({ language: state.profile.language, system: CHECKIN_QUESTIONS_SYSTEM, prompt, schema: checkinQuestionsSchema, effort: "low" });
     questions = normalise(out.questions);
   }
-  if (questions.length < 4) throw new HttpError(502, "Could not prepare today's questions. Please try again.");
+  if (questions.length < 3) throw new HttpError(502, "Could not prepare today's questions. Please try again.");
 
   const { data, error } = await db
     .from("daily_checkins")

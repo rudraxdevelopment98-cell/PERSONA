@@ -116,6 +116,25 @@ export const REFLECTION_STYLES = [
   { id: "evidence", label: "Evidence check", detail: "questions that test a belief against real evidence from today" },
 ] as const satisfies readonly Pick[];
 
+/** Pressure twists that make Decision and Communication Lab moments feel alive. */
+export const TWISTS = [
+  { id: "clock", label: "Ticking clock", detail: "there are only minutes to respond" },
+  { id: "audience", label: "Audience", detail: "other people are watching how you handle it" },
+  { id: "admired", label: "Someone you admire", detail: "the other person is someone you really respect" },
+  { id: "secret", label: "A secret", detail: "you know something the others don't" },
+  { id: "money", label: "Money on the line", detail: "real money is at stake" },
+  { id: "friendship", label: "Friendship at risk", detail: "a friendship could crack either way" },
+  { id: "unfair", label: "It's unfair", detail: "something unfair just happened to you or someone else" },
+  { id: "first_time", label: "First time", detail: "you've never been in this situation before" },
+  { id: "plot_twist", label: "Plot twist", detail: "new information arrives halfway and flips the situation" },
+  { id: "power", label: "Power gap", detail: "the other person has much more power than you" },
+  { id: "funny", label: "Awkward-funny", detail: "the situation is a little absurd and funny, but still matters" },
+  { id: "public", label: "Goes public", detail: "whatever you do could end up in a group chat or online" },
+] as const satisfies readonly Pick[];
+
+/** Day 4 of every season is a Mirror day: content may reflect the user's real situation directly. */
+export const isMirrorDay = (day: number) => seasonFor(day).position === 4;
+
 /** 7-day seasons; day 90 closes the last one. */
 export function seasonFor(day: number) {
   const d = Math.max(1, Math.min(90, Math.round(day)));

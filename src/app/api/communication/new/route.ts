@@ -1,5 +1,5 @@
 import { assertWithinLimit } from "@/lib/server/plan";
-import { ARENAS } from "@/lib/domain/variety";
+import { ARENAS, TWISTS } from "@/lib/domain/variety";
 import { z } from "zod";
 import { generateStructured } from "@/lib/ai/client";
 import { COMMUNICATION_PROMPT_SYSTEM } from "@/lib/ai/prompts";
@@ -27,13 +27,14 @@ export const POST = apiRoute(schema, async ({ exercise_type }, { db, user, state
     .eq("exercise_type", exercise_type)
     .order("created_at", { ascending: false })
     .limit(8);
-  const context = await buildAIContext(db, state, { checkins: 2, lean: true });
+  const context = await buildAIContext(db, state, { checkins: 2, lean: true, abstract: true });
+  const twist = TWISTS[Math.floor(Math.random() * TWISTS.length)];
 
   const arena = pickArena();
   const prompt = await generateStructured({
     language: state.profile.language,
     system: COMMUNICATION_PROMPT_SYSTEM,
-    prompt: `${context}\n\n## Exercise type\n${ex.label}: ${ex.description}\nAvoid repeating these recent situations:\n${(recent ?? []).map((r) => `- ${r.prompt?.title}`).join("\n") || "None"}\nSet it in this life area: ${arena.detail}. Use the user's data to choose which behaviour to train, but never reuse their literal situation, workplace or people.\n\nCreate the exercise.`,
+    prompt: `${context}\n\n## Exercise type\n${ex.label}: ${ex.description}\nAvoid repeating these recent situations:\n${(recent ?? []).map((r) => `- ${r.prompt?.title}`).join("\n") || "None"}\nSet it in this life area: ${arena.detail}. Twist: ${twist.label} - ${twist.detail}. Give the other person a name and a real personality. Use the user's data to choose which behaviour to train, but never reuse their literal situation, workplace or people.\n\nCreate the exercise.`,
     schema: communicationPromptSchema,
     effort: "low",
   });

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, GitBranch, Mic, MessagesSquare, Sparkles } from "lucide-react";
+import { ChevronRight, GitBranch, Leaf, Mic, MessagesSquare, Sparkles } from "lucide-react";
 import { Card, IconTile, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Practice" };
@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/decision-lab", title: "Decision Lab", text: "Make tough calls", icon: GitBranch, tone: "sky" as const },
   { href: "/communication-lab", title: "Communication Lab", text: "Say it out loud", icon: MessagesSquare, tone: "coral" as const, extra: "Voice" },
   { href: "/coach", title: "AI Coach", text: "Talk it through", icon: Sparkles, tone: "accent" as const },
+  { href: "/calm", title: "Calm Corner", text: "Breathe, vent, relax · 2 min", icon: Leaf, tone: "sun" as const },
 ];
 
 export default function PracticePage() {

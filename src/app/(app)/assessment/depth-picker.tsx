@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, Gauge, Layers, ListChecks, Zap } from "lucide-react";
-import { Alert, Button, Card, Spinner, cx } from "@/components/ui";
+import { Alert, Button, Spinner, cx } from "@/components/ui";
 import { DEPTHS, DEPTH_INFO, type AssessmentDepth } from "@/lib/domain/assessment";
 import { depthCopy } from "@/lib/domain/assessment-depth-i18n";
 import { postJSON } from "@/lib/client/api";

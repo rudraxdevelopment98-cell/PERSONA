@@ -116,7 +116,7 @@ export default async function TodayPage() {
             reflection_feedback: session.reflection_feedback,
             completed: Boolean(session.completed_at),
           }}
-          story={story ? { title: story.title, body: story.body, word_count: story.word_count, insights: story.insights } : null}
+          story={story ? { title: story.title, body: story.body, word_count: story.word_count, insights: story.insights, choice: story.choice ?? null, chosen: story.chosen ?? null, choice_feedback: story.choice_feedback ?? null } : null}
           scenarios={scenarios}
           episode={episode}
           aiVoice={aiVoice}

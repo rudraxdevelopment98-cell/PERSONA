@@ -86,6 +86,9 @@ export type StoryRow = {
   word_count: number;
   insights: { title: string; explanation: string }[];
   target_skills: string[];
+  choice?: { question: string; options: { id: string; text: string; vibe?: string }[] } | null;
+  chosen?: string | null;
+  choice_feedback?: string | null;
   created_at: string;
 };
 

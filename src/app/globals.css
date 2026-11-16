@@ -113,6 +113,28 @@
   color: var(--color-accent);
 }
 
+/* Vent & Burn: letters rise and burn away from the bottom up. */
+.burn-text span { display: inline-block; white-space: pre; animation: burn 1s ease-in forwards; }
+@keyframes burn {
+  0% { color: inherit; transform: translateY(0); opacity: 1; }
+  40% { color: #ffb347; text-shadow: 0 0 8px #ff6a00; }
+  100% { color: #ff3d00; transform: translateY(-28px) scale(0.6); opacity: 0; }
+}
+.burn-fire {
+  background: radial-gradient(ellipse at 50% 120%, rgba(255, 120, 0, 0.85), rgba(255, 60, 0, 0.35) 45%, transparent 70%);
+  animation: fire 2.6s ease-out forwards;
+}
+@keyframes fire {
+  0% { transform: translateY(100%); }
+  40% { transform: translateY(10%); }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+@keyframes fuse {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
 @keyframes page {
   0% { transform: translateY(8px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }

@@ -33,6 +33,8 @@ export const checkinQuestionSchema = z.object({
   scale_low_label: z.string().nullable(),
   scale_high_label: z.string().nullable(),
   options: z.array(z.string()).nullable(),
+  /** How the card is presented; older check-ins have none. */
+  style: z.enum(["normal", "emoji", "this_or_that", "would_you_rather", "quick_fire"]).nullable().optional(),
   purpose: z.string(),
 });
 export type CheckinQuestion = z.infer<typeof checkinQuestionSchema>;
@@ -96,12 +98,24 @@ export type DailySessionContent = z.infer<typeof dailySessionSchema>;
 
 export const storyPartSchema = z.object({ text: z.string() });
 
+/** First half of an interactive episode: ends at a decision the reader makes. */
+export const storyPart1Schema = z.object({
+  text: z.string(),
+  choice_point: z.object({
+    question: z.string(),
+    options: z.array(z.object({ id: z.string(), text: z.string(), vibe: z.string() })),
+  }),
+});
+export type StoryChoice = z.infer<typeof storyPart1Schema>["choice_point"];
+
 export const storySchema = z.object({
   title: z.string(),
   body: z.string(),
   insights: z.array(z.object({ title: z.string(), explanation: z.string() })),
   episode_summary: z.string(),
   next_episode_teaser: z.string(),
+  /** How the reader's choice played out and what it says about the skill (interactive episodes). */
+  choice_reflection: z.string(),
 });
 export type StoryContent = z.infer<typeof storySchema>;
 

@@ -129,6 +129,13 @@ export class Query<T = Row[]> implements PromiseLike<DbResult<T>> {
     return this;
   }
 
+  is(col: string, value: null) {
+    if (value !== null) throw new Error("Only is(col, null) is supported");
+    const c = ident(col);
+    this.filters.push({ sql: () => `${c} is null` });
+    return this;
+  }
+
   not(col: string, operator: "is", value: null) {
     if (operator !== "is" || value !== null) throw new Error("Only not(col, 'is', null) is supported");
     const c = ident(col);

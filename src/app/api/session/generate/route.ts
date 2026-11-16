@@ -1,18 +1,17 @@
 import { z } from "zod";
 import { AIError, generateStructured } from "@/lib/ai/client";
-import { SESSION_SYSTEM, STORY_EXPANSION_SYSTEM, STORY_PART1_SYSTEM, STORY_PART2_SYSTEM } from "@/lib/ai/prompts";
-import { dailySessionSchema, storyExpansionSchema, storyPartSchema, storySchema } from "@/lib/ai/schemas";
+import { SESSION_SYSTEM, STORY_EXPANSION_SYSTEM, STORY_PART1_SYSTEM } from "@/lib/ai/prompts";
+import { dailySessionSchema, storyExpansionSchema, storyPart1Schema } from "@/lib/ai/schemas";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { apiRoute, dbError, HttpError, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
 import { todaysFocus } from "@/lib/server/state";
 import { planDay, recipeText } from "@/lib/server/variety";
-import { getPlan } from "@/lib/server/plan";
-import { SCENARIO_FORMATS, byId } from "@/lib/domain/variety";
+import { countWords, storySize, writeSecondHalf } from "@/lib/server/story";
+import { SCENARIO_FORMATS, byId, isMirrorDay } from "@/lib/domain/variety";
 
 export const maxDuration = 300;
 
-const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
 /** Generates today's personalised 30-minute session (once per programme day). */
 export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) => {
@@ -39,10 +38,10 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
 
   const focus = todaysFocus(state);
   // Free users (on the app's AI) get a ~1,000-word episode; Pro and own-key users ~1,500.
-  const short = !(await getPlan(user.id)).unlimitedAI;
-  const words = short ? { range: "450-550", min: "450" } : { range: "650-800", min: "650" };
-  const sized = (sys: string) => sys.replaceAll("650-800 words (never fewer than 650)", `${words.range} words (never fewer than ${words.min})`);
-  const context = await buildAIContext(db, state, { checkins: 3 });
+  const { short, words, sized } = await storySize(user.id);
+  // Most days train the skill in fresh situations; one Mirror day a week speaks to the user's own life.
+  const mirror = isMirrorDay(state.day);
+  const context = await buildAIContext(db, state, { checkins: 3, abstract: !mirror });
   const plan = await planDay(db, user.id, state.day, state.profile.next_world ?? null);
   const v = plan.variety;
   const used = (pastStories ?? []).map((s) => `- "${s.title}": ${s.body.slice(0, 120).replace(/\s+/g, " ")}…`).join("\n");
@@ -52,6 +51,7 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
 Day ${focus.day} of 90, Phase ${focus.phase.number} (${focus.phase.name}).
 Focus: ${focus.title} - train ${DIMENSION_META[focus.dimension].label} (${focus.dimension}).${focus.personalised ? " This is a personalised day targeting one of the user's weakest areas." : ""}
 Set every scenario's "skill" to "${focus.dimension}" unless a scenario clearly trains a different dimension.
+${mirror ? "MIRROR DAY: exactly one of the three scenarios (the last) may mirror the user's real situation from their own words, so they can rehearse it. Everything else stays in fresh places and people." : "FRESH DAY: nothing today may resemble the user's own job, studies, family or past events."}
 
 ${recipeText(v, plan.previously)}
 
@@ -85,44 +85,44 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
   const part1 = await generateStructured({
     language: state.profile.language,
     system: sized(STORY_PART1_SYSTEM),
-    prompt: `${context}\n\n${briefText}\n\nWrite the first half now (${words.range} words).`,
-    schema: storyPartSchema,
+    prompt: `${context}\n\n${briefText}\n\nWrite the first half now (${words.range} words), ending at the decision, plus the choice point.`,
+    schema: storyPart1Schema,
     effort: "medium",
     maxTokens: 24000,
   });
-  const part2 = await generateStructured({
-    language: state.profile.language,
-    system: sized(STORY_PART2_SYSTEM),
-    prompt: `${briefText}\n\n## First half (already written)\n${part1.text}\n\nWrite the second half now (${words.range} words), plus the title and 3 insights.`,
-    schema: storySchema,
-    effort: "medium",
-    maxTokens: 24000,
-  });
-  const story = { title: part2.title || brief.title, body: `${part1.text.trim()}\n\n${part2.body.trim()}`, insights: part2.insights };
-  const variety = {
-    ...v,
-    cast,
-    arc,
-    episode_title: story.title,
-    episode_summary: part2.episode_summary,
-    teaser: v.finale ? "" : part2.next_episode_teaser,
-  };
+  // Interactive episode: the reader decides at the turning point and the second half
+  // is written from their choice. If the model gave no usable choice, write it straight through.
+  const choiceOptions = (part1.choice_point?.options ?? [])
+    .filter((o) => o.text?.trim())
+    .slice(0, 3)
+    .map((o, i) => ({ id: ["a", "b", "c"][i], text: o.text.trim(), vibe: (o.vibe ?? "").trim() }));
+  const interactive = choiceOptions.length >= 2 && Boolean(part1.choice_point.question?.trim());
+  let story: { title: string; body: string; insights: { title: string; explanation: string }[] };
+  let variety: Record<string, unknown>;
+  if (interactive) {
+    story = { title: brief.title, body: part1.text.trim(), insights: [] };
+    variety = { ...v, cast, arc, episode_title: brief.title, episode_summary: "", teaser: "" };
+  } else {
+    const part2 = await writeSecondHalf({ userId: user.id, language: state.profile.language, briefText, firstHalf: part1.text });
+    story = { title: part2.title || brief.title, body: `${part1.text.trim()}\n\n${part2.body.trim()}`, insights: part2.insights };
+    variety = { ...v, cast, arc, episode_title: story.title, episode_summary: part2.episode_summary, teaser: v.finale ? "" : part2.next_episode_teaser };
 
-  // Some models still write short; expand once if it is well under target.
-  if (countWords(story.body) < (short ? 700 : 1000)) {
-    try {
-      const expanded = await generateStructured({
-        language: state.profile.language,
-        system: short ? STORY_EXPANSION_SYSTEM.replace("1,100-1,400", "800-1,000") : STORY_EXPANSION_SYSTEM,
-        prompt: `Title: ${story.title}\nFocus skill: ${DIMENSION_META[focus.dimension].label}\n\n${story.body}`,
-        schema: storyExpansionSchema,
-        effort: "low",
-        maxTokens: 32000,
-      });
-      if (countWords(expanded.body) > countWords(story.body)) story.body = expanded.body;
-    } catch (err) {
-      if (!(err instanceof AIError)) throw err;
-      console.warn("[ai] Story expansion failed; keeping the original story.");
+    // Some models still write short; expand once if it is well under target.
+    if (countWords(story.body) < (short ? 700 : 1000)) {
+      try {
+        const expanded = await generateStructured({
+          language: state.profile.language,
+          system: short ? STORY_EXPANSION_SYSTEM.replace("1,100-1,400", "800-1,000") : STORY_EXPANSION_SYSTEM,
+          prompt: `Title: ${story.title}\nFocus skill: ${DIMENSION_META[focus.dimension].label}\n\n${story.body}`,
+          schema: storyExpansionSchema,
+          effort: "low",
+          maxTokens: 32000,
+        });
+        if (countWords(expanded.body) > countWords(story.body)) story.body = expanded.body;
+      } catch (err) {
+        if (!(err instanceof AIError)) throw err;
+        console.warn("[ai] Story expansion failed; keeping the original story.");
+      }
     }
   }
 
@@ -164,6 +164,9 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
     word_count: countWords(story.body),
     insights: story.insights.slice(0, 3),
     target_skills: [focus.dimension],
+    brief: briefText,
+    choice: interactive ? { question: part1.choice_point.question.trim(), options: choiceOptions } : null,
+    part2_at: interactive ? null : new Date().toISOString(),
   });
   dbError(saved.error);
   // A chosen world applies to one new season only.

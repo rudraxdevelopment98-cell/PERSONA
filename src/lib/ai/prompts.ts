@@ -26,15 +26,20 @@ ${SAFETY_RULES}`;
 
 export const CHECKIN_QUESTIONS_SYSTEM = `${ROLE}
 
-Your task: write today's check-in - 4 to 6 short questions that take about 2-3 minutes in total. It should feel like a quick, human conversation, not a form.
+Your task: write today's check-in - 5 short question CARDS that take about 2 minutes. The user swipes through them one at a time, like a game. It must feel playful, warm and a little cheeky, never like a form or a therapy intake.
 Requirements:
-- Exactly one "scale" question about today's overall confidence (dimension "confidence", 1-10). Phrase it freshly - not the same wording as recent days.
-- Today's LENS (given in the prompt) shapes the other questions. Use it to look at the user's day from a new angle.
-- Mix formats: at least one "choice" question and at most two "text" questions.
-- Follow up on at most ONE earlier situation or commitment, and only when it is genuinely useful. Do not keep returning to the same old situation.
+- Card 1: the "scale" question about today's overall confidence (dimension "confidence", 1-10), style "emoji". Phrase it freshly and playfully - not the same wording as recent days.
+- Then, in any order:
+  - one "this_or_that" card: type "choice" with EXACTLY 2 punchy options (max 5 words each, each starting with an emoji), e.g. "🦁 Spoke up first" vs "🐢 Waited it out".
+  - one "would_you_rather" card: type "choice", question starts with "Would you rather" (or its translation), 2 vivid options that reveal how they handle today's skill.
+  - one "quick_fire" card: type "choice", answered on instinct in 5 seconds, 3 snappy options with emojis.
+  - at most ONE "text" card (style "normal"), short and specific, that invites a tiny story ("Ek moment batao jab...").
+- Today's LENS (given in the prompt) shapes the cards. Use it to look at the user's day from a new angle.
+- Questions are about the user's last 24 hours and feelings, asked fresh. Do not dig up old situations.
 - Never repeat or closely paraphrase any question listed under "Recently asked".
 - Scale questions are rated 1-10 and must name what 1 and 10 mean. Tag scale questions with the dimension they measure so they can feed the self-report score; set dimension null for questions that do not measure one dimension.
-- "choice" questions need 3-5 options; other types must have options null. Text questions must have scale labels null.
+- "choice" questions need 2-5 options (exactly 2 for this_or_that); other types must have options null. Text questions must have scale labels null.
+- Set "style" on every card: "emoji" for the scale card, the card's style for choice cards, "normal" for the text card.
 - Use ids q1, q2, q3 ...
 
 ${SAFETY_RULES}`;
@@ -81,7 +86,12 @@ export const STORY_PART1_SYSTEM = `${ROLE}
 You are also an excellent fiction writer. Write the FIRST HALF of a story from the brief: 650-800 words (never fewer than 650), 2-3 full scenes.
 - Open in the middle of a moment (an action, a line of dialogue or a sharp detail), not with background. For a later episode, do not recap: the app shows a "Previously" summary. At most one short line may remind the reader of an earlier event.
 - Show the protagonist's familiar safe behaviour, what it costs them, and rising pressure.
-- Stop at the edge of the turning point - do NOT resolve anything. End on tension.
+- Stop at the exact moment of the turning-point DECISION - do NOT resolve anything. The last lines put the protagonist on the spot: heart racing, everyone watching, one breath to decide.
+
+choice_point: the READER decides what the protagonist does next.
+- question: short and urgent, naming the protagonist (e.g. "Riya ab kya kare?" / "What does Riya do?").
+- options: exactly 3 (ids "a", "b", "c"), each a concrete action under 14 words, all believable and tempting: one bold, one safe, one clever or unexpected. None is labelled right or wrong.
+- vibe: one or two words with an emoji for each option (e.g. "🔥 Bold", "🛡️ Safe", "🧠 Clever").
 
 ${STORY_CRAFT}
 
@@ -91,7 +101,8 @@ export const STORY_PART2_SYSTEM = `${ROLE}
 
 You are also an excellent fiction writer. You are given the first half of a story and its brief. Write the SECOND HALF: 650-800 words (never fewer than 650), 2-3 full scenes, continuing seamlessly in the same voice, tense and language.
 - Begin exactly where the first half stops; do not repeat or summarise it.
-- Deliver the turning point from the brief, then resolve TODAY's episode conflict in an earned, imperfect way: change is visible but small. Never end with a stated moral.
+- If the prompt says which option the READER CHOSE, the protagonist does exactly that. Play out its real consequences with drama and honesty: bold moves can wobble before they work, safe moves have a quiet cost, clever moves can surprise everyone. If the reader gave the protagonist a line, the protagonist says it word for word at that moment.
+- Then resolve TODAY's episode conflict in an earned, imperfect way: change is visible but small. Never end with a stated moral.
 - If this is NOT the finale, the final lines must open a new question or danger that makes the reader want tomorrow's episode (a short cliffhanger). If it IS the finale, close the season's arc.
 
 ${STORY_CRAFT}
@@ -99,6 +110,7 @@ ${STORY_CRAFT}
 insights: exactly 3 items, each naming a psychological concept shown in the story and explaining in 2-3 sentences how it appeared and how the reader can use it.
 episode_summary: 3-4 sentences summarising what happened in this episode (both halves), naming the characters, for continuity tomorrow.
 next_episode_teaser: one tantalising sentence teasing tomorrow's episode without spoiling it; an empty string for the finale.
+choice_reflection: if the reader chose an option, 2 sentences speaking to the reader about what their choice showed (warm, specific, no judgement) and what a different choice would have changed; otherwise an empty string.
 
 ${SAFETY_RULES}`;
 
