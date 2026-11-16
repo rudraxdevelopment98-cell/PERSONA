@@ -426,6 +426,17 @@ export async function aiTiers(): Promise<{ free: string; pro: string; light: str
   return { free: id(r?.value.free), pro: id(r?.value.pro), light: id(r?.value.light), lightForPro: Boolean(r?.value.lightForPro) };
 }
 
+export async function saveVoice(actor: string, model: string, proPerMonth: number, freePerMonth: number) {
+  await requireAdmin(actor);
+  const { VOICE_CHOICES } = await import("@/lib/domain/voice");
+  const choice = VOICE_CHOICES.find((v) => v.id === model);
+  if (!choice) throw new AdminError("Unknown voice model.");
+  if (!Number.isFinite(proPerMonth) || !Number.isFinite(freePerMonth)) throw new AdminError("Enter numbers for the monthly limits.");
+  const { saveVoiceConfig } = await import("./voice");
+  const saved = await saveVoiceConfig({ model: choice.id, proPerMonth, freePerMonth });
+  await audit(actor, "ai.voice", { label: `${saved.model} pro=${saved.proPerMonth}/mo free=${saved.freePerMonth}/mo` });
+}
+
 export async function saveAiTiers(actor: string, free: string, pro: string, light = "default", lightForPro = false) {
   await requireAdmin(actor);
   const { TIER_CHOICES } = await import("@/lib/domain/ai-pricing");

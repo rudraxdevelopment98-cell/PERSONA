@@ -125,6 +125,11 @@ export async function saveAiTiersAction(free: string, pro: string, light = "defa
   return run((u) => admin.saveAiTiers(u, free.slice(0, 80), pro.slice(0, 80), light.slice(0, 80), Boolean(lightForPro)));
 }
 
+export async function saveVoiceAction(model: string, proPerMonth: number, freePerMonth: number) {
+  if (typeof model !== "string") return { error: "Pick a voice model." };
+  return run((u) => admin.saveVoice(u, model.slice(0, 80), Number(proPerMonth), Number(freePerMonth)));
+}
+
 export async function testModelAction(choiceId: string) {
   const { user } = await requireUser();
   try {

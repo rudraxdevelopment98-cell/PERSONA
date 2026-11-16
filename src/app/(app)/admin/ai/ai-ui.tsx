@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FlaskConical } from "lucide-react";
 import { Alert, Button, Card, CardHeader, Input, Label, Select } from "@/components/ui";
-import { saveAiTiersAction, testModelAction } from "../actions";
+import { saveAiTiersAction, saveVoiceAction, testModelAction } from "../actions";
 
 type Choice = { id: string; label: string; perSession: number | null };
 const money = (n: number) => (Math.abs(n) >= 100 ? `$${Math.round(n).toLocaleString()}` : `$${n.toFixed(2)}`);
@@ -128,6 +128,66 @@ export function Calculator({ defaults }: { defaults: { users: number; perSession
             <span>{money(r.profit)}</span>
           </p>
         </div>
+      </div>
+    </Card>
+  );
+}
+
+type VoiceOption = { id: string; label: string; perStory: number };
+
+/** AI narrator for stories: model, monthly allowance per plan, and what it can cost. */
+export function VoiceForm({ choices, current, proPrice }: { choices: VoiceOption[]; current: { model: string; proPerMonth: number; freePerMonth: number }; proPrice: number }) {
+  const router = useRouter();
+  const [model, setModel] = useState(current.model);
+  const [pro, setPro] = useState(String(current.proPerMonth));
+  const [free, setFree] = useState(String(current.freePerMonth));
+  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  const per = choices.find((c) => c.id === model)?.perStory ?? 0;
+  const worstPro = per * (Number(pro) || 0);
+  const share = proPrice > 0 ? worstPro / proPrice : 0;
+  return (
+    <Card>
+      <CardHeader title="Story voice (AI narrator)" description="Free users always have the device voice. Audio is cached on the listener's phone, so replays cost nothing." />
+      <div className="grid gap-4 px-5 pb-5 md:grid-cols-3">
+        <div className="space-y-2 md:col-span-3">
+          <Label htmlFor="voice-model">Model</Label>
+          <Select id="voice-model" value={model} onChange={(e) => setModel(e.target.value)}>
+            {choices.map((c) => (
+              <option key={c.id} value={c.id}>{`${c.label}${c.perStory ? ` · ~$${c.perStory.toFixed(2)}/story` : ""}`}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="voice-pro">Pro · stories per month</Label>
+          <Input id="voice-pro" type="number" min={0} max={200} value={pro} onChange={(e) => setPro(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="voice-free">Free · stories per month</Label>
+          <Input id="voice-free" type="number" min={0} max={30} value={free} onChange={(e) => setFree(e.target.value)} />
+        </div>
+        <div className={`rounded-2xl p-3 text-sm ${share > 0.35 ? "bg-danger-soft text-danger" : "bg-bg"}`}>
+          <p className="text-xs text-muted">Worst case per Pro user</p>
+          <p className="font-bold">
+            {money(worstPro)}/month{proPrice > 0 && ` · ${Math.round(share * 100)}% of the Pro price`}
+          </p>
+        </div>
+        <div className="md:col-span-3 flex flex-wrap items-center gap-3">
+          <Button
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                const r = await saveVoiceAction(model, Number(pro), Number(free));
+                setMsg(r.error ? { tone: "danger", text: r.error } : { tone: "success", text: "Saved." });
+                router.refresh();
+              })
+            }
+          >
+            Save voice
+          </Button>
+          <span className="text-xs text-muted">Billed to your Vercel account through AI Gateway.</span>
+        </div>
+        {msg && <div className="md:col-span-3"><Alert tone={msg.tone}>{msg.text}</Alert></div>}
       </div>
     </Card>
   );

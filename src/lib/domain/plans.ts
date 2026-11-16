@@ -23,6 +23,7 @@ export const FEATURES: { label: string; free: string | boolean; pro: string | bo
   { label: "AI Coach messages", free: `${FREE_LIMITS.coachPerDay} per day`, pro: "Unlimited" },
   { label: "Circles you can start", free: String(FREE_LIMITS.circlesOwned), pro: "Up to 5" },
   { label: "Races you can start at once", free: String(FREE_LIMITS.activeRacesCreated), pro: "Unlimited" },
+  { label: "Listen to your story", free: "Device voice", pro: "Natural AI narrator" },
   { label: "Pick the world for your next story season any time", free: "At each finale", pro: "Any time" },
   { label: "Pro badge on your profile", free: false, pro: true },
 ];

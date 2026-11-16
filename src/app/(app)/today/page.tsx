@@ -7,6 +7,8 @@ import { CheckinFlow } from "./checkin";
 import { SessionFlow, type ClientScenario } from "./session";
 import type { EpisodeInfo } from "./episode";
 import { pickSponsor } from "@/lib/server/sponsors";
+import { voiceAllowance } from "@/lib/server/voice";
+import { canUseAIVoice } from "@/lib/domain/voice";
 import { SponsorCard } from "@/components/sponsor-card";
 import { GENRES, WORLDS, byId } from "@/lib/domain/variety";
 
@@ -82,6 +84,11 @@ export default async function TodayPage() {
     };
   }
 
+  const allowance = session && !session.story_completed_at ? await voiceAllowance(user.id, session.id).catch(() => null) : null;
+  const aiVoice =
+    allowance && allowance.enabled
+      ? { sessionId: session!.id, allowed: canUseAIVoice(allowance), pro: allowance.plan === "pro", remaining: Math.max(0, allowance.limit - allowance.used) }
+      : null;
   const sponsor = session?.completed_at ? await pickSponsor(user.id, "after_session", { language: state.profile.language, skill: focus.dimension, day: state.today }) : null;
 
   return (
@@ -112,6 +119,7 @@ export default async function TodayPage() {
           story={story ? { title: story.title, body: story.body, word_count: story.word_count, insights: story.insights } : null}
           scenarios={scenarios}
           episode={episode}
+          aiVoice={aiVoice}
         />
       )}
       {sponsor && <div className="mt-8"><SponsorCard s={sponsor} /></div>}

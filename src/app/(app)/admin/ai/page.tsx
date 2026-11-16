@@ -3,7 +3,9 @@ import { DISPLAY_PRICES } from "@/lib/domain/plans";
 import { SESSION_TOKENS_ESTIMATE, TIER_CHOICES, costUSD } from "@/lib/domain/ai-pricing";
 import { aiCosts, aiTiers, stats } from "@/lib/server/admin";
 import { revenueStats } from "@/lib/server/payments";
-import { Calculator, TierForm } from "./ai-ui";
+import { Calculator, TierForm, VoiceForm } from "./ai-ui";
+import { getVoiceConfig } from "@/lib/server/voice";
+import { STORY_CHARS_ESTIMATE, VOICE_CHOICES } from "@/lib/domain/voice";
 
 export const metadata = { title: "AI & costs · Admin" };
 
@@ -43,7 +45,7 @@ function Table({ title, rows, cols }: { title: string; rows: Record<string, stri
 }
 
 export default async function AdminAI() {
-  const [tiers, c, rev, s] = await Promise.all([aiTiers(), aiCosts(), revenueStats(), stats()]);
+  const [tiers, c, rev, s, voice] = await Promise.all([aiTiers(), aiCosts(), revenueStats(), stats(), getVoiceConfig()]);
   const paid = rev.paid ?? { month: 0, year: 0 };
   const mrr = paid.month * DISPLAY_PRICES.month + (paid.year * DISPLAY_PRICES.year) / 12;
   const measuredSession = c.perSession.sessions > 0 ? c.perSession.cost / c.perSession.sessions : null;
@@ -63,6 +65,11 @@ export default async function AdminAI() {
           </div>
         )}
         <TierForm choices={choices} current={tiers} />
+        <VoiceForm
+          choices={VOICE_CHOICES.map((v) => ({ id: v.id, label: v.label, perStory: v.perChar * STORY_CHARS_ESTIMATE }))}
+          current={voice}
+          proPrice={DISPLAY_PRICES.month}
+        />
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Card className="p-4">

@@ -192,6 +192,12 @@ async function anthropicClient(p: Provider): Promise<Anthropic> {
     directClient ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2 });
     return directClient;
   }
+  // OIDC tokens are short-lived, so build a client per request.
+  return new Anthropic({ apiKey: await gatewayToken(), baseURL: GATEWAY_URL, maxRetries: 2 });
+}
+
+/** Credentials for Vercel AI Gateway: an API key if set, else the deployment's OIDC token. */
+export async function gatewayToken(): Promise<string> {
   let token = process.env.AI_GATEWAY_API_KEY;
   if (!token) {
     try {
@@ -204,9 +210,10 @@ async function anthropicClient(p: Provider): Promise<Anthropic> {
   if (!token) {
     throw new AIError("The AI service is not configured. Set GEMINI_API_KEY, or deploy on Vercel to use AI Gateway.", "not_configured");
   }
-  // OIDC tokens are short-lived, so build a client per request.
-  return new Anthropic({ apiKey: token, baseURL: GATEWAY_URL, maxRetries: 2 });
+  return token;
 }
+
+export const gatewayUrl = () => GATEWAY_URL;
 
 type StreamParams = Parameters<Anthropic["messages"]["stream"]>[0];
 

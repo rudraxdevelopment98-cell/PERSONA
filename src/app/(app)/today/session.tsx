@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, Check, Lock, Target } from "lucide-react";
 import { DeepFeedback } from "@/components/feedback";
-import { ListenButton } from "@/components/listen-button";
+import { ListenButton, type AIVoice } from "@/components/listen-button";
 import { RubricTable } from "@/components/rubric";
 import { Alert, Badge, Button, Card, CardHeader, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
 import type { ReflectionFeedback, ScenarioEvaluation } from "@/lib/ai/schemas";
@@ -106,7 +106,7 @@ const RUBRIC_LABELS: Record<string, string> = {
   practicality: "Practicality",
 };
 
-function StoryReader({ sessionId, story, initialProgress, completed, onComplete, episode }: { sessionId: string; story: Story; initialProgress: number; completed: boolean; onComplete: () => void; episode: EpisodeInfo | null }) {
+function StoryReader({ sessionId, story, initialProgress, completed, onComplete, episode, aiVoice }: { sessionId: string; story: Story; initialProgress: number; completed: boolean; onComplete: () => void; episode: EpisodeInfo | null; aiVoice: AIVoice | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(completed ? 100 : initialProgress);
   const sent = useRef(initialProgress);
@@ -176,7 +176,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
         <BookOpen className="size-4 shrink-0 text-muted" strokeWidth={1.75} />
         <ProgressBar value={progress} />
         <span className="shrink-0 text-xs tabular-nums text-muted">{progress}%</span>
-        <ListenButton paragraphs={[story.title, ...paragraphs]} onParagraph={(i) => onParagraph(i === null || i === 0 ? null : i - 1)} onEnd={onListenEnd} />
+        <ListenButton paragraphs={[story.title, ...paragraphs]} onParagraph={(i) => onParagraph(i === null || i === 0 ? null : i - 1)} onEnd={onListenEnd} ai={aiVoice} />
       </div>
       <article className="px-5 py-8 sm:px-10">
         {episode && (
@@ -473,11 +473,13 @@ export function SessionFlow({
   story,
   scenarios: initialScenarios,
   episode = null,
+  aiVoice = null,
 }: {
   session: ClientSession;
   story: Story | null;
   scenarios: ClientScenario[];
   episode?: EpisodeInfo | null;
+  aiVoice?: AIVoice | null;
 }) {
   const router = useRouter();
   const [session, setSession] = useState(initial);
@@ -525,6 +527,7 @@ export function SessionFlow({
           {episode && <Previously info={episode} />}
           <StoryReader
             episode={episode}
+            aiVoice={aiVoice}
             sessionId={session.id}
             story={story}
             initialProgress={session.story_progress}
