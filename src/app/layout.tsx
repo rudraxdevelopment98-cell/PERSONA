@@ -14,15 +14,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#26364A",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f6f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0b0f" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
+const THEME_SCRIPT = `try{var t=localStorage.getItem("p90-theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB" className={jakarta.variable}>
+    <html lang="en-GB" className={jakarta.variable} suppressHydrationWarning>
+      <head>
+        {/* Apply the saved theme before paint so there is no flash. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-screen">
         {children}
         <ServiceWorker />

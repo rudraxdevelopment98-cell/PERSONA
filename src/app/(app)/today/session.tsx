@@ -194,7 +194,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
         </div>
       ) : (
         <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10">
-          {error ? <Alert tone="warning">{error}</Alert> : <span className="text-xs text-muted">Scroll to the end of the story to continue.</span>}
+          {error ? <Alert tone="warning">{error}</Alert> : <span />}
           <Button onClick={markRead} disabled={progress < 95 || busy}>
             {busy && <Spinner />} I&apos;ve finished reading
           </Button>
@@ -273,7 +273,7 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
           <>
             <div>
               <label htmlFor={`reason-${index}`} className="mb-1.5 block text-sm font-medium">
-                Why would you choose this? <span className="font-normal text-muted">Your reasoning is what gets evaluated.</span>
+                Why would you choose this?
               </label>
               <Textarea id={`reason-${index}`} rows={3} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
             </div>
@@ -360,7 +360,7 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
           <>
             <div>
               <label htmlFor="challenge-notes" className="mb-1.5 block text-sm font-medium">
-                What happened? <span className="font-normal text-muted">Record this after you have tried it - later today is fine.</span>
+                What happened?
               </label>
               <Textarea id="challenge-notes" rows={3} maxLength={4000} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
@@ -442,7 +442,7 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
         )
       ) : (
         <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          {error ? <Alert tone="danger">{error}</Alert> : <span className="text-xs text-muted">Completing the reflection completes today&apos;s session.</span>}
+          {error ? <Alert tone="danger">{error}</Alert> : <span />}
           <Button onClick={submit} disabled={busy || answers.some((a) => a.trim().length < 10)}>
             {busy && <Spinner />} {busy ? "Saving…" : "Complete session"}
           </Button>

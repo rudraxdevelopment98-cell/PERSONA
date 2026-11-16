@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { InfoTip } from "./info-tip";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -7,11 +8,11 @@ export function cx(...c: (string | false | null | undefined)[]) {
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "accent";
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 h-10 px-4 whitespace-nowrap";
+  "inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 h-10 px-4 whitespace-nowrap";
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-white shadow-card hover:bg-primary-hover",
-  accent: "bg-accent text-white shadow-card hover:brightness-95",
-  secondary: "border border-line bg-surface text-ink hover:bg-bg",
+  primary: "bg-primary text-white hover:bg-primary-hover",
+  accent: "bg-accent text-white hover:brightness-95",
+  secondary: "bg-primary-soft text-ink hover:brightness-95",
   ghost: "text-muted hover:bg-primary-soft hover:text-ink",
   danger: "border border-danger/30 bg-surface text-danger hover:bg-danger-soft",
 };
@@ -27,7 +28,7 @@ export function ButtonLink({ variant = "primary", className, ...props }: Compone
 export function Card({ className, ...props }: ComponentProps<"div">) {
   // A background passed in className replaces the default surface colour.
   const customBg = /(^|\s)bg-/.test(className ?? "");
-  return <div className={cx("rounded-2xl border border-line/80 shadow-card", !customBg && "bg-surface", className)} {...props} />;
+  return <div className={cx("rounded-3xl border border-line/70 shadow-card", !customBg && "bg-surface", className)} {...props} />;
 }
 
 export function CardHeader({ title, description, action, icon }: { title: ReactNode; description?: ReactNode; action?: ReactNode; icon?: ReactNode }) {
@@ -37,7 +38,7 @@ export function CardHeader({ title, description, action, icon }: { title: ReactN
         {icon}
         <div className="min-w-0">
           <h2 className="text-[15px] font-bold text-ink">{title}</h2>
-          {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+          {description && <p className="mt-0.5 line-clamp-1 text-xs text-muted">{description}</p>}
         </div>
       </div>
       {action}
@@ -46,14 +47,17 @@ export function CardHeader({ title, description, action, icon }: { title: ReactN
 }
 
 export function PageHeader({ title, description, action, eyebrow }: { title: string; description?: ReactNode; action?: ReactNode; eyebrow?: ReactNode }) {
+  // Help text lives behind an ⓘ so pages open on content, not instructions.
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        {eyebrow && <p className="mb-1 text-xs font-bold uppercase tracking-wider text-accent">{eyebrow}</p>}
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-[28px]">{title}</h1>
-        {description && <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>}
+    <div className="mb-5 flex items-center justify-between gap-3 sm:mb-7">
+      <div className="min-w-0">
+        {eyebrow && <p className="mb-0.5 text-[11px] font-bold uppercase tracking-wider text-muted">{eyebrow}</p>}
+        <h1 className="flex items-center gap-1 text-2xl font-extrabold tracking-tight text-ink sm:text-[28px]">
+          <span className="truncate">{title}</span>
+          {description && <InfoTip label={`About ${title}`}>{description}</InfoTip>}
+        </h1>
       </div>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
@@ -86,7 +90,7 @@ export function Label({ className, ...props }: ComponentProps<"label">) {
 }
 
 const fieldBase =
-  "w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/70 focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/10 disabled:bg-bg";
+  "w-full rounded-2xl border border-line bg-bg px-4 py-2.5 text-sm text-ink placeholder:text-muted/60 focus:border-primary/50 focus:bg-surface focus:outline-none focus:ring-4 focus:ring-primary/10 disabled:opacity-60";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cx(fieldBase, "h-10", className)} {...props} />;
@@ -172,7 +176,7 @@ export function EmptyState({ icon, title, description, action }: { icon?: ReactN
     <div className="flex flex-col items-center px-6 py-12 text-center">
       {icon && <div className="mb-3 text-muted">{icon}</div>}
       <p className="text-sm font-bold text-ink">{title}</p>
-      <p className="mt-1 max-w-sm text-sm text-muted">{description}</p>
+      {description && <p className="mt-1 max-w-xs text-sm text-muted">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

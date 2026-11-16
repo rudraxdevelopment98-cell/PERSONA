@@ -18,21 +18,21 @@ function PhonePreview() {
   ];
   return (
     <div className="mx-auto w-full max-w-[320px] rounded-[2.5rem] border-[10px] border-ink bg-bg p-3 shadow-raised">
-      <div className="rounded-2xl bg-primary p-4 text-white">
+      <div className="bg-brand rounded-2xl p-4 text-white">
         <p className="text-xs text-white/70">Good evening, Aarav</p>
         <div className="mt-1 flex items-center justify-between">
           <p className="text-xl font-extrabold">
             Day 12 <span className="text-white/50">/ 90</span>
           </p>
-          <ProgressRing value={40} size={56} stroke={6} color="#2dd4bf" track="rgba(255,255,255,0.15)">
+          <ProgressRing value={40} size={56} stroke={6} color="#ffffff" track="rgba(255,255,255,0.2)">
             <span className="text-sm font-extrabold">2/5</span>
           </ProgressRing>
         </div>
         <div className="mt-2 flex gap-2 text-[11px] font-bold">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-amber-300">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-amber-200">
             <Flame className="size-3" /> 11 days
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-teal-300">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-white">
             <Zap className="size-3" /> 640 XP
           </span>
         </div>
@@ -45,7 +45,7 @@ function PhonePreview() {
               <span
                 className={cx(
                   "flex size-9 items-center justify-center rounded-xl",
-                  s.done ? "bg-success text-white" : s.next ? "bg-primary text-white" : "bg-bg text-muted",
+                  s.done ? "bg-success text-white" : s.next ? "bg-brand text-white" : "bg-bg text-muted",
                 )}
               >
                 {s.done ? <Check className="size-4" strokeWidth={3} /> : <s.icon className="size-4" />}
@@ -72,12 +72,12 @@ export default async function Landing() {
   if (process.env.DATABASE_URL && (await getSessionUser().catch(() => null))) redirect("/dashboard");
 
   const features = [
-    { icon: BookOpen, tone: "sky" as const, title: "A 30-minute daily session", text: "An original story written around your patterns, interactive scenarios, a real-world challenge and a reflection." },
-    { icon: Mic, tone: "coral" as const, title: "Speak, don't just type", text: "Practise saying no, disagreeing and handling criticism out loud. Get your pace, filler words and a stronger version." },
-    { icon: GitBranch, tone: "accent" as const, title: "Decision Lab", text: "Real dilemmas with trade-offs. Feedback on how you reasoned, the biases you showed and a better way to decide." },
-    { icon: Sparkles, tone: "primary" as const, title: "An AI coach who knows you", text: "Practical guidance based on your assessment, recent check-ins and progress - not empty motivation." },
-    { icon: Trophy, tone: "sun" as const, title: "Streaks, XP and badges", text: "Level up as you practise. Every point comes from something you actually did." },
-    { icon: Languages, tone: "sky" as const, title: "English, Hinglish or Hindi", text: "Stories, questions and feedback in the language you think in." },
+    { icon: BookOpen, tone: "sky" as const, title: "A 30-minute daily session", text: "A story written around you, every day." },
+    { icon: Mic, tone: "coral" as const, title: "Speak, don't just type", text: "Practise hard conversations out loud." },
+    { icon: GitBranch, tone: "accent" as const, title: "Decision Lab", text: "Real dilemmas. Feedback on how you think." },
+    { icon: Sparkles, tone: "primary" as const, title: "An AI coach who knows you", text: "Advice built on your own progress." },
+    { icon: Trophy, tone: "sun" as const, title: "Streaks, XP and badges", text: "Level up as you practise." },
+    { icon: Languages, tone: "sky" as const, title: "English, Hinglish or Hindi", text: "In the language you think in." },
   ];
 
   return (
@@ -101,13 +101,11 @@ export default async function Landing() {
             <h1 className="mt-4 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
               Understand yourself.
               <br />
-              <span className="text-accent">Challenge</span> yourself.
+              <span className="text-brand">Challenge</span> yourself.
               <br />
               Become yourself.
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-              PERSONA 90 builds confidence, communication, decision-making and leadership through daily practice - with honest feedback on how you actually think and speak.
-            </p>
+            <p className="mt-5 max-w-md text-lg text-muted">Confidence, communication and decisions. 30 minutes a day.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/signup" className="h-12 px-6 text-base">
                 Start free <ArrowRight className="size-4" />
@@ -125,12 +123,12 @@ export default async function Landing() {
         <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
-              <div key={f.title} className="rounded-2xl border border-line/80 bg-surface p-6 shadow-card">
+              <div key={f.title} className="rounded-3xl border border-line/70 bg-surface p-6 transition hover:-translate-y-1 hover:shadow-raised">
                 <IconTile tone={f.tone} size="lg">
                   <f.icon className="size-6" />
                 </IconTile>
                 <h2 className="mt-4 font-bold">{f.title}</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{f.text}</p>
+                <p className="mt-1 text-sm text-muted">{f.text}</p>
               </div>
             ))}
           </div>
@@ -140,20 +138,18 @@ export default async function Landing() {
           <h2 className="text-2xl font-extrabold tracking-tight">Three phases, ninety days</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {PHASES.map((p, i) => (
-              <div key={p.number} className="relative rounded-2xl bg-primary p-6 text-white" style={{ opacity: 1 - i * 0.08 }}>
-                <p className="text-xs font-bold uppercase tracking-wider text-teal-300">
+              <div key={p.number} className="bg-brand relative rounded-3xl p-6 text-white" style={{ filter: `hue-rotate(${i * 25}deg)` }}>
+                <p className="text-xs font-bold uppercase tracking-wider text-white/70">
                   Days {p.days[0]}–{p.days[1]}
                 </p>
                 <h3 className="mt-1 text-lg font-extrabold">{p.name}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/75">{p.summary}</p>
               </div>
             ))}
           </div>
         </section>
 
         <footer className="mx-auto max-w-6xl border-t border-line px-4 py-8 text-xs leading-relaxed text-muted sm:px-6">
-          PERSONA 90 is a self-development tool. Scores are development indicators, not clinical or psychometric measurements, and nothing in the app is a diagnosis. If you
-          are struggling with your mental health, please speak to a qualified professional.{" "}
+          A self-development tool, not a diagnosis. If you are struggling, please speak to a professional.{" "}
           <Link href="/about" className="underline underline-offset-2">
             How scoring and privacy work
           </Link>

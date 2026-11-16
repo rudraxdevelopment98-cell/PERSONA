@@ -2,26 +2,26 @@
 
 @theme {
   /* Base */
-  --color-bg: #f5f6f8;
+  --color-bg: #f6f6f9;
   --color-surface: #ffffff;
-  --color-ink: #1f2430;
-  --color-muted: #6b7380;
-  --color-line: #e6e8ec;
-  --color-line-strong: #d5d9df;
+  --color-ink: #14151a;
+  --color-muted: #6b6f7b;
+  --color-line: #ececf1;
+  --color-line-strong: #dadbe3;
 
-  /* Brand */
-  --color-primary: #26364a;
-  --color-primary-hover: #1b2738;
-  --color-primary-soft: #eef1f6;
+  /* Brand: one vivid indigo, used sparingly */
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-soft: #eef0ff;
 
   /* Accents - each has one job */
-  --color-accent: #0e9f8a; /* progress, success of practice */
-  --color-accent-soft: #e3f6f2;
+  --color-accent: #0ea58f; /* progress */
+  --color-accent-soft: #e2f6f2;
   --color-sun: #f59e0b; /* streaks, XP */
   --color-sun-soft: #fff4dd;
-  --color-coral: #ef6a5b; /* challenges, energy */
-  --color-coral-soft: #fdecea;
-  --color-sky: #3b82f6; /* learning, stories */
+  --color-coral: #f2555a; /* challenges, unread */
+  --color-coral-soft: #fdeaea;
+  --color-sky: #3b82f6; /* stories */
   --color-sky-soft: #e8f0fe;
 
   /* Status */
@@ -29,17 +29,86 @@
   --color-success-soft: #e5f5ec;
   --color-warning: #a35f00;
   --color-warning-soft: #fff4dd;
-  --color-danger: #c03a2b;
+  --color-danger: #d23b3b;
   --color-danger-soft: #fdecea;
 
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-serif: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, Cambria, serif;
 
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.04);
-  --shadow-raised: 0 8px 24px rgba(16, 24, 40, 0.08);
+  --shadow-card: 0 1px 2px rgba(20, 21, 26, 0.04);
+  --shadow-raised: 0 10px 30px rgba(20, 21, 26, 0.10);
 
   --animate-pop: pop 0.35s ease-out;
   --animate-rise: rise 0.4s ease-out both;
+  --animate-page: page 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Dark theme: same tokens, night values. Follows the device unless the person picked one. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #0b0b0f;
+    --color-surface: #16171d;
+    --color-ink: #f1f1f4;
+    --color-muted: #9a9caa;
+    --color-line: #24252e;
+    --color-line-strong: #33343f;
+    --color-primary: #6366f1;
+    --color-primary-hover: #7477f4;
+    --color-primary-soft: #1d1e3a;
+    --color-accent: #2dd4bf;
+    --color-accent-soft: #0f2a27;
+    --color-sun-soft: #2b2110;
+    --color-coral-soft: #2e1617;
+    --color-sky-soft: #14213a;
+    --color-success: #34d399;
+    --color-success-soft: #0f2a1f;
+    --color-warning: #fbbf24;
+    --color-warning-soft: #2b2110;
+    --color-danger: #f87171;
+    --color-danger-soft: #2e1617;
+    --shadow-card: 0 0 0 transparent;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-bg: #0b0b0f;
+  --color-surface: #16171d;
+  --color-ink: #f1f1f4;
+  --color-muted: #9a9caa;
+  --color-line: #24252e;
+  --color-line-strong: #33343f;
+  --color-primary: #6366f1;
+  --color-primary-hover: #7477f4;
+  --color-primary-soft: #1d1e3a;
+  --color-accent: #2dd4bf;
+  --color-accent-soft: #0f2a27;
+  --color-sun-soft: #2b2110;
+  --color-coral-soft: #2e1617;
+  --color-sky-soft: #14213a;
+  --color-success: #34d399;
+  --color-success-soft: #0f2a1f;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2b2110;
+  --color-danger: #f87171;
+  --color-danger-soft: #2e1617;
+  --shadow-card: 0 0 0 transparent;
+  color-scheme: dark;
+}
+
+/* Signature gradient for hero moments (today's episode, level card). */
+.bg-brand {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #db2777 100%);
+}
+.text-brand {
+  background: linear-gradient(135deg, #6366f1, #a855f7 60%, #ec4899);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes page {
+  0% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes pop {
@@ -65,8 +134,12 @@ body {
 }
 
 ::selection {
-  background: #d7e6f7;
+  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
+
+/* Hide scrollbars on horizontal chip/story rows. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 :focus-visible {
   outline: 2px solid var(--color-primary);

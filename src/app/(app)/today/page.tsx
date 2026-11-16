@@ -87,13 +87,9 @@ export default async function TodayPage() {
   return (
     <>
       <PageHeader
-        title="Daily Development"
-        description={
-          <>
-            Day {state.day} · {focus.title} · {DIMENSION_META[focus.dimension].label}
-          </>
-        }
-        action={focus.personalised ? <Badge tone="primary">Personalised to your growth areas</Badge> : undefined}
+        eyebrow={<>Day {state.day} · {DIMENSION_META[focus.dimension].label}</>}
+        title={focus.title}
+        action={focus.personalised ? <Badge tone="primary">✨ For you</Badge> : undefined}
       />
       {!checkin?.completed_at || !session ? (
         <CheckinFlow checkin={checkin} hasSession={Boolean(session)} />

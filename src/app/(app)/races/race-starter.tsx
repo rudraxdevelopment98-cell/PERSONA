@@ -69,7 +69,7 @@ export function RaceStarter({ friendId = null, circleId = null, name }: { friend
         )}
         <div className="sm:col-span-2">
           <Button disabled={pending}>{pending ? "Starting..." : "Start race"}</Button>
-          <p className="mt-2 text-xs text-muted">Only activity during the race counts, so everyone starts at zero. Scores are counts only - never what you wrote.</p>
+          <p className="mt-2 text-xs text-muted">Everyone starts at zero. Only counts are shared.</p>
         </div>
       </form>
     </Card>

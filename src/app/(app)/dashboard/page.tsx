@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Check, ClipboardCheck, Flame, GitBranch, Lightbulb, Mic, PenLine, Sparkles, Target, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Lightbulb, Mic, PenLine, Sparkles, Target, TrendingUp, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
-import { Badge, ButtonLink, Card, CardHeader, IconTile, PageHeader, ProgressRing, cx } from "@/components/ui";
-import { DIMENSION_META } from "@/lib/domain/dimensions";
+import { Card, PageHeader, ProgressRing, cx } from "@/components/ui";
 import { PROGRAMME_LENGTH } from "@/lib/domain/programme";
 import { overallScore } from "@/lib/domain/scoring";
 import { ACHIEVEMENTS, getGamification } from "@/lib/server/gamification";
@@ -30,7 +29,7 @@ export default async function Dashboard() {
   if (!state.baseline) {
     return (
       <>
-        <PageHeader eyebrow="Welcome" title={`Hi, ${name} 👋`} description="Your programme starts with a short assessment of how you currently think and act." />
+        <PageHeader title={`Hi, ${name} 👋`} />
         <BaselineGate feature="Your 90-day programme" />
       </>
     );
@@ -91,187 +90,141 @@ export default async function Dashboard() {
         }
     : null;
 
+  const quick = [
+    { href: "/decision-lab", label: "Decide", icon: GitBranch, tone: "bg-sky-soft text-sky" },
+    { href: "/communication-lab", label: "Speak", icon: Mic, tone: "bg-coral-soft text-coral" },
+    { href: "/coach", label: "Coach", icon: Sparkles, tone: "bg-accent-soft text-accent" },
+    { href: "/journal", label: "Journal", icon: PenLine, tone: "bg-sun-soft text-warning" },
+    { href: "/progress", label: "Progress", icon: TrendingUp, tone: "bg-primary-soft text-primary" },
+  ];
+  const delta = Math.round((overall - baselineOverall) * 10) / 10;
+
   return (
-    <div className="space-y-5">
-      {/* Hero */}
-      <section className="animate-rise overflow-hidden rounded-2xl bg-primary text-white shadow-raised">
-        <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div>
-            <p className="text-sm text-white/70">
-              {greeting(hour)}, {name}
-            </p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Day {state.day} <span className="text-white/50">/ {PROGRAMME_LENGTH}</span>
-            </h1>
-            <p className="mt-1 text-sm text-white/80">
-              Phase {focus.phase.number} · {focus.phase.name} — today: <span className="font-semibold text-white">{focus.title}</span>
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-amber-300">
-                <Flame className="size-3.5" /> {stats.streak}-day streak
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-teal-300">
-                <Zap className="size-3.5" /> {stats.xp} XP · Level {level.level}
-              </span>
-              <span
-                className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-sky-200"
-                title="Miss one day and your streak survives - once every 7 days."
-              >
-                ❄️ {restUsed ? "Rest day used this week" : "1 rest day available"}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <ProgressRing value={(done / steps.length) * 100} size={92} stroke={9} color="#2dd4bf" track="rgba(255,255,255,0.15)" label={`${done} of 5 done today`}>
-              <div className="text-center">
-                <p className="text-xl font-extrabold leading-none">
-                  {done}/{steps.length}
-                </p>
-                <p className="text-[10px] text-white/70">today</p>
-              </div>
-            </ProgressRing>
-            {nextIndex !== -1 && (
-              <ButtonLink href="/today" className="bg-white text-primary hover:bg-white/90">
-                {nextIndex === 0 ? "Start today" : "Continue"} <ArrowRight className="size-4" />
-              </ButtonLink>
-            )}
-          </div>
+    <div className="space-y-6">
+      {/* Header: who, what day, three numbers */}
+      <section className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm text-muted">
+            {greeting(hour)}, {name}
+          </p>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            Day {state.day}
+            <span className="text-muted/50"> / {PROGRAMME_LENGTH}</span>
+          </h1>
+        </div>
+        <div className="flex shrink-0 gap-1.5 text-xs font-bold">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1.5 text-primary" title={`${stats.xp} XP`}>
+            <Zap className="size-3.5" /> Lv {level.level}
+          </span>
+          <span
+            className={cx("inline-flex items-center rounded-full px-2.5 py-1.5", restUsed ? "bg-bg text-muted/50" : "bg-sky-soft")}
+            title={restUsed ? "Rest day used this week" : "1 rest day available: miss a day, keep your streak"}
+            aria-label={restUsed ? "Rest day used this week" : "1 rest day available"}
+          >
+            ❄️
+          </span>
         </div>
       </section>
 
-      {series && (
-        <Link href="/today" className="group block">
-          <Card className="flex items-center gap-4 p-4 transition group-hover:-translate-y-0.5 group-hover:shadow-raised sm:p-5">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-2xl">🎬</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-accent">{series.label}</p>
-              <p className="mt-0.5 font-serif text-lg font-semibold leading-snug">{series.title}</p>
-              <p className="text-sm text-muted">{series.line}</p>
+      {/* Today's episode: the one thing to do */}
+      <Link href="/today" className="group block">
+        <section className="bg-brand relative overflow-hidden rounded-[28px] p-5 text-white shadow-raised transition-transform group-active:scale-[0.99] sm:p-7">
+          <div className="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full bg-white/10 blur-2xl" />
+          <p className="text-xs font-bold uppercase tracking-wider text-white/70">
+            {series ? series.label : `Phase ${focus.phase.number} · ${focus.phase.name}`}
+          </p>
+          <h2 className="mt-1.5 line-clamp-2 font-serif text-2xl font-semibold leading-snug sm:text-3xl">{series ? series.title : focus.title}</h2>
+          <div className="mt-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5" aria-label={`${done} of ${steps.length} done today`}>
+              {steps.map((st, i) => (
+                <span
+                  key={st.label}
+                  title={st.label}
+                  className={cx(
+                    "flex size-8 items-center justify-center rounded-full transition",
+                    st.done ? "bg-white text-primary" : i === nextIndex ? "bg-white/25 ring-2 ring-white" : "bg-white/15 text-white/70",
+                  )}
+                >
+                  {st.done ? <Check className="size-4" strokeWidth={3} /> : <st.icon className="size-4" />}
+                </span>
+              ))}
             </div>
-            <span className="hidden shrink-0 items-center gap-1 text-sm font-bold text-primary sm:inline-flex">
-              {series.cta} <ArrowRight className="size-4" />
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-primary transition group-hover:gap-2.5">
+              {nextIndex === -1 ? "View" : nextIndex === 0 ? "Start" : "Continue"} <ArrowRight className="size-4" />
             </span>
-          </Card>
-        </Link>
+          </div>
+        </section>
+      </Link>
+
+      {c?.analysis?.suggestion_for_today && (
+        <div className="flex items-start gap-3 rounded-3xl bg-accent-soft px-4 py-3.5">
+          <Lightbulb className="mt-0.5 size-5 shrink-0 text-accent" />
+          <p className="text-sm leading-relaxed">{c.analysis.suggestion_for_today}</p>
+        </div>
       )}
+
+      {/* Quick practice, story-row style */}
+      <nav aria-label="Quick practice" className="no-scrollbar -mx-4 flex justify-between gap-3 overflow-x-auto px-4 sm:mx-0 sm:justify-start sm:gap-5 sm:px-0">
+        {quick.map((q) => (
+          <Link key={q.href} href={q.href} className="group flex w-14 shrink-0 flex-col items-center gap-1.5">
+            <span className={cx("flex size-14 items-center justify-center rounded-full transition-transform group-hover:scale-105 group-active:scale-95", q.tone)}>
+              <q.icon className="size-6" />
+            </span>
+            <span className="text-xs font-semibold">{q.label}</span>
+          </Link>
+        ))}
+      </nav>
 
       {sponsor && <SponsorCard s={sponsor} />}
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        {/* Today's path */}
-        <Card className="lg:col-span-2">
-          <CardHeader
-            title="Today's path"
-            description={<>Focus: {DIMENSION_META[focus.dimension].label}</>}
-            action={focus.personalised ? <Badge tone="accent">Personalised</Badge> : undefined}
-          />
-          <div className="grid grid-cols-5 gap-2 p-5">
-            {steps.map((st, i) => (
-              <Link key={st.label} href="/today" className="group flex flex-col items-center text-center">
-                <span
-                  className={cx(
-                    "relative flex size-12 items-center justify-center rounded-2xl transition group-hover:scale-105 sm:size-14",
-                    st.done ? "bg-success text-white" : i === nextIndex ? "bg-primary text-white shadow-raised" : "bg-bg text-muted",
-                  )}
-                >
-                  {st.done ? <Check className="size-6" strokeWidth={3} /> : <st.icon className="size-6" />}
-                </span>
-                <span className={cx("mt-2 text-xs font-bold", !st.done && i !== nextIndex && "text-muted")}>{st.label}</span>
-                <span className="text-[11px] text-muted">{st.detail}</span>
-              </Link>
-            ))}
+      {/* Score + skills */}
+      <Link href="/progress" className="group block">
+        <Card className="p-5 transition group-hover:border-line-strong">
+          <div className="flex items-center gap-4">
+            <ProgressRing value={overall} size={72} stroke={7} label={`Overall score ${overall}`}>
+              <span className="text-xl font-extrabold tabular-nums">{Math.round(overall)}</span>
+            </ProgressRing>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold">Your skills</p>
+              <p className="text-sm">
+                <span className={cx("font-bold", delta >= 0 ? "text-success" : "text-danger")}>
+                  {delta >= 0 ? "+" : ""}
+                  {delta}
+                </span>{" "}
+                <span className="text-muted">since day 1</span>
+              </p>
+            </div>
+            <ChevronRight className="size-5 text-muted transition group-hover:translate-x-0.5" />
           </div>
-          {c?.analysis && (
-            <div className="mx-5 mb-5 flex gap-3 rounded-2xl bg-accent-soft p-4">
-              <Lightbulb className="mt-0.5 size-5 shrink-0 text-accent" />
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-accent">Try today</p>
-                <p className="mt-0.5 text-sm leading-relaxed">{c.analysis.suggestion_for_today}</p>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Score */}
-        <Card className="flex flex-col items-center justify-center p-5 text-center">
-          <ProgressRing value={overall} size={120} stroke={11} label={`Overall score ${overall}`}>
-            <div>
-              <p className="text-3xl font-extrabold leading-none tabular-nums">{Math.round(overall)}</p>
-              <p className="text-[11px] text-muted">overall</p>
-            </div>
-          </ProgressRing>
-          <p className="mt-3 text-sm">
-            <span className={cx("font-bold", overall - baselineOverall >= 0 ? "text-success" : "text-danger")}>
-              {overall - baselineOverall >= 0 ? "+" : ""}
-              {Math.round((overall - baselineOverall) * 10) / 10}
-            </span>{" "}
-            <span className="text-muted">since you started</span>
-          </p>
-          <Link href="/progress" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">
-            See progress <ArrowRight className="size-3.5" />
-          </Link>
-        </Card>
-      </div>
-
-      {/* Quick practice */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { href: "/decision-lab", title: "Decision Lab", text: "Make a tough call", icon: GitBranch, tone: "sky" as const },
-          { href: "/communication-lab", title: "Speak up", text: "Voice practice", icon: Mic, tone: "coral" as const },
-          { href: "/coach", title: "Ask your coach", text: "Talk it through", icon: Sparkles, tone: "accent" as const },
-        ].map((q) => (
-          <Link key={q.href} href={q.href}>
-            <Card className="flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-raised">
-              <IconTile tone={q.tone}>
-                <q.icon className="size-5" />
-              </IconTile>
-              <div>
-                <p className="text-sm font-bold">{q.title}</p>
-                <p className="text-xs text-muted">{q.text}</p>
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader title="Your skills" description="Bar = now · tick = when you started" />
-          <div className="px-5 pb-5 pt-3">
+          <div className="mt-4">
             <ScoreBars rows={state.skills} />
           </div>
         </Card>
-        <Card>
-          <CardHeader
-            title="Badges"
-            action={
-              <Link href="/achievements" className="text-xs font-bold text-primary hover:underline">
-                All
-              </Link>
-            }
-          />
-          {(achievements ?? []).length === 0 ? (
-            <p className="px-5 pb-5 pt-2 text-sm text-muted">Complete activities to earn badges.</p>
-          ) : (
-            <ul className="space-y-1 px-3 pb-4 pt-2">
-              {(achievements ?? []).map((a) => {
-                const def = badgeDefs.get(a.code as string);
-                return (
-                  <li key={a.code} className="flex items-center gap-3 rounded-xl px-2 py-2">
-                    <span className="flex size-9 items-center justify-center rounded-full bg-sun text-white">
-                      <BadgeIcon name={def?.icon ?? "trophy"} className="size-4" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold">{def?.title ?? a.code}</p>
-                      <p className="text-xs text-muted">{def?.description}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Card>
-      </div>
+      </Link>
+
+      {(achievements ?? []).length > 0 && (
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-bold">Badges</h2>
+            <Link href="/achievements" className="text-sm font-semibold text-primary">
+              See all
+            </Link>
+          </div>
+          <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            {(achievements ?? []).map((a) => {
+              const def = badgeDefs.get(a.code as string);
+              return (
+                <div key={a.code} className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center" title={def?.description}>
+                  <span className="flex size-14 items-center justify-center rounded-full bg-sun text-white shadow-card">
+                    <BadgeIcon name={def?.icon ?? "trophy"} className="size-6" />
+                  </span>
+                  <span className="line-clamp-2 text-[11px] font-semibold leading-tight">{def?.title ?? a.code}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Lock, Sparkles } from "lucide-react";
 import { Alert, Button, Card, CardHeader, Spinner, Textarea, cx } from "@/components/ui";
 import { CHECKIN_LENSES, byId } from "@/lib/domain/variety";
 import { WritingEpisode } from "./writing-episode";
@@ -119,11 +119,9 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
   if (!checkin) {
     return (
       <Card className="p-6 sm:p-8">
-        <h2 className="text-lg font-semibold">Start with a short check-in</h2>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-          A few questions about the last 24 hours. Your answers are used to write today&apos;s story, scenarios and challenge, and to track how
-          you are changing over time.
-        </p>
+        <p className="text-4xl">☀️</p>
+        <h2 className="mt-3 text-xl font-extrabold">How was your last day?</h2>
+        <p className="mt-1 text-sm text-muted">3 min · shapes today&apos;s story</p>
         {error && <div className="mt-4"><Alert tone="danger">{error}</Alert></div>}
         <Button className="mt-6" onClick={start} disabled={busy !== null}>
           {busy === "start" ? <Spinner /> : null} {busy === "start" ? "Preparing your questions…" : "Begin check-in"}
@@ -141,7 +139,6 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
       <Card>
         <CardHeader
           title={`Check-in · Day ${checkin.day_number}`}
-          description="Be specific - concrete examples make your session more useful."
           action={lensLabel ? <span className="whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">Today&apos;s angle: {lensLabel}</span> : undefined}
         />
         <div className="divide-y divide-line">
@@ -177,7 +174,7 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
           ))}
         </div>
         <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          {error ? <Alert tone="danger">{error}</Alert> : <span className="text-xs text-muted">Answers are private and saved to your account.</span>}
+          {error ? <Alert tone="danger">{error}</Alert> : <span className="inline-flex items-center gap-1 text-xs text-muted"><Lock className="size-3" /> Private</span>}
           <Button onClick={submit} disabled={!complete || busy !== null}>
             {busy === "submit" && <Spinner />} {busy === "submit" ? "Saving…" : "Submit check-in"}
           </Button>
@@ -231,7 +228,7 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
           ) : (
             <>
               <h2 className="mb-1 font-semibold">Writing today&apos;s episode…</h2>
-              <p className="mb-4 text-sm text-muted">Built from your check-in. Read your insight above while you wait - this takes a minute or two.</p>
+              <p className="mb-4 text-sm text-muted">About a minute</p>
               <WritingEpisode startedAt={buildStarted!} />
             </>
           )}
@@ -243,9 +240,7 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
             <div>
               <h2 className="font-semibold">Your 30-minute session</h2>
               <p className="mt-1 text-sm text-muted">
-                {busy === "session"
-                  ? "Writing an original story and scenarios from your check-in. This usually takes one to two minutes."
-                  : "Introduction, story, scenarios, a real-world challenge and a reflection."}
+                {busy === "session" ? "About a minute" : "Story · scenarios · challenge · reflection"}
               </p>
             </div>
             <Button onClick={buildSession} disabled={busy !== null}>

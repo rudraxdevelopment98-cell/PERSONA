@@ -25,7 +25,7 @@ export function ReminderToggle({ initial }: { initial: boolean }) {
       />
       <span>
         <span className="block font-semibold">Daily evening reminder</span>
-        <span className="block text-xs text-muted">If you haven&apos;t done today&apos;s session, we send one nudge in the evening with a teaser of your next episode. Never more than once a day.</span>
+        <span className="block text-xs text-muted">One evening nudge, only if you missed the day.</span>
       </span>
     </label>
   );

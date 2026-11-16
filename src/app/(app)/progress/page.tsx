@@ -124,14 +124,15 @@ export default async function ProgressPage() {
               </tbody>
             </table>
           </div>
-          <div className="border-t border-line px-5 py-4 text-xs leading-relaxed text-muted">
-            <p>
+          <details className="group border-t border-line px-5 py-3 text-xs leading-relaxed text-muted">
+            <summary className="cursor-pointer list-none font-semibold text-ink marker:hidden">How scores work <span className="text-muted group-open:hidden">›</span></summary>
+            <p className="mt-2">
               <span className="font-medium text-ink">Self-reported behaviour</span> ({WEIGHTS.self * 100}%): your baseline blended with your daily check-in ratings.{" "}
               <span className="font-medium text-ink">Demonstrated performance</span> ({WEIGHTS.demonstrated * 100}%): rubric scores for your reasoning in scenarios and labs, reaching full weight after {DEMONSTRATED_FULL_WEIGHT_AT} pieces of evidence.{" "}
               <span className="font-medium text-ink">Consistency</span>: completion of sessions, check-ins and challenges since day 1. It measures follow-through, so it counts towards self-discipline only ({DISCIPLINE_CONSISTENCY_WEIGHT * 100}% weight, from day {CONSISTENCY_MIN_DAYS}). Weights are shared out among the components that have data.
               These are development indicators, not clinical measurements.
             </p>
-          </div>
+          </details>
         </Card>
 
         <Card>
@@ -170,7 +171,7 @@ export default async function ProgressPage() {
           </div>
           {state.day > 0 && completedSessions === 0 && (
             <p className="px-5 pb-5 text-sm text-muted">
-              No sessions completed yet. <Badge tone="primary">Tip</Badge> Today&apos;s session takes about 30 minutes.
+              No sessions yet.
             </p>
           )}
         </Card>

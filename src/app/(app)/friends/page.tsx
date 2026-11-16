@@ -47,13 +47,13 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
           </Alert>
         )}
 
-        <InviteBox title="Invite a friend" text="Send a private link. When they open it and sign in, you're connected - no searching, no public profiles." />
+        <InviteBox title="Invite a friend" text="Private link · no public profiles" />
 
         <section>
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Your friends ({friends.length})</h2>
           {friends.length === 0 ? (
             <Card>
-              <EmptyState icon={<Users className="size-6" />} title="No friends yet" description="Create an invite link above and share it on WhatsApp or anywhere you like." />
+              <EmptyState icon={<Users className="size-6" />} title="No friends yet" description="Share your invite link to add one." />
             </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -88,7 +88,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
           <Card>
             <CardHeader title="Circles" description="Small groups with a shared board" action={<ButtonLink href="/circles" variant="ghost" className="h-8 px-2">All <ChevronRight className="size-4" /></ButtonLink>} />
             <div className="space-y-1 p-3">
-              {circles.length === 0 && <p className="px-2 pb-2 text-sm text-muted">You&apos;re not in any circles yet.</p>}
+              {circles.length === 0 && <p className="px-2 pb-2 text-sm text-muted">No circles yet.</p>}
               {circles.slice(0, 4).map((c) => (
                 <Link key={c.id} href={`/circles/${c.id}`} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-bg">
                   <span className="flex size-9 items-center justify-center rounded-xl bg-accent-soft text-lg">{c.emoji || "👥"}</span>
@@ -102,7 +102,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
           <Card>
             <CardHeader title="Races" description="Friendly, time-boxed competitions" />
             <div className="space-y-1 p-3">
-              {liveRaces.length === 0 && <p className="px-2 pb-2 text-sm text-muted">No races running. Start one from a friend&apos;s page or a circle.</p>}
+              {liveRaces.length === 0 && <p className="px-2 pb-2 text-sm text-muted">No races yet.</p>}
               {liveRaces.slice(0, 5).map((r) => (
                 <Link key={r.id} href={`/races/${r.id}`} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-bg">
                   <span className="flex size-9 items-center justify-center rounded-xl bg-sun-soft text-warning"><Flag className="size-4" /></span>

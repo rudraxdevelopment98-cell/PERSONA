@@ -11,25 +11,25 @@ const fmtDate = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en
 
 function TrendChart({ data, dataKey, baseline, label }: { data: { date: string; value: number | null }[]; dataKey: string; baseline?: number; label: string }) {
   if (data.length < 2) {
-    return <p className="px-5 py-10 text-center text-sm text-muted">The trend appears once your scores have changed on at least two different days.</p>;
+    return <p className="px-5 py-10 text-center text-sm text-muted">📈 Your trend shows up after 2 days of practice</p>;
   }
   return (
     <div className="h-64 w-full px-2 pb-3 pt-5" role="img" aria-label={`${label} over time`}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: -12 }}>
-          <CartesianGrid stroke="#EEF0F2" vertical={false} />
-          <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 11, fill: "#737B85" }} tickLine={false} axisLine={{ stroke: "#E5E7EB" }} minTickGap={24} />
-          <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 11, fill: "#737B85" }} tickLine={false} axisLine={false} />
+          <CartesianGrid stroke="var(--color-line)" vertical={false} />
+          <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 11, fill: "var(--color-muted)" }} tickLine={false} axisLine={{ stroke: "var(--color-line)" }} minTickGap={24} />
+          <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 11, fill: "var(--color-muted)" }} tickLine={false} axisLine={false} />
           {baseline != null && (
-            <ReferenceLine y={baseline} stroke="#A3AAB3" strokeDasharray="4 4" label={{ value: "Baseline", position: "insideTopLeft", fontSize: 11, fill: "#737B85" }} />
+            <ReferenceLine y={baseline} stroke="var(--color-muted)" strokeDasharray="4 4" label={{ value: "Baseline", position: "insideTopLeft", fontSize: 11, fill: "var(--color-muted)" }} />
           )}
           <Tooltip
-            cursor={{ stroke: "#D4D8DE" }}
+            cursor={{ stroke: "var(--color-line-strong)" }}
             contentStyle={{ borderRadius: 6, border: "1px solid #E5E7EB", fontSize: 12, boxShadow: "0 2px 8px rgba(16,24,40,.06)" }}
             labelFormatter={(d) => fmtDate(String(d))}
             formatter={(v) => [v, label]}
           />
-          <Line type="monotone" dataKey={dataKey} name={label} stroke="#26364A" strokeWidth={2} dot={{ r: 4, fill: "#26364A", stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 5 }} connectNulls />
+          <Line type="monotone" dataKey={dataKey} name={label} stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-primary)", stroke: "var(--color-surface)", strokeWidth: 2 }} activeDot={{ r: 5 }} connectNulls />
         </LineChart>
       </ResponsiveContainer>
     </div>

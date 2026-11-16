@@ -5,9 +5,9 @@ import { Card, IconTile, PageHeader } from "@/components/ui";
 export const metadata = { title: "Practice" };
 
 const ITEMS = [
-  { href: "/decision-lab", title: "Decision Lab", text: "Real dilemmas with trade-offs. Your reasoning gets scored, not just your choice.", icon: GitBranch, tone: "sky" as const },
-  { href: "/communication-lab", title: "Communication Lab", text: "Say no, disagree, take criticism. Type or speak your reply and get a stronger version.", icon: MessagesSquare, tone: "coral" as const, extra: "Voice" },
-  { href: "/coach", title: "AI Coach", text: "Talk through a situation. Your coach knows your patterns and progress.", icon: Sparkles, tone: "accent" as const },
+  { href: "/decision-lab", title: "Decision Lab", text: "Make tough calls", icon: GitBranch, tone: "sky" as const },
+  { href: "/communication-lab", title: "Communication Lab", text: "Say it out loud", icon: MessagesSquare, tone: "coral" as const, extra: "Voice" },
+  { href: "/coach", title: "AI Coach", text: "Talk it through", icon: Sparkles, tone: "accent" as const },
 ];
 
 export default function PracticePage() {

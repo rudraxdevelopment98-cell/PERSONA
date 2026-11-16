@@ -47,7 +47,7 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
         <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="absolute right-3 top-3 rounded-full p-1.5 text-white/80 hover:bg-white/10">
           <X className="size-5" />
         </button>
-        <div className="bg-primary px-6 pb-6 pt-8 text-center text-white">
+        <div className="bg-brand px-6 pb-6 pt-8 text-center text-white">
           <p className="text-4xl">{data.levelUp ? "🏆" : "🎉"}</p>
           <h2 className="mt-2 text-2xl font-extrabold">{data.levelUp ? `Level ${data.level}!` : "Session complete!"}</h2>
           <p className="mt-1 text-sm text-white/75">{data.levelUp ? `You're now a ${data.levelName}.` : `Session ${data.sessions} of 90 done. That's real practice.`}</p>

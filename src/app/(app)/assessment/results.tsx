@@ -106,8 +106,7 @@ export function AssessmentResults({ scores, profile, depth = "deep" }: { scores:
           <div className="space-y-3 px-5 py-4 text-sm leading-relaxed text-muted">
             <p>{HOW[depth]}</p>
             <p className="rounded-md bg-bg px-3 py-2 font-mono text-xs text-ink">score = (average item score − 1) ÷ 4 × 100</p>
-            <p>These are self-development indicators, not clinical or psychometric measurements. They describe current habits, not who you are.</p>
-            <p>From now on, your scores also include how you perform in exercises and how consistently you practise. The Progress page explains how.</p>
+            <p>Development indicators, not clinical measurements.</p>
           </div>
         </Card>
       </div>

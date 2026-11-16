@@ -62,7 +62,7 @@ export default async function AchievementsPage() {
           {ACHIEVEMENTS.map((a) => {
             const got = earned.has(a.code);
             return (
-              <div key={a.code} className={cx("rounded-2xl border p-4 text-center transition", got ? "border-sun/40 bg-sun-soft/60" : "border-line bg-bg/60")}>
+              <div key={a.code} title={a.description} className={cx("rounded-2xl border p-4 text-center transition", got ? "border-sun/40 bg-sun-soft/60" : "border-line bg-bg/60")}>
                 <span
                   className={cx(
                     "mx-auto flex size-12 items-center justify-center rounded-full",
@@ -72,7 +72,6 @@ export default async function AchievementsPage() {
                   {got ? <BadgeIcon name={a.icon} className="size-6" /> : <Lock className="size-5" />}
                 </span>
                 <p className={cx("mt-2 text-sm font-bold", !got && "text-muted")}>{a.title}</p>
-                <p className="mt-0.5 text-xs text-muted">{a.description}</p>
                 {got && <p className="mt-1 text-[11px] font-semibold text-warning">{new Date(earned.get(a.code)!).toLocaleDateString("en-GB")}</p>}
               </div>
             );

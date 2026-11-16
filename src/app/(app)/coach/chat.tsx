@@ -21,7 +21,7 @@ function Bubble({ m }: { m: Msg }) {
       <div
         className={cx(
           "max-w-[85%] whitespace-pre-wrap rounded-lg px-4 py-2.5 text-sm leading-relaxed",
-          m.role === "user" ? "bg-primary text-white" : "border border-line bg-surface text-ink",
+          m.role === "user" ? "bg-brand text-white" : "border border-line bg-surface text-ink",
         )}
       >
         {m.content || <Spinner className="text-muted" />}

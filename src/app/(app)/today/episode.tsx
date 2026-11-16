@@ -64,8 +64,8 @@ export function NextEpisode({ info }: { info: EpisodeInfo }) {
   if (!info.finale) {
     if (!info.teaser) return null;
     return (
-      <Card className="bg-primary p-5 text-white">
-        <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-teal-300">
+      <Card className="bg-brand border-0 p-5 text-white">
+        <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/75">
           <Sparkles className="size-3.5" /> Tomorrow · Episode {info.episode + 1}
         </p>
         <p className="mt-2 font-serif text-lg leading-snug">{info.teaser}</p>

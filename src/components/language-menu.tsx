@@ -26,7 +26,7 @@ const SAVED: Record<Language, string> = {
 };
 
 /** Compact header menu to switch the AI content language at any time. */
-export function LanguageMenu({ value, align = "right" }: { value: Language; align?: "left" | "right" }) {
+export function LanguageMenu({ value, align = "right", up = false }: { value: Language; align?: "left" | "right"; up?: boolean }) {
   const router = useRouter();
   const [lang, setLang] = useState<Language>(value);
   const [open, setOpen] = useState(false);
@@ -83,7 +83,7 @@ export function LanguageMenu({ value, align = "right" }: { value: Language; alig
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Language: ${current.label}. Change language`}
-        className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-surface px-2 text-xs font-bold text-ink transition hover:bg-bg sm:gap-1.5 sm:px-2.5"
+        className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-primary-soft px-2 text-xs font-bold text-ink transition hover:brightness-95 sm:gap-1.5 sm:px-2.5"
       >
         {pending ? <Spinner className="size-3.5" /> : <Languages className="size-3.5 text-primary" />}
         {current.short}
@@ -96,6 +96,7 @@ export function LanguageMenu({ value, align = "right" }: { value: Language; alig
           className={cx(
             "fixed inset-x-3 top-16 z-50 rounded-2xl border border-line bg-surface p-1.5 shadow-raised sm:absolute sm:inset-x-auto sm:top-10 sm:w-64",
             align === "right" ? "sm:right-0" : "sm:left-0",
+            up && "sm:top-auto sm:bottom-10",
           )}
         >
           {OPTIONS.map((o) => (

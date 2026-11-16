@@ -24,25 +24,27 @@ export default async function MePage() {
   return (
     <>
       <Card className="mb-5 overflow-hidden">
-        <div className="bg-primary p-5 text-white">
-          <div className="flex items-center gap-4">
-            <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-2xl font-extrabold">{name.slice(0, 1).toUpperCase()}</span>
-            <div>
-              <p className="text-lg font-extrabold">{name}</p>
-              <p className="text-sm text-white/70">
+        <div className="p-5">
+          <div className="flex items-center gap-5">
+            <span className="bg-brand rounded-full p-[3px]">
+              <span className="flex size-20 items-center justify-center rounded-full border-4 border-surface bg-primary-soft text-3xl font-extrabold text-ink">{name.slice(0, 1).toUpperCase()}</span>
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-xl font-extrabold">{name}</p>
+              <p className="text-sm text-muted">
                 Level {level.level} · {level.name}
               </p>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-5 grid grid-cols-3 text-center">
             {[
               { v: stats.xp, l: "XP" },
               { v: stats.streak, l: "Day streak" },
               { v: stats.sessionsCompleted, l: "Sessions" },
             ].map((s) => (
-              <div key={s.l} className="rounded-xl bg-white/10 py-2">
-                <p className="text-lg font-extrabold tabular-nums">{s.v}</p>
-                <p className="text-[11px] text-white/70">{s.l}</p>
+              <div key={s.l}>
+                <p className="text-xl font-extrabold tabular-nums">{s.v}</p>
+                <p className="text-xs text-muted">{s.l}</p>
               </div>
             ))}
           </div>
