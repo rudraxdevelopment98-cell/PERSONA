@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Flame, Sparkles, Trophy, X, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
+import { ShareProgress } from "@/components/share-progress";
 import { Button, ProgressBar } from "@/components/ui";
 
 export type Celebration = {
@@ -102,6 +103,7 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
             </div>
           )}
           {data.finale && <p className="text-sm text-muted">Season complete! Pick the world for your next season on this page.</p>}
+          <ShareProgress label="Share today's win" />
           <Button className="w-full" onClick={onClose}>
             Done for today
           </Button>

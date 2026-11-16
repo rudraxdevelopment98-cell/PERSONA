@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, Check, Lock, Target } from "lucide-react";
 import { DeepFeedback } from "@/components/feedback";
+import { ListenButton } from "@/components/listen-button";
 import { RubricTable } from "@/components/rubric";
 import { Alert, Badge, Button, Card, CardHeader, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
 import type { ReflectionFeedback, ScenarioEvaluation } from "@/lib/ai/schemas";
@@ -154,12 +155,28 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
   }
 
   const minutes = Math.max(1, Math.round(story.word_count / 220));
+  const paragraphs = story.body
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const [speaking, setSpeaking] = useState<number | null>(null);
+  const onParagraph = (i: number | null) => {
+    setSpeaking(i);
+    if (i === null) return;
+    document.getElementById(`story-p-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+  const onListenEnd = () => {
+    if (completed) return;
+    setProgress(100);
+    report(100);
+  };
   return (
     <Card>
       <div className="sticky top-14 z-10 flex items-center gap-3 rounded-t-lg border-b border-line bg-surface/95 px-5 py-3 backdrop-blur lg:top-0">
         <BookOpen className="size-4 shrink-0 text-muted" strokeWidth={1.75} />
         <ProgressBar value={progress} />
         <span className="shrink-0 text-xs tabular-nums text-muted">{progress}%</span>
+        <ListenButton paragraphs={[story.title, ...paragraphs]} onParagraph={(i) => onParagraph(i === null || i === 0 ? null : i - 1)} onEnd={onListenEnd} />
       </div>
       <article className="px-5 py-8 sm:px-10">
         {episode && (
@@ -172,12 +189,11 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
         </p>
         <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{story.title}</h3>
         <div ref={ref} className="story-body mt-6 max-w-[65ch] font-serif text-[17px] leading-[1.75] text-ink">
-          {story.body
-            .split(/\n\s*\n/)
-            .filter((p) => p.trim())
-            .map((p, i) => (
-              <p key={i}>{p.trim()}</p>
-            ))}
+          {paragraphs.map((p, i) => (
+            <p key={i} id={`story-p-${i}`} className={cx("-mx-2 rounded-lg px-2 transition-colors duration-300", speaking === i && "bg-primary-soft")}>
+              {p}
+            </p>
+          ))}
         </div>
       </article>
       {completed ? (

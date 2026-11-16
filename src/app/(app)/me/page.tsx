@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShareProgress } from "@/components/share-progress";
 import { ChevronRight, ClipboardList, Gem, LineChart, LogOut, Map, NotebookPen, Settings, ShieldCheck, Trophy } from "lucide-react";
 import { isAdmin } from "@/lib/server/admin";
 import { Card, IconTile, ProgressBar } from "@/components/ui";
@@ -48,6 +49,9 @@ export default async function MePage() {
               </div>
             ))}
           </div>
+        </div>
+        <div className="px-5 pb-1">
+          <ShareProgress />
         </div>
         <div className="px-5 py-3">
           <div className="mb-1 flex justify-between text-xs text-muted">
