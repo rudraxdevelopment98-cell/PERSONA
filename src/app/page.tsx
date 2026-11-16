@@ -138,7 +138,7 @@ export default async function Landing() {
           <h2 className="text-2xl font-extrabold tracking-tight">Three phases, ninety days</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {PHASES.map((p, i) => (
-              <div key={p.number} className="bg-brand relative rounded-3xl p-6 text-white" style={{ filter: `hue-rotate(${i * 25}deg)` }}>
+              <div key={p.number} className="bg-brand relative rounded-3xl p-6 text-white" style={{ opacity: 1 - i * 0.08 }}>
                 <p className="text-xs font-bold uppercase tracking-wider text-white/70">
                   Days {p.days[0]}–{p.days[1]}
                 </p>
