@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Headphones, Pause, Play, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Check, Download, Headphones, Pause, Play, Settings2, Sparkles, Volume2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { GOOD_VOICE, bestVoice, rankedVoices, saveVoiceName, savedVoiceName, sentences, voiceScore, voiceTip, type VoiceLang } from "@/lib/client/voices";
+import { PIPER_VOICES, isDownloaded, loadVoice, piperSupported, piperVoice, synthesize, type PiperVoiceId } from "@/lib/client/piper";
 import { cx } from "./ui";
 
 const RATES = [1, 1.25, 0.85];
 const CACHE = "p90-voice-v1";
+const PREF = "p90-listen-engine";
 
 export type AIVoice = {
   sessionId: string;
@@ -16,19 +20,30 @@ export type AIVoice = {
   remaining: number;
 };
 
-/** Picks a voice that suits the text: Hindi for Devanagari, Indian English for Hinglish/English. */
-function pickVoice(text: string): { lang: string; voice: SpeechSynthesisVoice | null } {
-  const voices = window.speechSynthesis.getVoices();
-  const hindi = /[ऀ-ॿ]/.test(text);
-  const prefs = hindi ? ["hi-IN", "hi"] : ["en-IN", "en-GB", "en-US", "en"];
-  for (const p of prefs) {
-    const v = voices.find((x) => x.lang.replace("_", "-").toLowerCase().startsWith(p.toLowerCase()));
-    if (v) return { lang: v.lang, voice: v };
+type Engine = "ai" | "piper" | "device";
+
+const readPref = (): string | null => {
+  try {
+    return localStorage.getItem(PREF);
+  } catch {
+    return null;
   }
-  return { lang: hindi ? "hi-IN" : "en-IN", voice: null };
+};
+const writePref = (v: string) => {
+  try {
+    localStorage.setItem(PREF, v);
+  } catch {}
+};
+
+/** "hi" for Devanagari, "hinglish" for Roman Hindi, else "en". */
+function storyLanguage(text: string): "hi" | "hinglish" | "en" {
+  if (/[ऀ-ॿ]/.test(text)) return "hi";
+  const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
+  const hind = words.filter((w) => /^(hai|hain|nahi|kya|mein|tum|aur|ki|ka|ke|ko|se|ne|bhi|toh|tha|thi|kar|raha|rahi|apni|apna|uska|uski)$/.test(w)).length;
+  return words.length && hind / words.length > 0.06 ? "hinglish" : "en";
 }
 
-/** One narrated part as a playable URL; kept in the browser cache so replays cost nothing. */
+/** One AI-narrated part as a playable URL; kept in the browser cache so replays cost nothing. */
 async function aiPart(sessionId: string, part: number): Promise<string> {
   const url = `/api/story/audio?session=${sessionId}&part=${part}`;
   let res: Response | undefined;
@@ -46,8 +61,10 @@ async function aiPart(sessionId: string, part: number): Promise<string> {
 }
 
 /**
- * Reads the story aloud. Pro (and a monthly free taste) get the AI narrator;
- * everyone else, or when it is unavailable, gets the device's built-in voice.
+ * Reads the story aloud with one of three engines:
+ * - AI narrator (Pro, and a monthly free taste),
+ * - HD voice: free neural Piper voices running on the device after a one-time download,
+ * - the best voice the phone already has.
  * Reports the paragraph being read and calls onEnd after the last one.
  */
 export function ListenButton({
@@ -64,25 +81,36 @@ export function ListenButton({
   const [deviceOk, setDeviceOk] = useState(false);
   const [state, setState] = useState<"idle" | "loading" | "playing" | "paused">("idle");
   const [rate, setRate] = useState(1);
-  const [useAI, setUseAI] = useState(Boolean(ai?.allowed));
+  const [engineChoice, setEngineChoice] = useState<Engine>("device");
+  const [piperId, setPiperId] = useState<PiperVoiceId | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [sheet, setSheet] = useState(false);
   const index = useRef(0);
   const run = useRef(0);
-  const engine = useRef<"ai" | "device">("device");
+  const engine = useRef<Engine>("device");
   const audio = useRef<HTMLAudioElement | null>(null);
-  const urls = useRef(new Map<number, Promise<string>>());
+  const urls = useRef(new Map<string, Promise<string>>());
+  const lang = storyLanguage(paragraphs.join(" ").slice(0, 3000));
+  const deviceLang: VoiceLang = lang === "hi" ? "hi" : "en";
 
+  // Choose the engine: saved preference first, then AI if allowed, else the device.
   useEffect(() => {
     setDeviceOk(typeof window !== "undefined" && "speechSynthesis" in window);
     if ("speechSynthesis" in window) window.speechSynthesis.getVoices();
+    const pref = readPref();
+    if (pref?.startsWith("piper:") && piperSupported() && piperVoice(pref.slice(6))) {
+      setEngineChoice("piper");
+      setPiperId(pref.slice(6) as PiperVoiceId);
+    } else if (ai?.allowed && pref !== "device") setEngineChoice("ai");
+    else setEngineChoice("device");
     const map = urls.current;
     return () => {
-      run.current++;
+      run.current += 1;
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       audio.current?.pause();
       map.forEach((p) => p.then((u) => URL.revokeObjectURL(u)).catch(() => {}));
     };
-  }, []);
+  }, [ai?.allowed]);
 
   const finish = () => {
     setState("idle");
@@ -97,40 +125,48 @@ export function ListenButton({
     engine.current = "device";
     audio.current?.pause();
     synth.cancel();
-    const next = (k: number) => {
+    const say = (k: number) => {
       if (myRun !== run.current) return;
       if (k >= paragraphs.length) return finish();
       index.current = k;
       onParagraph?.(k);
-      const u = new SpeechSynthesisUtterance(paragraphs[k]);
-      const { lang, voice } = pickVoice(paragraphs[k]);
-      u.lang = lang;
-      if (voice) u.voice = voice;
-      u.rate = r;
-      u.onend = () => next(k + 1);
-      u.onerror = (e) => {
-        if (e.error !== "interrupted" && e.error !== "canceled") next(k + 1);
+      const pieces = sentences(paragraphs[k]);
+      const { lang: code, voice } = bestVoice(deviceLang);
+      const speakPiece = (j: number) => {
+        if (myRun !== run.current) return;
+        // A short breath between paragraphs.
+        if (j >= pieces.length) return void setTimeout(() => say(k + 1), 350);
+        const u = new SpeechSynthesisUtterance(pieces[j]);
+        u.lang = code;
+        if (voice) u.voice = voice;
+        u.rate = r * 0.97;
+        u.pitch = 1;
+        u.onend = () => speakPiece(j + 1);
+        u.onerror = (e) => {
+          if (e.error !== "interrupted" && e.error !== "canceled") speakPiece(j + 1);
+        };
+        synth.speak(u);
       };
-      synth.speak(u);
+      speakPiece(0);
     };
     setState("playing");
-    next(i);
+    say(i);
   };
 
-  const fetchPart = (k: number) => {
-    if (!ai) return Promise.reject(new Error("no ai"));
-    let p = urls.current.get(k);
+  const fetchPart = (kind: "ai" | "piper", k: number) => {
+    const key = `${kind}:${kind === "piper" ? piperId : ""}:${k}`;
+    let p = urls.current.get(key);
     if (!p) {
-      p = aiPart(ai.sessionId, k);
-      urls.current.set(k, p);
-      p.catch(() => urls.current.delete(k));
+      p = kind === "ai" ? (ai ? aiPart(ai.sessionId, k) : Promise.reject(new Error("no ai"))) : synthesize(piperId!, paragraphs[k]);
+      urls.current.set(key, p);
+      p.catch(() => urls.current.delete(key));
     }
     return p;
   };
 
-  const playAI = (i: number, r = rate) => {
+  const playAudio = (kind: "ai" | "piper", i: number, r = rate) => {
     const myRun = ++run.current;
-    engine.current = "ai";
+    engine.current = kind;
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     const el = (audio.current ??= new Audio());
     const next = async (k: number) => {
@@ -139,10 +175,11 @@ export function ListenButton({
       index.current = k;
       onParagraph?.(k);
       try {
-        if (!urls.current.has(k)) setState("loading");
-        const src = await fetchPart(k);
+        const key = `${kind}:${kind === "piper" ? piperId : ""}:${k}`;
+        if (!urls.current.has(key)) setState("loading");
+        const src = await fetchPart(kind, k);
         if (myRun !== run.current) return;
-        if (k + 1 < paragraphs.length) fetchPart(k + 1).catch(() => {});
+        if (k + 1 < paragraphs.length) fetchPart(kind, k + 1).catch(() => {});
         el.src = src;
         el.playbackRate = r;
         el.onended = () => next(k + 1);
@@ -150,9 +187,9 @@ export function ListenButton({
         setState("playing");
       } catch (e) {
         if (myRun !== run.current) return;
-        // Limit reached, AI busy or autoplay blocked: carry on with the device voice.
-        setNote((e as Error).message === "402" ? "AI voice limit reached · device voice" : "Device voice");
-        setUseAI(false);
+        // Limit reached, offline, or the engine failed: carry on with the device voice.
+        setNote(kind === "ai" && (e as Error).message === "402" ? "AI voice limit reached · phone voice" : "Phone ki awaaz par switch kiya");
+        setEngineChoice("device");
         if (deviceOk) speakDevice(k, r);
         else setState("idle");
       }
@@ -161,18 +198,28 @@ export function ListenButton({
     void next(i);
   };
 
-  const start = (i: number, r = rate) => (useAI && ai?.allowed ? playAI(i, r) : speakDevice(i, r));
+  const start = (i: number, r = rate) => {
+    if (engineChoice === "ai" && ai?.allowed) return playAudio("ai", i, r);
+    if (engineChoice === "piper" && piperId) return playAudio("piper", i, r);
+    return speakDevice(i, r);
+  };
+
+  const stopAll = () => {
+    run.current += 1;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    audio.current?.pause();
+    setState("idle");
+  };
 
   const toggle = () => {
     if (state === "playing") {
-      if (engine.current === "ai") audio.current?.pause();
-      else window.speechSynthesis.pause();
+      if (engine.current === "device") window.speechSynthesis.pause();
+      else audio.current?.pause();
       setState("paused");
     } else if (state === "paused") {
       setState("playing");
-      if (engine.current === "ai") {
-        audio.current?.play().catch(() => start(index.current));
-      } else {
+      if (engine.current !== "device") audio.current?.play().catch(() => start(index.current));
+      else {
         const synth = window.speechSynthesis;
         synth.resume();
         // Some browsers drop a long pause; restart the current paragraph if nothing is speaking.
@@ -180,48 +227,48 @@ export function ListenButton({
           if (!synth.speaking) speakDevice(index.current);
         }, 300);
       }
-    } else if (state === "idle") {
-      start(0);
-    }
+    } else if (state === "idle") start(0);
   };
 
   const cycleRate = () => {
     const r = RATES[(RATES.indexOf(rate) + 1) % RATES.length];
     setRate(r);
-    if (engine.current === "ai" && audio.current) audio.current.playbackRate = r;
+    if (engine.current !== "device" && audio.current) audio.current.playbackRate = r;
     else if (state === "playing") speakDevice(index.current, r);
   };
 
-  const switchEngine = () => {
-    const next = !useAI;
-    setUseAI(next);
-    setNote(null);
-    if (state === "playing" || state === "paused" || state === "loading") {
-      if (next && ai?.allowed) playAI(index.current);
-      else speakDevice(index.current);
-    }
-  };
+  /** Called by the voice sheet; restarts the current paragraph with the new engine. */
+  const choose = useCallback(
+    (e: Engine, id?: PiperVoiceId) => {
+      setEngineChoice(e);
+      setNote(null);
+      if (e === "piper" && id) {
+        setPiperId(id);
+        writePref(`piper:${id}`);
+      } else writePref(e);
+      if (state !== "idle") stopAll();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state],
+  );
 
-  if (!deviceOk && !ai?.allowed) return null;
-  const aiOn = useAI && Boolean(ai?.allowed);
+  if (!deviceOk && !ai?.allowed && !piperSupported()) return null;
+  const label = engineChoice === "ai" ? "AI voice" : engineChoice === "piper" ? "HD voice" : "Phone voice";
   return (
     <div className="flex shrink-0 items-center gap-1">
-      {ai && (ai.allowed ? (
-        <button
-          type="button"
-          onClick={switchEngine}
-          aria-pressed={aiOn}
-          aria-label={aiOn ? "AI voice on. Switch to device voice" : "Switch to AI voice"}
-          title={note ?? (aiOn ? `AI voice${ai.pro ? "" : ` · ${ai.remaining} free left this month`}` : "Device voice")}
-          className={cx("rounded-full p-1.5 transition", aiOn ? "bg-sun-soft text-warning" : "text-muted hover:bg-bg")}
-        >
-          <Sparkles className="size-4" />
-        </button>
-      ) : (
-        <Link href="/pricing" title={ai.pro ? "AI voice limit reached this month" : "AI narrator voice · Pro"} aria-label="AI narrator voice is a Pro feature" className="rounded-full p-1.5 text-muted/60 hover:text-warning">
-          <Sparkles className="size-4" />
-        </Link>
-      ))}
+      <button
+        type="button"
+        onClick={() => setSheet(true)}
+        aria-label={`Choose voice. Now: ${label}`}
+        title={note ?? `Awaaz: ${label}`}
+        className={cx(
+          "inline-flex h-8 items-center gap-1 rounded-full px-2 text-xs font-bold transition",
+          engineChoice === "device" ? "text-muted hover:bg-bg" : "bg-sun-soft text-warning",
+        )}
+      >
+        {engineChoice === "device" ? <Settings2 className="size-4" /> : <Sparkles className="size-4" />}
+        <span className="hidden sm:inline">{label}</span>
+      </button>
       <button
         type="button"
         onClick={toggle}
@@ -248,6 +295,230 @@ export function ListenButton({
           {rate}x
         </button>
       )}
+      {sheet &&
+        createPortal(
+        <VoiceSheet
+          onClose={() => setSheet(false)}
+          lang={lang}
+          deviceLang={deviceLang}
+          ai={ai ?? null}
+          current={{ engine: engineChoice, piperId }}
+          onChoose={(e, id) => {
+            choose(e, id);
+            if (e !== "piper") setSheet(false);
+          }}
+        />,
+          document.body,
+        )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- Voice sheet */
+
+function VoiceSheet({
+  onClose,
+  lang,
+  deviceLang,
+  ai,
+  current,
+  onChoose,
+}: {
+  onClose: () => void;
+  lang: "hi" | "hinglish" | "en";
+  deviceLang: VoiceLang;
+  ai: AIVoice | null;
+  current: { engine: Engine; piperId: PiperVoiceId | null };
+  onChoose: (e: Engine, id?: PiperVoiceId) => void;
+}) {
+  const [ready, setReady] = useState<Record<string, boolean>>({});
+  const [progress, setProgress] = useState<Record<string, number>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [device, setDevice] = useState<SpeechSynthesisVoice[]>([]);
+  const [deviceName, setDeviceName] = useState<string | null>(null);
+  const sample = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const load = () => setDevice(rankedVoices(deviceLang).slice(0, 5));
+    load();
+    setDeviceName(savedVoiceName(deviceLang) ?? rankedVoices(deviceLang)[0]?.name ?? null);
+    window.speechSynthesis?.addEventListener?.("voiceschanged", load);
+    Promise.all(PIPER_VOICES.map(async (v) => [v.id, await isDownloaded(v.id)] as const)).then((r) => setReady(Object.fromEntries(r)));
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.speechSynthesis?.removeEventListener?.("voiceschanged", load);
+      window.removeEventListener("keydown", esc);
+      sample.current?.pause();
+      window.speechSynthesis?.cancel();
+    };
+  }, [deviceLang, onClose]);
+
+  const playSample = (src: string) => {
+    window.speechSynthesis?.cancel();
+    sample.current?.pause();
+    sample.current = new Audio(src);
+    void sample.current.play().catch(() => {});
+  };
+  const previewDevice = (v: SpeechSynthesisVoice) => {
+    sample.current?.pause();
+    const s = window.speechSynthesis;
+    s.cancel();
+    const u = new SpeechSynthesisUtterance(deviceLang === "hi" ? "नमस्ते! मैं आज की कहानी सुनाऊँगी।" : "Namaste! I will read today's story for you.");
+    u.voice = v;
+    u.lang = v.lang;
+    s.speak(u);
+  };
+
+  const getPiper = async (id: PiperVoiceId) => {
+    setError(null);
+    if (!ready[id]) {
+      setProgress((p) => ({ ...p, [id]: 0 }));
+      try {
+        await loadVoice(id, (l, t) => setProgress((p) => ({ ...p, [id]: t ? Math.round((l / t) * 100) : Math.min(99, Math.round(l / 640_000)) })));
+        setReady((r) => ({ ...r, [id]: true }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Download nahi hua. Wi-Fi par dobara try karo.");
+        setProgress((p) => {
+          const n = { ...p };
+          delete n[id];
+          return n;
+        });
+        return;
+      }
+      setProgress((p) => {
+        const n = { ...p };
+        delete n[id];
+        return n;
+      });
+    }
+    onChoose("piper", id);
+  };
+
+  // Roman Hinglish and Hindi stories: Hindi voices first; English stories: English voices first.
+  const piperList = [...PIPER_VOICES].sort((a, b) => Number(b.lang === (lang === "en" ? "en" : "hi")) - Number(a.lang === (lang === "en" ? "en" : "hi")));
+  const bestDeviceScore = device[0] ? voiceScore(device[0], deviceLang) : 0;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 sm:items-center" role="dialog" aria-modal="true" aria-label="Choose a voice" onClick={onClose}>
+      <div
+        className="animate-page max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-raised sm:rounded-3xl"
+        style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-extrabold">Awaaz chuno</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted hover:bg-bg">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {ai && (
+          <section className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">✨ AI narrator</p>
+            {ai.allowed ? (
+              <Row
+                selected={current.engine === "ai"}
+                title="AI narrator"
+                sub={ai.pro ? "Sabse natural · Pro" : `${ai.remaining} free story is mahine`}
+                onSelect={() => onChoose("ai")}
+              />
+            ) : (
+              <Link href="/pricing" className="mt-2 block rounded-2xl border border-dashed border-line p-3 text-sm text-muted hover:border-primary/40">
+                AI narrator · Pro mein milta hai →
+              </Link>
+            )}
+          </section>
+        )}
+
+        {piperSupported() && (
+          <section className="mt-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">🎧 HD awaaz · free · offline</p>
+            <p className="mt-1 text-xs text-muted">Ek baar download (~100 MB pehli baar, Wi-Fi par), phir hamesha free aur bina internet.</p>
+            <div className="mt-2 space-y-2">
+              {piperList.map((v) => (
+                <div
+                  key={v.id}
+                  className={cx(
+                    "flex items-center gap-2 rounded-2xl border p-3",
+                    current.engine === "piper" && current.piperId === v.id ? "border-primary bg-primary-soft" : "border-line",
+                  )}
+                >
+                  <button type="button" onClick={() => playSample(v.sample)} aria-label={`Sample: ${v.label}`} className="rounded-full bg-bg p-2 text-primary hover:brightness-95">
+                    <Volume2 className="size-4" />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{v.label}</p>
+                    <p className="text-xs text-muted">
+                      {progress[v.id] != null ? `Download ho raha hai… ${progress[v.id]}%` : ready[v.id] ? "Ready ✓" : "~64 MB"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => getPiper(v.id)}
+                    disabled={progress[v.id] != null}
+                    aria-label={ready[v.id] ? `Use ${v.label}` : `Download ${v.label}`}
+                    className={cx("rounded-full px-3 py-1.5 text-xs font-bold", ready[v.id] ? "bg-primary text-white" : "bg-primary-soft text-primary")}
+                  >
+                    {current.engine === "piper" && current.piperId === v.id ? (
+                      <Check className="size-4" />
+                    ) : ready[v.id] ? (
+                      "Use"
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        <Download className="size-3.5" /> Get
+                      </span>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+            {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+          </section>
+        )}
+
+        {device.length > 0 && (
+          <section className="mt-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">📱 Phone ki awaaz · turant</p>
+            <div className="mt-2 space-y-2">
+              {device.map((v) => (
+                <Row
+                  key={v.name}
+                  selected={current.engine === "device" && deviceName === v.name}
+                  title={v.name.replace(/\s*\(.*?\)\s*/g, " ").trim()}
+                  sub={`${v.lang}${voiceScore(v, deviceLang) >= GOOD_VOICE ? " · natural" : ""}`}
+                  onPreview={() => previewDevice(v)}
+                  onSelect={() => {
+                    saveVoiceName(deviceLang, v.name);
+                    setDeviceName(v.name);
+                    onChoose("device");
+                  }}
+                />
+              ))}
+            </div>
+            {bestDeviceScore < GOOD_VOICE && <p className="mt-2 rounded-xl bg-bg p-3 text-xs leading-relaxed text-muted">💡 {voiceTip(deviceLang)}</p>}
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Row({ selected, title, sub, onSelect, onPreview }: { selected: boolean; title: string; sub: string; onSelect: () => void; onPreview?: () => void }) {
+  return (
+    <div className={cx("mt-2 flex items-center gap-2 rounded-2xl border p-3", selected ? "border-primary bg-primary-soft" : "border-line")}>
+      {onPreview && (
+        <button type="button" onClick={onPreview} aria-label={`Preview ${title}`} className="rounded-full bg-bg p-2 text-primary hover:brightness-95">
+          <Volume2 className="size-4" />
+        </button>
+      )}
+      <button type="button" onClick={onSelect} className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left">
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold">{title}</span>
+          <span className="block text-xs text-muted">{sub}</span>
+        </span>
+        {selected && <Check className="size-4 shrink-0 text-primary" />}
+      </button>
     </div>
   );
 }
