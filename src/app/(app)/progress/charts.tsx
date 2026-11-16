@@ -25,7 +25,7 @@ function TrendChart({ data, dataKey, baseline, label }: { data: { date: string; 
           )}
           <Tooltip
             cursor={{ stroke: "var(--color-line-strong)" }}
-            contentStyle={{ borderRadius: 6, border: "1px solid #E5E7EB", fontSize: 12, boxShadow: "0 2px 8px rgba(16,24,40,.06)" }}
+            contentStyle={{ borderRadius: 12, border: "1px solid var(--color-line)", background: "var(--color-surface)", color: "var(--color-ink)", fontSize: 12, boxShadow: "var(--shadow-raised)" }}
             labelFormatter={(d) => fmtDate(String(d))}
             formatter={(v) => [v, label]}
           />

@@ -6,6 +6,7 @@ import { getUserState } from "@/lib/server/state";
 import { SettingsForm } from "./form";
 import { SecuritySettings } from "./security";
 import { YourAI } from "./your-ai";
+import { ThemeSetting } from "@/components/theme-toggle";
 
 export const metadata = { title: "Settings" };
 
@@ -22,6 +23,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader title="Settings" description="Your profile, AI, privacy and data." />
+      <ThemeSetting />
       <YourAI
         connection={connection}
         appProviderName={APP_PROVIDER_NAMES[app.kind] ?? app.kind}

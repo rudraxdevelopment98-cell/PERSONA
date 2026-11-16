@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Bell, Dumbbell, Flame, Gem, Home, LogOut, Play, ShieldCheck, Users } from "lucide-react";
 import { Logo } from "./logo";
 import { LanguageMenu } from "./language-menu";
-import { ThemeToggle } from "./theme-toggle";
 import type { Language } from "@/lib/ai/prompts";
 import { ProgressRing, cx } from "./ui";
 
@@ -163,7 +162,6 @@ export function AppNav({
           </form>
           <div className="flex items-center">
             <LanguageMenu value={language} up />
-            <ThemeToggle />
           </div>
         </div>
       </aside>
@@ -181,7 +179,6 @@ export function AppNav({
             <Flame className="size-3.5" /> {stats.streak}
           </Link>
           <LanguageMenu value={language} />
-          <ThemeToggle className="hidden min-[380px]:inline-flex" />
           <BellLink unread={unread} />
         </div>
       </header>

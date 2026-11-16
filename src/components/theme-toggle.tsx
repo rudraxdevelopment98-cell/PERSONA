@@ -1,36 +1,60 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
-import { cx } from "./ui";
+import { Card, cx } from "./ui";
 
-/** One tap switches light/dark; the choice is remembered on this device. */
-export function ThemeToggle({ className }: { className?: string }) {
-  const [dark, setDark] = useState<boolean | null>(null);
+type Theme = "system" | "light" | "dark";
+const OPTIONS: { id: Theme; label: string; icon: typeof Sun }[] = [
+  { id: "system", label: "Auto", icon: Monitor },
+  { id: "light", label: "Light", icon: Sun },
+  { id: "dark", label: "Dark", icon: Moon },
+];
+
+/** Appearance setting: follow the device, or always light / always dark. Remembered on this device. */
+export function ThemeSetting() {
+  const [theme, setTheme] = useState<Theme>("system");
 
   useEffect(() => {
     const t = document.documentElement.dataset.theme;
-    setDark(t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+    setTheme(t === "dark" || t === "light" ? t : "system");
   }, []);
 
-  const toggle = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.dataset.theme = next ? "dark" : "light";
+  const choose = (next: Theme) => {
+    setTheme(next);
+    const root = document.documentElement;
     try {
-      localStorage.setItem("p90-theme", next ? "dark" : "light");
+      if (next === "system") {
+        delete root.dataset.theme;
+        localStorage.removeItem("p90-theme");
+      } else {
+        root.dataset.theme = next;
+        localStorage.setItem("p90-theme", next);
+      }
     } catch {}
   };
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      title={dark ? "Light mode" : "Dark mode"}
-      className={cx("rounded-full p-2 text-muted transition-colors hover:bg-primary-soft hover:text-ink", className)}
-    >
-      {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-    </button>
+    <Card className="mb-6 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <h2 className="text-[15px] font-bold">Appearance</h2>
+      <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-full bg-bg p-1">
+        {OPTIONS.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            role="radio"
+            aria-checked={theme === o.id}
+            onClick={() => choose(o.id)}
+            className={cx(
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition",
+              theme === o.id ? "bg-surface text-ink shadow-card" : "text-muted hover:text-ink",
+            )}
+          >
+            <o.icon className="size-4" />
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </Card>
   );
 }

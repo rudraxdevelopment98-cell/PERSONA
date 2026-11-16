@@ -95,6 +95,16 @@
   color-scheme: dark;
 }
 
+/* Dark theme: bright fills (success, accent, danger, coral) get dark text for contrast. */
+:root[data-theme="dark"] :is(.bg-success, .bg-accent, .bg-danger, .bg-coral).text-white {
+  color: #0e1117;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) :is(.bg-success, .bg-accent, .bg-danger, .bg-coral).text-white {
+    color: #0e1117;
+  }
+}
+
 /* Hero surfaces (today's episode, level card) use the brand navy. */
 .bg-brand {
   background: var(--color-primary);
