@@ -33,7 +33,7 @@ export const POST = apiRoute(schema, async ({ id, response, input_mode, speech }
   if (ex.completed_at) throw new HttpError(409, "You have already answered this exercise.");
   const meta = EXERCISE_BY_ID.get(ex.exercise_type);
 
-  const context = await buildAIContext(db, state, { checkins: 1 });
+  const context = await buildAIContext(db, state, { checkins: 1, lean: true });
   const evaluation = await generateStructured({
     language: state.profile.language,
     system: COMMUNICATION_EVAL_SYSTEM,

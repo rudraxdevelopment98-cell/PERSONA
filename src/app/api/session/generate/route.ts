@@ -7,6 +7,7 @@ import { apiRoute, dbError, HttpError, requireBaseline } from "@/lib/server/api"
 import { buildAIContext } from "@/lib/server/context";
 import { todaysFocus } from "@/lib/server/state";
 import { planDay, recipeText } from "@/lib/server/variety";
+import { getPlan } from "@/lib/server/plan";
 import { SCENARIO_FORMATS, byId } from "@/lib/domain/variety";
 
 export const maxDuration = 300;
@@ -37,6 +38,10 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
     .limit(12);
 
   const focus = todaysFocus(state);
+  // Free users (on the app's AI) get a ~1,000-word episode; Pro and own-key users ~1,500.
+  const short = !(await getPlan(user.id)).unlimitedAI;
+  const words = short ? { range: "450-550", min: "450" } : { range: "650-800", min: "650" };
+  const sized = (sys: string) => sys.replaceAll("650-800 words (never fewer than 650)", `${words.range} words (never fewer than ${words.min})`);
   const context = await buildAIContext(db, state, { checkins: 3 });
   const plan = await planDay(db, user.id, state.day, state.profile.next_world ?? null);
   const v = plan.variety;
@@ -79,16 +84,16 @@ Concepts to dramatise: ${brief.concepts.join(", ")}
 Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
   const part1 = await generateStructured({
     language: state.profile.language,
-    system: STORY_PART1_SYSTEM,
-    prompt: `${context}\n\n${briefText}\n\nWrite the first half now (650-800 words).`,
+    system: sized(STORY_PART1_SYSTEM),
+    prompt: `${context}\n\n${briefText}\n\nWrite the first half now (${words.range} words).`,
     schema: storyPartSchema,
     effort: "medium",
     maxTokens: 24000,
   });
   const part2 = await generateStructured({
     language: state.profile.language,
-    system: STORY_PART2_SYSTEM,
-    prompt: `${briefText}\n\n## First half (already written)\n${part1.text}\n\nWrite the second half now (650-800 words), plus the title and 3 insights.`,
+    system: sized(STORY_PART2_SYSTEM),
+    prompt: `${briefText}\n\n## First half (already written)\n${part1.text}\n\nWrite the second half now (${words.range} words), plus the title and 3 insights.`,
     schema: storySchema,
     effort: "medium",
     maxTokens: 24000,
@@ -104,11 +109,11 @@ Skill being trained: ${DIMENSION_META[focus.dimension].label}`;
   };
 
   // Some models still write short; expand once if it is well under target.
-  if (countWords(story.body) < 1000) {
+  if (countWords(story.body) < (short ? 700 : 1000)) {
     try {
       const expanded = await generateStructured({
         language: state.profile.language,
-        system: STORY_EXPANSION_SYSTEM,
+        system: short ? STORY_EXPANSION_SYSTEM.replace("1,100-1,400", "800-1,000") : STORY_EXPANSION_SYSTEM,
         prompt: `Title: ${story.title}\nFocus skill: ${DIMENSION_META[focus.dimension].label}\n\n${story.body}`,
         schema: storyExpansionSchema,
         effort: "low",

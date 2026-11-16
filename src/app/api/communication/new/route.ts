@@ -27,7 +27,7 @@ export const POST = apiRoute(schema, async ({ exercise_type }, { db, user, state
     .eq("exercise_type", exercise_type)
     .order("created_at", { ascending: false })
     .limit(8);
-  const context = await buildAIContext(db, state, { checkins: 2 });
+  const context = await buildAIContext(db, state, { checkins: 2, lean: true });
 
   const arena = pickArena();
   const prompt = await generateStructured({

@@ -419,13 +419,14 @@ export async function grantProByEmail(actor: string, email: string, days: number
 // AI models and costs
 // ---------------------------------------------------------------------------
 
-export async function aiTiers(): Promise<{ free: string; pro: string }> {
-  const [r] = await q<{ value: { free?: { provider: string; model: string }; pro?: { provider: string; model: string } } }>("select value from public.app_settings where key = 'ai_tiers'");
-  const id = (c?: { provider: string; model: string }) => (!c || c.provider === "default" ? "default" : `${c.provider}:${c.model}`);
-  return { free: id(r?.value.free), pro: id(r?.value.pro) };
+export async function aiTiers(): Promise<{ free: string; pro: string; light: string; lightForPro: boolean }> {
+  type C = { provider: string; model: string };
+  const [r] = await q<{ value: { free?: C; pro?: C; light?: C; lightForPro?: boolean } }>("select value from public.app_settings where key = 'ai_tiers'");
+  const id = (c?: C) => (!c || c.provider === "default" ? "default" : `${c.provider}:${c.model}`);
+  return { free: id(r?.value.free), pro: id(r?.value.pro), light: id(r?.value.light), lightForPro: Boolean(r?.value.lightForPro) };
 }
 
-export async function saveAiTiers(actor: string, free: string, pro: string) {
+export async function saveAiTiers(actor: string, free: string, pro: string, light = "default", lightForPro = false) {
   await requireAdmin(actor);
   const { TIER_CHOICES } = await import("@/lib/domain/ai-pricing");
   const pick = (id: string) => {
@@ -433,11 +434,11 @@ export async function saveAiTiers(actor: string, free: string, pro: string) {
     if (!c) throw new AdminError("Unknown model.");
     return { provider: c.provider, model: c.model };
   };
-  const value = { free: pick(free), pro: pick(pro) };
+  const value = { free: pick(free), pro: pick(pro), light: pick(light), lightForPro };
   await q("insert into public.app_settings (key, value) values ('ai_tiers', $1) on conflict (key) do update set value = excluded.value", [JSON.stringify(value)]);
   const { clearTierCache } = await import("@/lib/ai/client");
   clearTierCache();
-  await audit(actor, "ai.tiers", { label: `free=${free} pro=${pro}` });
+  await audit(actor, "ai.tiers", { label: `free=${free} pro=${pro} light=${light}${lightForPro ? " (pro too)" : ""}` });
 }
 
 export async function aiCosts() {

@@ -27,7 +27,7 @@ export const POST = apiRoute(schema, async (body, { db, user, state }) => {
   const chosen = log.scenario.options.find((o) => o.id === body.chosen_option);
   if (!chosen) throw new HttpError(400, "Unknown option.");
 
-  const context = await buildAIContext(db, state, { checkins: 1 });
+  const context = await buildAIContext(db, state, { checkins: 1, lean: true });
   const prompt = `${context}
 
 ## Scenario (${log.category}, ${log.difficulty})

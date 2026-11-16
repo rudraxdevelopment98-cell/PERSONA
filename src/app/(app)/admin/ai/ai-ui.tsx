@@ -9,10 +9,12 @@ import { saveAiTiersAction, testModelAction } from "../actions";
 type Choice = { id: string; label: string; perSession: number | null };
 const money = (n: number) => (Math.abs(n) >= 100 ? `$${Math.round(n).toLocaleString()}` : `$${n.toFixed(2)}`);
 
-export function TierForm({ choices, current }: { choices: Choice[]; current: { free: string; pro: string } }) {
+export function TierForm({ choices, current }: { choices: Choice[]; current: { free: string; pro: string; light: string; lightForPro: boolean } }) {
   const router = useRouter();
   const [free, setFree] = useState(current.free);
   const [pro, setPro] = useState(current.pro);
+  const [light, setLight] = useState(current.light);
+  const [lightForPro, setLightForPro] = useState(current.lightForPro);
   const [msg, setMsg] = useState<{ tone: "success" | "danger" | "warning"; text: string } | null>(null);
   const [pending, start] = useTransition();
   const label = (c: Choice) => `${c.label}${c.perSession != null ? ` · ~$${c.perSession.toFixed(3)}/session` : ""}`;
@@ -28,8 +30,9 @@ export function TierForm({ choices, current }: { choices: Choice[]; current: { f
       <CardHeader title="AI model per plan" description="Users who connect their own AI key always use their own. If a chosen model fails, the app default takes over automatically." />
       <div className="grid gap-4 px-5 pb-5 md:grid-cols-2">
         {[
-          { id: "tier-free", title: "Free plan", value: free, set: setFree },
-          { id: "tier-pro", title: "Pro plan", value: pro, set: setPro },
+          { id: "tier-free", title: "Free plan · stories & profile", value: free, set: setFree },
+          { id: "tier-pro", title: "Pro plan · stories & profile", value: pro, set: setPro },
+          { id: "tier-light", title: "Everyday tasks · feedback, check-ins, coach", value: light, set: setLight },
         ].map((t) => (
           <div key={t.id} className="space-y-2">
             <Label htmlFor={t.id}>{t.title}</Label>
@@ -43,12 +46,16 @@ export function TierForm({ choices, current }: { choices: Choice[]; current: { f
             </Button>
           </div>
         ))}
+        <label className="flex items-start gap-2 self-end pb-2 text-sm">
+          <input type="checkbox" className="mt-0.5 size-4 accent-[var(--color-primary)]" checked={lightForPro} onChange={(e) => setLightForPro(e.target.checked)} />
+          <span>Use the everyday model for Pro users too <span className="block text-xs text-muted">Cheaper; Pro keeps its better model for stories.</span></span>
+        </label>
         <div className="md:col-span-2 flex flex-wrap items-center gap-3">
           <Button
             disabled={pending}
             onClick={() =>
               start(async () => {
-                const r = await saveAiTiersAction(free, pro);
+                const r = await saveAiTiersAction(free, pro, light, lightForPro);
                 setMsg(r.error ? { tone: "danger", text: r.error } : { tone: "success", text: "Saved. New requests use these models within a few seconds." });
                 router.refresh();
               })

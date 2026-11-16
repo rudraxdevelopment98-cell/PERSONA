@@ -36,7 +36,7 @@ export const POST = apiRoute(schema, async (body, { db, user, state }) => {
     .maybeSingle();
   if (prior) throw new HttpError(409, "You have already answered this scenario.");
 
-  const context = await buildAIContext(db, state, { checkins: 2 });
+  const context = await buildAIContext(db, state, { checkins: 1, lean: true });
   const prompt = `${context}
 
 ## Scenario

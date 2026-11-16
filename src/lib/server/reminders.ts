@@ -57,3 +57,34 @@ export async function sendDailyReminders(now = new Date()) {
   }
   return { checked: rows.length, sent };
 }
+
+/** Weekly alert to admins when AI spending is too high compared with revenue. */
+export async function checkCostAlert() {
+  const pool = getPool();
+  const {
+    rows: [c],
+  } = await pool.query<{ cost: number }>("select coalesce(sum(cost_usd), 0)::float8 as cost from public.ai_usage where created_at > now() - interval '30 days'");
+  const { revenueStats } = await import("./payments");
+  const { DISPLAY_PRICES } = await import("@/lib/domain/plans");
+  const rev = await revenueStats();
+  const paid = rev.paid ?? { month: 0, year: 0 };
+  const mrr = paid.month * DISPLAY_PRICES.month + (paid.year * DISPLAY_PRICES.year) / 12;
+  const over = mrr > 0 ? c.cost > mrr * 0.3 && c.cost > 5 : c.cost > 20;
+  if (!over) return { alerted: false, cost: c.cost, mrr };
+  const {
+    rows: [last],
+  } = await pool.query<{ value: { at: string } }>("select value from public.app_settings where key = 'cost_alert'");
+  if (last && Date.now() - Date.parse(last.value.at) < 7 * 86_400_000) return { alerted: false, cost: c.cost, mrr };
+  await pool.query("insert into public.app_settings (key, value) values ('cost_alert', $1) on conflict (key) do update set value = excluded.value", [
+    JSON.stringify({ at: new Date().toISOString() }),
+  ]);
+  const { rows: admins } = await pool.query<{ user_id: string }>("select user_id from public.admins");
+  const { notify } = await import("./social");
+  const pct = mrr > 0 ? Math.round((c.cost / mrr) * 100) : 0;
+  const body =
+    mrr > 0
+      ? `AI cost of ${c.cost.toFixed(2)} USD in 30 days is ${pct}% of revenue (${mrr.toFixed(2)} USD/month).`
+      : `AI cost reached ${c.cost.toFixed(2)} USD in 30 days with no paid revenue yet.`;
+  await Promise.all(admins.map((a) => notify(a.user_id, "cost_alert", { title: "⚠️ AI costs are high", body, url: "/admin/ai" }).catch(() => {})));
+  return { alerted: true, cost: c.cost, mrr };
+}

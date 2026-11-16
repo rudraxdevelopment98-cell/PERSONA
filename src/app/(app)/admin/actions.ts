@@ -120,9 +120,9 @@ export async function grantProAction(email: string, days: number) {
   return run((u) => admin.grantProByEmail(u, email, days));
 }
 
-export async function saveAiTiersAction(free: string, pro: string) {
-  if (typeof free !== "string" || typeof pro !== "string") return { error: "Pick a model for each plan." };
-  return run((u) => admin.saveAiTiers(u, free.slice(0, 80), pro.slice(0, 80)));
+export async function saveAiTiersAction(free: string, pro: string, light = "default", lightForPro = false) {
+  if (typeof free !== "string" || typeof pro !== "string" || typeof light !== "string") return { error: "Pick a model for each plan." };
+  return run((u) => admin.saveAiTiers(u, free.slice(0, 80), pro.slice(0, 80), light.slice(0, 80), Boolean(lightForPro)));
 }
 
 export async function testModelAction(choiceId: string) {

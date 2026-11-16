@@ -32,7 +32,7 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { db, user,
 
   let feedback = null;
   try {
-    const context = await buildAIContext(db, state, { checkins: 1 });
+    const context = await buildAIContext(db, state, { checkins: 1, lean: true });
     const qa = session.reflection_questions.map((q, i) => `Q: ${q}\nA: ${answers[i]}`).join("\n\n");
     feedback = await generateStructured({
       language: state.profile.language,

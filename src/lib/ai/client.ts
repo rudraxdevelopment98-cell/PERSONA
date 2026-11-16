@@ -49,10 +49,25 @@ function meter(model: string, input?: number, output?: number) {
 }
 
 type TierChoice = { provider: "default" | "gemini" | "gateway"; model: string };
-let tierCache: { at: number; value: { free?: TierChoice; pro?: TierChoice } } | null = null;
+type TierConfig = { free?: TierChoice; pro?: TierChoice; light?: TierChoice; lightForPro?: boolean };
+let tierCache: { at: number; value: TierConfig } | null = null;
+
+/** Quick, structured tasks that a cheaper model handles well (feedback, check-ins, coach). */
+const LIGHT_FEATURES = new Set([
+  "checkin.start",
+  "checkin.submit",
+  "session.scenario",
+  "session.reflect",
+  "decision.new",
+  "decision.submit",
+  "communication.new",
+  "communication.submit",
+  "coach",
+]);
+export const isLightFeature = (f: string) => LIGHT_FEATURES.has(f);
 
 /** Admin-chosen models per plan (cached briefly; each server bundle keeps its own copy). */
-async function tierConfig(): Promise<{ free?: TierChoice; pro?: TierChoice }> {
+async function tierConfig(): Promise<TierConfig> {
   if (tierCache && Date.now() - tierCache.at < 10_000) return tierCache.value;
   try {
     const { getPool } = await import("@/lib/db/pool");
@@ -73,7 +88,11 @@ async function resolveProvider(): Promise<Provider> {
   const own = userAI.getStore();
   if (own) return { kind: own.provider, model: own.model, apiKey: own.apiKey };
   const ctx = aiContext.getStore();
-  const choice = (await tierConfig())[ctx?.tier ?? "free"];
+  const cfg = await tierConfig();
+  const tier = ctx?.tier ?? "free";
+  // Everyday tasks can run on a cheaper model (always for Free, optionally for Pro).
+  const useLight = cfg.light && cfg.light.provider !== "default" && isLightFeature(ctx?.feature ?? "") && (tier === "free" || cfg.lightForPro);
+  const choice = useLight ? cfg.light : cfg[tier];
   if (choice && choice.provider !== "default" && choice.model) return { kind: choice.provider, model: choice.model };
   return appProvider();
 }
@@ -309,7 +328,8 @@ function checkGeminiFinish(last: GeminiChunk | null) {
  * remembered for the lifetime of the server instance.
  */
 const GEMINI_FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash"];
-let workingGeminiModel: string | null = null;
+/** Per requested model: the model that last worked in its place (so admin-chosen models are respected). */
+const workingGeminiModel = new Map<string, string>();
 
 const errStatus = (err: unknown) => (err as { status?: number })?.status;
 const errText = (err: unknown) => String((err as Error)?.message ?? err);
@@ -342,7 +362,7 @@ async function withGeminiModelFallback<T>(
   // Pass 1 uses the normal time per attempt; if every model was busy or slow,
   // pass 2 retries them with double the time (load spikes are usually short).
   for (let pass = 0; pass < 2; pass++) {
-    const queue = [...new Set([p.apiKey ? p.model : (workingGeminiModel ?? p.model), p.model, ...GEMINI_FALLBACK_MODELS])];
+    const queue = [...new Set([p.apiKey ? p.model : (workingGeminiModel.get(p.model) ?? p.model), p.model, ...GEMINI_FALLBACK_MODELS])];
     const tried = new Set<string>();
     const perAttempt = attemptMs * (pass + 1);
     while (queue.length > 0) {
@@ -353,19 +373,19 @@ async function withGeminiModelFallback<T>(
       tried.add(model);
       try {
         const result = await fn(model, AbortSignal.timeout(Math.min(perAttempt, remaining - 3_000)));
-        if (!p.apiKey) workingGeminiModel = model;
+        if (!p.apiKey) workingGeminiModel.set(p.model, model);
         return result;
       } catch (err) {
         lastErr = err;
         const status = errStatus(err);
         if (isTimeout(err)) {
           console.warn(`[ai] Gemini model "${model}" was too slow (${Math.round(perAttempt / 1000)} s); trying another model.`);
-          if (workingGeminiModel === model) workingGeminiModel = null;
+          if (workingGeminiModel.get(p.model) === model) workingGeminiModel.delete(p.model);
           continue;
         }
         if (status && TRANSIENT.has(status)) {
           console.warn(`[ai] Gemini model "${model}" is busy (${status}); trying another model.`);
-          if (workingGeminiModel === model) workingGeminiModel = null;
+          if (workingGeminiModel.get(p.model) === model) workingGeminiModel.delete(p.model);
           continue;
         }
         if (status !== 404) throw err;

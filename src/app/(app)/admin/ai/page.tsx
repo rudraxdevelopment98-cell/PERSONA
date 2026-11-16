@@ -57,6 +57,11 @@ export default async function AdminAI() {
     <>
       <PageHeader eyebrow="Admin" title="AI models & costs" description="Choose the AI for each plan and keep AI spending below revenue." />
       <div className="space-y-4">
+        {mrr > 0 && c.tot.cost > mrr * 0.3 && (
+          <div className="rounded-2xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm font-semibold text-danger">
+            AI costs are {Math.round((c.tot.cost / mrr) * 100)}% of revenue (target: under 30%). Switch the everyday model to a cheaper one or tighten Free limits.
+          </div>
+        )}
         <TierForm choices={choices} current={tiers} />
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

@@ -39,7 +39,7 @@ export const POST = apiRoute(schema, async ({ answers }, { db, user, state }) =>
   let analysis = null;
   let analysisError: string | null = null;
   try {
-    const context = await buildAIContext(db, state, { checkins: 6 });
+    const context = await buildAIContext(db, state, { checkins: 4, lean: true });
     const today = checkin.questions.map((q) => `Q: ${q.text}\nA: ${clean.find((c) => c.id === q.id)?.value}`).join("\n");
     analysis = await generateStructured({
       language: state.profile.language,

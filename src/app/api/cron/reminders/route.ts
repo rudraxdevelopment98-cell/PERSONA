@@ -1,4 +1,4 @@
-import { sendDailyReminders } from "@/lib/server/reminders";
+import { checkCostAlert, sendDailyReminders } from "@/lib/server/reminders";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -12,5 +12,6 @@ export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) return new Response("Unauthorized", { status: 401 });
   const result = await sendDailyReminders();
-  return Response.json(result);
+  const cost = await checkCostAlert().catch((e) => ({ error: (e as Error).message }));
+  return Response.json({ ...result, cost });
 }

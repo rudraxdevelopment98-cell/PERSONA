@@ -21,7 +21,7 @@ export const POST = apiRoute(schema, async ({ category, difficulty }, { db, user
 
   const { data: recent } = await db.from("decision_logs").select("scenario").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
   const used = (recent ?? []).map((r) => `- ${r.scenario?.title}`).join("\n");
-  const context = await buildAIContext(db, state, { checkins: 2 });
+  const context = await buildAIContext(db, state, { checkins: 2, lean: true });
   const cat = DECISION_CATEGORIES.find((c) => c.id === category)!.label;
   const diff = DECISION_DIFFICULTIES.find((d) => d.id === difficulty)!.label;
 

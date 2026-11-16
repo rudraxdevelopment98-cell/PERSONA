@@ -16,7 +16,8 @@ const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s
 export async function buildAIContext(
   db: Db,
   state: UserState,
-  opts: { includeJournal?: boolean; checkins?: number } = {},
+  /** lean: a smaller context for quick feedback calls (cheaper; the essentials only). */
+  opts: { includeJournal?: boolean; checkins?: number; lean?: boolean } = {},
 ): Promise<string> {
   const uid = state.userId;
   const [checkinsRes, scenariosRes, decisionsRes, exercisesRes, sessionsRes, journalRes] = await Promise.all([
@@ -27,7 +28,7 @@ export async function buildAIContext(
       .not("completed_at", "is", null)
       .order("checkin_date", { ascending: false })
       .limit(opts.checkins ?? 4),
-    db.from("scenario_responses").select("skill, score, evaluation").eq("user_id", uid).not("score", "is", null).order("created_at", { ascending: false }).limit(5),
+    db.from("scenario_responses").select("skill, score, evaluation").eq("user_id", uid).not("score", "is", null).order("created_at", { ascending: false }).limit(opts.lean ? 2 : 5),
     db
       .from("decision_logs")
       .select("category, score, confidence, first_choice_ms, total_time_ms, choice_changes, evaluation")
@@ -62,7 +63,7 @@ export async function buildAIContext(
   if (dp) {
     lines.push(`\n## Development profile`);
     lines.push(dp.summary);
-    if (dp.behavioural_patterns.length) lines.push(`Patterns: ${dp.behavioural_patterns.join("; ")}`);
+    if (dp.behavioural_patterns.length) lines.push(`Patterns: ${dp.behavioural_patterns.slice(0, opts.lean ? 2 : 6).join("; ")}`);
     lines.push(`Growth areas: ${dp.growth_areas.map((g) => `${DIMENSION_META[g.dimension].label} (${g.likely_pattern})`).join("; ")}`);
   }
 
@@ -79,7 +80,7 @@ export async function buildAIContext(
       const qa = (c.questions ?? [])
         .map((q) => {
           const a = c.answers?.find((x) => x.id === q.id)?.value;
-          return a == null || a === "" ? null : `Q: ${q.text}\nA: ${clip(String(a), 500)}`;
+          return a == null || a === "" ? null : `Q: ${q.text}\nA: ${clip(String(a), opts.lean ? 240 : 500)}`;
         })
         .filter(Boolean)
         .join("\n");
@@ -118,6 +119,6 @@ export async function buildAIContext(
     for (const j of journal) lines.push(userData(`journal ${j.entry_type} ${String(j.created_at).slice(0, 10)}`, `${j.title}\n${clip(j.body, 1200)}`));
   }
 
-  lines.push(`\n## Programme phases\n${PHASES.map((p) => `${p.number}. ${p.name} (days ${p.days[0]}-${p.days[1]}): ${p.focus.map((f) => f.title).join(", ")}`).join("\n")}`);
+  if (!opts.lean) lines.push(`\n## Programme phases\n${PHASES.map((p) => `${p.number}. ${p.name} (days ${p.days[0]}-${p.days[1]}): ${p.focus.map((f) => f.title).join(", ")}`).join("\n")}`);
   return lines.join("\n");
 }
