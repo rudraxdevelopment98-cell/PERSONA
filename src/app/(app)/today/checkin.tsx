@@ -6,7 +6,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { Alert, Button, Card, CardHeader, Spinner } from "@/components/ui";
 import { CHECKIN_LENSES, byId } from "@/lib/domain/variety";
 import { WritingEpisode } from "./writing-episode";
-import { CheckinDeck } from "./checkin-deck";
+import { CheckinDeck, type TodayMoment } from "./checkin-deck";
 import type { CheckinAnalysis } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import type { CheckinRow } from "@/lib/server/types";
@@ -64,10 +64,11 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const submit = (answers: Record<string, string | number>) =>
+  const submit = (answers: Record<string, string | number>, today: TodayMoment) =>
     run("submit", async () => {
       const res = await postJSON<{ analysis: CheckinAnalysis | null; analysisError: string | null }>("/api/checkin/submit", {
         answers: checkin!.questions.map((q) => ({ id: q.id, value: answers[q.id] ?? "" })),
+        today,
       });
       setCheckin({ ...checkin!, completed_at: new Date().toISOString() });
       setAnalysis(res.analysis);

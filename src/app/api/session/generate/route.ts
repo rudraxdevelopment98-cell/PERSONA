@@ -8,6 +8,8 @@ import { buildAIContext } from "@/lib/server/context";
 import { todaysFocus } from "@/lib/server/state";
 import { planDay, recipeText } from "@/lib/server/variety";
 import { countWords, storySize, writeSecondHalf } from "@/lib/server/story";
+import { userData } from "@/lib/ai/prompts";
+import { momentTagLabel } from "@/lib/domain/moment";
 import { SCENARIO_FORMATS, byId, isMirrorDay } from "@/lib/domain/variety";
 
 export const maxDuration = 300;
@@ -23,7 +25,7 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
 
   const { data: checkin } = await db
     .from("daily_checkins")
-    .select("completed_at")
+    .select("completed_at, today_note, today_tags, analysis")
     .eq("user_id", user.id)
     .eq("checkin_date", state.today)
     .maybeSingle();
@@ -41,9 +43,22 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
   const { short, words, sized } = await storySize(user.id);
   // Most days train the skill in fresh situations; one Mirror day a week speaks to the user's own life.
   const mirror = isMirrorDay(state.day);
-  const context = await buildAIContext(db, state, { checkins: 3, abstract: !mirror });
+  const context = await buildAIContext(db, state, { checkins: 3, abstract: true, ownWords: mirror });
   const plan = await planDay(db, user.id, state.day, state.profile.next_world ?? null);
   const v = plan.variety;
+  // Today's moment (optional, shared in the check-in) shapes today only.
+  const todayNote = (checkin.today_note as string | null) ?? null;
+  const todayTags = ((checkin.today_tags as string[] | null) ?? []).filter((t) => t !== "nothing");
+  const todayBlock =
+    todayNote || todayTags.length
+      ? `## What happened TODAY (the user chose to share this; use it for today only)
+${userData("today's moment", [todayTags.length ? `About: ${todayTags.map(momentTagLabel).join(", ")}` : "", todayNote ?? ""].filter(Boolean).join("\n"))}
+${checkin.analysis?.observation ? `Check-in insight: ${checkin.analysis.observation}\n` : ""}TODAY RULES:
+- The introduction's hook speaks to this moment warmly and specifically (without quoting private details back at length).
+- Today's story episode echoes the same feeling or dilemma inside the season's world - never their real people, place or details.
+- The LAST scenario lets them rehearse a moment like theirs in a fresh setting; the other two stay different.
+- The challenge helps them act on it today or tomorrow, and one reflection question links back to it.`
+      : "## Today\nThe user did not share anything specific today. Keep every part fresh and use only their behaviour patterns.";
   const used = (pastStories ?? []).map((s) => `- "${s.title}": ${s.body.slice(0, 120).replace(/\s+/g, " ")}…`).join("\n");
   const prompt = `${context}
 
@@ -51,7 +66,9 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
 Day ${focus.day} of 90, Phase ${focus.phase.number} (${focus.phase.name}).
 Focus: ${focus.title} - train ${DIMENSION_META[focus.dimension].label} (${focus.dimension}).${focus.personalised ? " This is a personalised day targeting one of the user's weakest areas." : ""}
 Set every scenario's "skill" to "${focus.dimension}" unless a scenario clearly trains a different dimension.
-${mirror ? "MIRROR DAY: exactly one of the three scenarios (the last) may mirror the user's real situation from their own words, so they can rehearse it. Everything else stays in fresh places and people." : "FRESH DAY: nothing today may resemble the user's own job, studies, family or past events."}
+${mirror ? "MIRROR DAY: exactly one of the three scenarios (the last) may mirror the user's real situation (from today's moment if shared, otherwise their assessment words), so they can rehearse it. Everything else stays in fresh places and people." : "FRESH DAY: nothing today may resemble the user's own job, studies, family or past events."}
+
+${todayBlock}
 
 ${recipeText(v, plan.previously)}
 

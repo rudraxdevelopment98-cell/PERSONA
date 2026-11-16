@@ -6,6 +6,7 @@ import { apiRoute, dbError, HttpError } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
 import { recomputeScores } from "@/lib/server/progress";
 import type { CheckinRow } from "@/lib/server/types";
+import { MOMENT_TAG_IDS, momentTagLabel } from "@/lib/domain/moment";
 
 export const maxDuration = 300;
 
@@ -13,9 +14,17 @@ const schema = z.object({
   answers: z
     .array(z.object({ id: z.string().max(8), value: z.union([z.string().trim().max(2000), z.number().int().min(1).max(10)]) }))
     .max(7),
+  /** Optional: what happened today, in the user's words. Skipping is always fine. */
+  today: z
+    .object({
+      note: z.string().trim().max(2000).optional(),
+      tags: z.array(z.enum(MOMENT_TAG_IDS)).max(8).optional(),
+      skipped: z.boolean().optional(),
+    })
+    .optional(),
 });
 
-export const POST = apiRoute(schema, async ({ answers }, { db, user, state }) => {
+export const POST = apiRoute(schema, async ({ answers, today: moment }, { db, user, state }) => {
   const { data } = await db.from("daily_checkins").select("*").eq("user_id", user.id).eq("checkin_date", state.today).maybeSingle();
   const checkin = data as CheckinRow | null;
   if (!checkin) throw new HttpError(404, "Start today's check-in first.");
@@ -33,14 +42,21 @@ export const POST = apiRoute(schema, async ({ answers }, { db, user, state }) =>
   }
 
   const completedAt = new Date().toISOString();
-  const save = await db.from("daily_checkins").update({ answers: clean, completed_at: completedAt }).eq("id", checkin.id);
+  const note = moment?.skipped ? null : moment?.note?.trim() || null;
+  const tags = moment?.skipped ? [] : [...new Set(moment?.tags ?? [])];
+  const save = await db
+    .from("daily_checkins")
+    .update({ answers: clean, completed_at: completedAt, today_note: note, today_tags: tags, today_skipped: Boolean(moment?.skipped) || (!note && !tags.length) })
+    .eq("id", checkin.id);
   dbError(save.error);
 
   let analysis = null;
   let analysisError: string | null = null;
   try {
     const context = await buildAIContext(db, state, { checkins: 4, lean: true });
-    const today = checkin.questions.map((q) => `Q: ${q.text}\nA: ${clean.find((c) => c.id === q.id)?.value}`).join("\n");
+    const qa = checkin.questions.map((q) => `Q: ${q.text}\nA: ${clean.find((c) => c.id === q.id)?.value}`).join("\n");
+    const shared = [tags.length ? `Today was about: ${tags.map(momentTagLabel).join(", ")}` : "", note ? `What happened today: ${note}` : ""].filter(Boolean).join("\n");
+    const today = shared ? `${qa}\n${shared}` : qa;
     analysis = await generateStructured({
       language: state.profile.language,
       system: CHECKIN_ANALYSIS_SYSTEM,

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
 import { Alert, Button, Spinner, Textarea, cx } from "@/components/ui";
 import type { CheckinQuestion } from "@/lib/ai/schemas";
+import { MOMENT_TAGS } from "@/lib/domain/moment";
 
 type Answers = Record<string, string | number>;
 
@@ -116,6 +117,54 @@ function Fuse() {
  * The check-in as a deck of cards: one question at a time, big targets,
  * choices advance on their own. Answers stay private to the user.
  */
+export type TodayMoment = { note?: string; tags?: string[]; skipped?: boolean };
+
+/** The last, optional card: what happened today. Shapes today's session only. */
+function MomentCard({ note, tags, onNote, onTags }: { note: string; tags: string[]; onNote: (v: string) => void; onTags: (t: string[]) => void }) {
+  const toggle = (id: string) => {
+    if (id === "nothing") return onTags(tags.includes("nothing") ? [] : ["nothing"]);
+    const next = tags.filter((t) => t !== "nothing");
+    onTags(next.includes(id) ? next.filter((t) => t !== id) : [...next, id]);
+  };
+  return (
+    <div key="moment" data-checkin-card className="animate-page rounded-[28px] border-2 border-dashed border-primary/30 bg-surface p-5 shadow-card sm:p-7">
+      <p className="text-xs font-bold uppercase tracking-wider text-accent">🌟 Aaj ka moment · optional</p>
+      <h2 className="mt-2 text-xl font-extrabold leading-snug text-balance sm:text-2xl">Aaj kuch hua jo share karna chahoge?</h2>
+      <p className="mt-1 text-sm text-muted">Aaj ka session isi ke hisaab se banega. Sirf aaj ke liye. Mann na ho to skip karo.</p>
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Aaj kis baare mein">
+        {MOMENT_TAGS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => toggle(t.id)}
+            aria-pressed={tags.includes(t.id)}
+            className={cx(
+              "rounded-full border px-3 py-1.5 text-sm font-semibold transition active:scale-95",
+              tags.includes(t.id) ? "border-primary bg-primary text-white" : "border-line bg-surface text-ink hover:border-primary/40",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <Textarea
+        id="today-note"
+        rows={4}
+        maxLength={2000}
+        className="mt-4"
+        placeholder="Jaise: meeting mein sabke saamne tok diya gaya, aur main kuch bol nahi paaya…"
+        value={note}
+        onChange={(e) => onNote(e.target.value)}
+      />
+    </div>
+  );
+}
+
+/**
+ * The check-in as a deck of cards: one question at a time, big targets,
+ * choices advance on their own, and an optional "today's moment" card at the end.
+ * Answers stay private to the user.
+ */
 export function CheckinDeck({
   questions,
   dayNumber,
@@ -129,16 +178,19 @@ export function CheckinDeck({
   lensLabel: string | null;
   busy: boolean;
   error: string | null;
-  onSubmit: (answers: Answers) => void;
+  onSubmit: (answers: Answers, today: TodayMoment) => void;
 }) {
   const [answers, setAnswers] = useState<Answers>({});
+  const [note, setNote] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [i, setI] = useState(0);
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => void (advance.current && clearTimeout(advance.current)), []);
 
-  const q = questions[i];
+  const total = questions.length + 1; // + the moment card
+  const onMoment = i === questions.length;
+  const q = questions[Math.min(i, questions.length - 1)];
   const style = styleOf(q);
-  const last = i === questions.length - 1;
   const answered = (x: CheckinQuestion) => {
     const v = answers[x.id];
     return v != null && String(v).trim().length > (x.type === "text" ? 1 : 0);
@@ -147,11 +199,10 @@ export function CheckinDeck({
   const set = (v: string | number) => setAnswers((a) => ({ ...a, [q.id]: v }));
   const pick = (o: string) => {
     set(o);
-    if (!last) {
-      if (advance.current) clearTimeout(advance.current);
-      advance.current = setTimeout(() => setI((n) => Math.min(n + 1, questions.length - 1)), 380);
-    }
+    if (advance.current) clearTimeout(advance.current);
+    advance.current = setTimeout(() => setI((n) => Math.min(n + 1, total - 1)), 380);
   };
+  const firstOpen = questions.findIndex((x) => !answered(x));
 
   return (
     <section aria-label={`Check-in, day ${dayNumber}`} className="space-y-4">
@@ -161,51 +212,68 @@ export function CheckinDeck({
         </p>
         {lensLabel && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{lensLabel}</span>}
       </div>
-      <div className="flex gap-1.5" aria-label={`Card ${i + 1} of ${questions.length}`}>
-        {questions.map((x, n) => (
+      <div className="flex gap-1.5" aria-label={`Card ${i + 1} of ${total}`}>
+        {[...questions.map((x) => ({ id: x.id, done: answered(x) })), { id: "moment", done: Boolean(note.trim() || tags.length) }].map((x, n) => (
           <button
             key={x.id}
             type="button"
             onClick={() => setI(n)}
             aria-label={`Go to card ${n + 1}`}
-            className={cx("h-1.5 flex-1 rounded-full transition-colors", n === i ? "bg-primary" : answered(x) ? "bg-primary/40" : "bg-line")}
+            className={cx("h-1.5 flex-1 rounded-full transition-colors", n === i ? "bg-primary" : x.done ? "bg-primary/40" : "bg-line")}
           />
         ))}
       </div>
 
-      <div key={q.id} data-checkin-card className="animate-page rounded-[28px] border border-line/70 bg-surface p-5 shadow-card sm:p-7">
-        <p className="text-xs font-bold uppercase tracking-wider text-accent">{STYLE_TAG[style] ?? STYLE_TAG.normal}</p>
-        <h2 className="mt-2 text-xl font-extrabold leading-snug text-balance sm:text-2xl">{q.text}</h2>
-        {style === "quick_fire" && (
-          <div className="mt-3">
-            <Fuse />
-          </div>
-        )}
-        <div className="mt-5">
-          {q.type === "scale" && <EmojiScale q={q} value={answers[q.id] as number | undefined} onChange={set} />}
-          {q.type === "choice" && <Options q={q} style={style} value={answers[q.id] as string | undefined} onPick={pick} />}
-          {q.type === "text" && (
-            <Textarea
-              rows={4}
-              maxLength={2000}
-              autoFocus
-              placeholder="Ek-do line kaafi hai…"
-              value={(answers[q.id] as string) ?? ""}
-              onChange={(e) => set(e.target.value)}
-            />
+      {onMoment ? (
+        <MomentCard note={note} tags={tags} onNote={setNote} onTags={setTags} />
+      ) : (
+        <div key={q.id} data-checkin-card className="animate-page rounded-[28px] border border-line/70 bg-surface p-5 shadow-card sm:p-7">
+          <p className="text-xs font-bold uppercase tracking-wider text-accent">{STYLE_TAG[style] ?? STYLE_TAG.normal}</p>
+          <h2 className="mt-2 text-xl font-extrabold leading-snug text-balance sm:text-2xl">{q.text}</h2>
+          {style === "quick_fire" && (
+            <div className="mt-3">
+              <Fuse />
+            </div>
           )}
+          <div className="mt-5">
+            {q.type === "scale" && <EmojiScale q={q} value={answers[q.id] as number | undefined} onChange={set} />}
+            {q.type === "choice" && <Options q={q} style={style} value={answers[q.id] as string | undefined} onPick={pick} />}
+            {q.type === "text" && (
+              <Textarea
+                rows={4}
+                maxLength={2000}
+                autoFocus
+                placeholder="Ek-do line kaafi hai…"
+                value={(answers[q.id] as string) ?? ""}
+                onChange={(e) => set(e.target.value)}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {error && <Alert tone="danger">{error}</Alert>}
+      {onMoment && !allDone && (
+        <p className="text-center text-sm text-warning">
+          Ek card baaki hai.{" "}
+          <button type="button" className="font-bold underline" onClick={() => setI(firstOpen)}>
+            Wahan chalo
+          </button>
+        </p>
+      )}
       <div className="flex items-center justify-between gap-3">
         <Button type="button" variant="ghost" onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0} aria-label="Previous card">
           <ArrowLeft className="size-4" />
         </Button>
-        {last ? (
-          <Button onClick={() => onSubmit(answers)} disabled={!allDone || busy}>
-            {busy && <Spinner />} {busy ? "Saving…" : "Submit check-in"}
-          </Button>
+        {onMoment ? (
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" onClick={() => onSubmit(answers, { skipped: true })} disabled={!allDone || busy}>
+              Skip, aaj nahi
+            </Button>
+            <Button onClick={() => onSubmit(answers, { note: note.trim() || undefined, tags })} disabled={!allDone || busy}>
+              {busy && <Spinner />} {busy ? "Saving…" : "Submit check-in"}
+            </Button>
+          </div>
         ) : (
           <Button type="button" variant={answered(q) ? "primary" : "secondary"} onClick={() => setI((n) => n + 1)} disabled={!answered(q)}>
             Next <ArrowRight className="size-4" />

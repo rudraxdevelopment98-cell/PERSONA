@@ -27,13 +27,15 @@ export async function buildAIContext(
      * model trains the same skill in fresh situations instead of retelling their case.
      */
     abstract?: boolean;
+    /** With abstract: still include the user's own assessment words (Mirror day). */
+    ownWords?: boolean;
   } = {},
 ): Promise<string> {
   const uid = state.userId;
   const [checkinsRes, scenariosRes, decisionsRes, exercisesRes, sessionsRes, journalRes] = await Promise.all([
     db
       .from("daily_checkins")
-      .select("checkin_date, day_number, questions, answers, analysis")
+      .select("checkin_date, day_number, questions, answers, analysis, today_note")
       .eq("user_id", uid)
       .not("completed_at", "is", null)
       .order("checkin_date", { ascending: false })
@@ -77,7 +79,7 @@ export async function buildAIContext(
     lines.push(`Growth areas: ${dp.growth_areas.map((g) => `${DIMENSION_META[g.dimension].label} (${g.likely_pattern})`).join("; ")}`);
   }
 
-  if (state.baseline?.reflections && !opts.abstract) {
+  if (state.baseline?.reflections && (!opts.abstract || opts.ownWords)) {
     lines.push(
       `\n## In their own words (assessment)\n${state.baseline.reflections.held_back ? `${userData("held back", clip(state.baseline.reflections.held_back, 800))}\n` : ""}${userData("90-day goal", clip(state.baseline.reflections.goal, 600))}`,
     );
@@ -106,6 +108,8 @@ export async function buildAIContext(
         .join("\n");
       lines.push(`### Day ${c.day_number} (${c.checkin_date})`);
       lines.push(userData("check-in answers", qa));
+      const note = (c as { today_note?: string | null }).today_note;
+      if (note) lines.push(userData("what happened that day (shared by the user)", clip(note, opts.lean ? 300 : 800)));
       if (c.analysis) {
         lines.push(`Analysis: ${c.analysis.summary}`);
         if (c.analysis.patterns.length) lines.push(`Patterns noted: ${c.analysis.patterns.join("; ")}`);
