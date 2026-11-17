@@ -121,8 +121,21 @@ export type StoryContent = z.infer<typeof storySchema>;
 
 export const storyExpansionSchema = z.object({ body: z.string() });
 
-/** Listening script: the same paragraphs, ready for a Hindi voice. */
-export const narrationSchema = z.object({ paragraphs: z.array(z.string()) });
+/** Listening script: the same paragraphs, split into sentences with the emotion and speaker of each. */
+export const narrationSchema = z.object({
+  paragraphs: z.array(
+    z.object({
+      sentences: z.array(
+        z.object({
+          text: z.string(),
+          emotion: z.enum(["neutral", "calm", "happy", "excited", "sad", "angry", "fear", "tense", "whisper", "surprised", "tender", "determined"]),
+          intensity: z.number(),
+          speaker: z.enum(["narrator", "male", "female", "child"]),
+        }),
+      ),
+    }),
+  ),
+});
 
 const conceptField = z.object({ name: z.string(), explanation: z.string() });
 

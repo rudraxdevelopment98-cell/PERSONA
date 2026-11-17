@@ -1,3 +1,5 @@
+import { perform, type ScriptSentence } from "@/lib/domain/emotion";
+
 /**
  * Free "HD voice": Piper neural text-to-speech (rhasspy/piper, MIT) running
  * entirely on the listener's device. The voice model (~64 MB) downloads once
@@ -7,12 +9,12 @@
 
 export type PiperVoiceId = "hi-priyamvada" | "hi-rohan" | "hi-pratham" | "en-alba" | "en-lessac";
 
-export const PIPER_VOICES: { id: PiperVoiceId; path: string; label: string; lang: "hi" | "en"; sample: string }[] = [
-  { id: "hi-priyamvada", path: "hi/hi_IN/priyamvada/medium/hi_IN-priyamvada-medium", label: "Priyamvada · Hindi/Hinglish (female)", lang: "hi", sample: "/voice-samples/hi-priyamvada.mp3" },
-  { id: "hi-rohan", path: "hi/hi_IN/rohan/medium/hi_IN-rohan-medium", label: "Rohan · Hindi/Hinglish (male)", lang: "hi", sample: "/voice-samples/hi-rohan.mp3" },
-  { id: "hi-pratham", path: "hi/hi_IN/pratham/medium/hi_IN-pratham-medium", label: "Pratham · Hindi/Hinglish (male)", lang: "hi", sample: "/voice-samples/hi-pratham.mp3" },
-  { id: "en-alba", path: "en/en_GB/alba/medium/en_GB-alba-medium", label: "Alba · English (female)", lang: "en", sample: "/voice-samples/en-alba.mp3" },
-  { id: "en-lessac", path: "en/en_US/lessac/medium/en_US-lessac-medium", label: "Lessac · English (female)", lang: "en", sample: "/voice-samples/en-lessac.mp3" },
+export const PIPER_VOICES: { id: PiperVoiceId; path: string; label: string; lang: "hi" | "en"; gender: "female" | "male"; sample: string }[] = [
+  { id: "hi-priyamvada", path: "hi/hi_IN/priyamvada/medium/hi_IN-priyamvada-medium", label: "Priyamvada · Hindi/Hinglish (female)", lang: "hi", gender: "female", sample: "/voice-samples/hi-priyamvada.mp3" },
+  { id: "hi-rohan", path: "hi/hi_IN/rohan/medium/hi_IN-rohan-medium", label: "Rohan · Hindi/Hinglish (male)", lang: "hi", gender: "male", sample: "/voice-samples/hi-rohan.mp3" },
+  { id: "hi-pratham", path: "hi/hi_IN/pratham/medium/hi_IN-pratham-medium", label: "Pratham · Hindi/Hinglish (male)", lang: "hi", gender: "male", sample: "/voice-samples/hi-pratham.mp3" },
+  { id: "en-alba", path: "en/en_GB/alba/medium/en_GB-alba-medium", label: "Alba · English (female)", lang: "en", gender: "female", sample: "/voice-samples/en-alba.mp3" },
+  { id: "en-lessac", path: "en/en_US/lessac/medium/en_US-lessac-medium", label: "Lessac · English (female)", lang: "en", gender: "female", sample: "/voice-samples/en-lessac.mp3" },
 ];
 
 const MODEL_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main";
@@ -225,6 +227,58 @@ function wav(pcm: Float32Array, sampleRate: number): Blob {
   view.setUint32(40, pcm.length * 2, true);
   for (let i = 0; i < pcm.length; i++) view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, pcm[i])) * 0x7fff, true);
   return new Blob([buffer], { type: "audio/wav" });
+}
+
+/** Raises (factor > 1) or lowers pitch by resampling; the clip gets shorter or longer by the same factor. */
+function resample(pcm: Float32Array, factor: number): Float32Array {
+  if (Math.abs(factor - 1) < 0.01) return pcm;
+  const out = new Float32Array(Math.floor(pcm.length / factor));
+  for (let i = 0; i < out.length; i++) {
+    const x = i * factor;
+    const j = Math.floor(x);
+    const f = x - j;
+    out[i] = (pcm[j] ?? 0) * (1 - f) + (pcm[j + 1] ?? 0) * f;
+  }
+  return out;
+}
+
+/**
+ * Performs a paragraph from the listening script: each sentence with its own
+ * emotion (intonation variety, pace, loudness, pause) and speaker (a man's line
+ * read by a female voice goes lower, a child's higher). Pitch is shifted by
+ * rendering slower and resampling, so the pace stays as intended.
+ */
+export async function synthesizeScript(id: PiperVoiceId, sentences: ScriptSentence[]): Promise<string> {
+  const { session, config } = await loadVoice(id);
+  const ort = await loadOrt();
+  const sr = config.audio.sample_rate;
+  const base = config.inference;
+  const gender = piperVoice(id)?.gender ?? "female";
+  const pcms: Float32Array[] = [];
+  for (const sentence of sentences) {
+    const ids = await phonemize(sentence.text, config.espeak.voice);
+    if (!ids?.length) continue;
+    const p = perform(sentence, gender);
+    const pitch = Math.max(0.75, Math.min(1.3, p.pitch));
+    const feeds: Record<string, unknown> = {
+      input: new ort.Tensor("int64", BigInt64Array.from(ids.map((n) => BigInt(n))), [1, ids.length]),
+      input_lengths: new ort.Tensor("int64", BigInt64Array.from([BigInt(ids.length)]), [1]),
+      scales: new ort.Tensor("float32", Float32Array.from([base.noise_scale * p.life, base.length_scale * p.pace * pitch, base.noise_w * p.rhythm]), [3]),
+    };
+    if (config.speaker_id_map && Object.keys(config.speaker_id_map).length) feeds.sid = new ort.Tensor("int64", BigInt64Array.from([0n]), [1]);
+    const { output } = await session.run(feeds);
+    const shifted = resample(output.data, pitch);
+    for (let i = 0; i < shifted.length; i++) shifted[i] = Math.max(-1, Math.min(1, shifted[i] * p.volume));
+    pcms.push(shifted, new Float32Array(Math.round(sr * p.pause)));
+  }
+  if (!pcms.length) throw new Error("Nothing to say");
+  const all = new Float32Array(pcms.reduce((n, x) => n + x.length, 0));
+  let o = 0;
+  for (const x of pcms) {
+    all.set(x, o);
+    o += x.length;
+  }
+  return URL.createObjectURL(wav(all, sr));
 }
 
 /** Performs one paragraph sentence by sentence (with natural pauses) into a WAV blob URL. */

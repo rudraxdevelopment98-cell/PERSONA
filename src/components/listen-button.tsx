@@ -5,7 +5,8 @@ import { Check, Download, Headphones, Pause, Play, Settings2, Sparkles, Volume2,
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GOOD_VOICE, bestVoice, langOf, rankedVoices, saveVoiceName, savedVoiceName, sentences, voiceScore, voiceTip, type VoiceLang } from "@/lib/client/voices";
-import { PIPER_VOICES, delivery, isDownloaded, loadVoice, piperSupported, piperVoice, speechSentences, synthesize, type PiperVoiceId } from "@/lib/client/piper";
+import { PIPER_VOICES, delivery, isDownloaded, loadVoice, piperSupported, piperVoice, speechSentences, synthesize, synthesizeScript, type PiperVoiceId } from "@/lib/client/piper";
+import { perform, type ScriptSentence } from "@/lib/domain/emotion";
 import { cx } from "./ui";
 
 const RATES = [1, 1.25, 0.85];
@@ -96,9 +97,20 @@ export function ListenButton({
   const audio = useRef<HTMLAudioElement | null>(null);
   const urls = useRef(new Map<string, Promise<string>>());
   const lang = storyLanguage(paragraphs.join(" ").slice(0, 3000));
-  // Listening script (Devanagari, expressive punctuation) for Hindi voices; null = read the story as written.
-  const script = useRef<{ key: string; paragraphs: string[] } | null>(null);
-  const textAt = (k: number) => script.current?.paragraphs[k] ?? paragraphs[k];
+  // Listening script: each sentence with its emotion and speaker (Devanagari for Hinglish); null = punctuation cues only.
+  const script = useRef<{ key: string; sentences: ScriptSentence[][] } | null>(null);
+  const textAt = (k: number) => (script.current ? script.current.sentences[k].map((x) => x.text).join(" ") : paragraphs[k]);
+  /** The sentences to perform for paragraph k: from the script, or derived from punctuation. */
+  const performed = (k: number): ScriptSentence[] =>
+    script.current?.sentences[k] ??
+    speechSentences(paragraphs[k])
+      .flatMap((x) => sentences(x))
+      .map((t) => {
+        const d = delivery(t);
+        const q = /\?["”']?$/.test(t);
+        const ex = /!["”']?$/.test(t);
+        return { text: t, intensity: 2, speaker: "narrator" as const, emotion: d.pauseAfter >= 0.7 ? ("whisper" as const) : ex ? ("excited" as const) : q ? ("surprised" as const) : d.noise > 1.1 ? ("happy" as const) : ("neutral" as const) };
+      });
   const deviceLang: VoiceLang = lang === "hi" ? "hi" : "en";
 
   // Choose the engine: saved preference first, then AI if allowed, else the device.
@@ -139,22 +151,21 @@ export function ListenButton({
       if (k >= paragraphs.length) return finish();
       index.current = k;
       onParagraph?.(k);
-      const text = textAt(k);
-      const pieces = speechSentences(text).flatMap((x) => sentences(x));
-      const { lang: code, voice } = bestVoice(langOf(text));
+      const pieces = performed(k).flatMap((x) => sentences(x.text).map((t) => ({ ...x, text: t })));
+      const { lang: code, voice } = bestVoice(langOf(textAt(k)));
       const speakPiece = (j: number) => {
         if (myRun !== run.current) return;
         // A short breath between paragraphs.
         if (j >= pieces.length) return void setTimeout(() => say(k + 1), 380);
-        const u = new SpeechSynthesisUtterance(pieces[j]);
+        const u = new SpeechSynthesisUtterance(pieces[j].text);
         u.lang = code;
         if (voice) u.voice = voice;
-        // Perform it: questions rise, exclamations lift, dialogue is brighter, suspense slows down.
-        const d = delivery(pieces[j]);
-        const t = pieces[j].trim();
-        u.rate = r * 0.97 * (d.length < 1 ? 1.05 : d.length > 1.1 ? 0.88 : 1);
-        u.pitch = /\?["”']?$/.test(t) ? 1.12 : /!["”']?$/.test(t) ? 1.08 : d.noise > 1.1 ? 1.04 : 1;
-        u.onend = () => setTimeout(() => speakPiece(j + 1), Math.round(d.pauseAfter * 250));
+        // Perform the sentence's emotion and speaker through pitch, pace and loudness.
+        const pf = perform(pieces[j], "female");
+        u.rate = Math.max(0.5, Math.min(2, (r * 0.97) / pf.pace));
+        u.pitch = Math.max(0.5, Math.min(2, 1 + (pf.pitch - 1) * 1.6));
+        u.volume = Math.max(0.3, Math.min(1, pf.volume));
+        u.onend = () => setTimeout(() => speakPiece(j + 1), Math.round(pf.pause * 250));
         u.onerror = (e) => {
           if (e.error !== "interrupted" && e.error !== "canceled") speakPiece(j + 1);
         };
@@ -170,7 +181,7 @@ export function ListenButton({
     const key = `${kind}:${kind === "piper" ? `${piperId}:${script.current?.key ?? ""}` : ""}:${k}`;
     let p = urls.current.get(key);
     if (!p) {
-      p = kind === "ai" ? (ai ? aiPart(ai.sessionId, k) : Promise.reject(new Error("no ai"))) : synthesize(piperId!, textAt(k));
+      p = kind === "ai" ? (ai ? aiPart(ai.sessionId, k) : Promise.reject(new Error("no ai"))) : script.current ? synthesizeScript(piperId!, script.current.sentences[k]) : synthesize(piperId!, paragraphs[k]);
       urls.current.set(key, p);
       p.catch(() => urls.current.delete(key));
     }
@@ -211,12 +222,15 @@ export function ListenButton({
     void next(i);
   };
 
-  /** Hinglish story + a Hindi voice: fetch the Devanagari listening script once (cached on the server too). */
+  /**
+   * Fetch the emotion script once (cached on the server too). Hinglish scripts are in
+   * Devanagari, so they need a Hindi voice; otherwise punctuation cues are used.
+   */
   const ensureScript = async () => {
     const hindiPiper = engineChoice === "piper" && piperVoice(piperId ?? "")?.lang === "hi";
     const topHindi = rankedVoices("hi")[0];
     const goodHindiPhone = engineChoice === "device" && topHindi && voiceScore(topHindi, "hi") >= GOOD_VOICE;
-    if (lang !== "hinglish" || !sessionId || !(hindiPiper || goodHindiPhone)) {
+    if (!sessionId || (lang === "hinglish" && !(hindiPiper || goodHindiPhone))) {
       script.current = null;
       return;
     }
@@ -224,8 +238,8 @@ export function ListenButton({
     if (script.current?.key === key) return;
     try {
       const res = await fetch("/api/story/narration", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) });
-      const json = (await res.json()) as { paragraphs?: string[] | null };
-      script.current = json.paragraphs && json.paragraphs.length === paragraphs.length ? { key, paragraphs: json.paragraphs } : null;
+      const json = (await res.json()) as { sentences?: ScriptSentence[][] | null };
+      script.current = json.sentences && json.sentences.length === paragraphs.length ? { key, sentences: json.sentences } : null;
     } catch {
       script.current = null;
     }
