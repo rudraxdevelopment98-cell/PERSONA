@@ -52,10 +52,11 @@ export async function loadStats(db: Db, userId: string, today: number): Promise<
     db.from("daily_sessions").select("day_number, completed_at, story_completed_at, challenge_status").eq("user_id", userId),
   ]);
   const sessions = sessionsRes.data ?? [];
-  const completedDays = sessions
-    .filter((s) => s.completed_at)
-    .map((s) => s.day_number as number)
-    .sort((a, b) => a - b);
+  // Lite days (free plan, no episode) count for the streak once the check-in is done.
+  const { data: liteRows } = await db.from("daily_checkins").select("day_number").eq("user_id", userId).eq("lite", true).not("completed_at", "is", null);
+  const completedDays = [
+    ...new Set([...sessions.filter((s) => s.completed_at).map((s) => s.day_number as number), ...(liteRows ?? []).map((r) => r.day_number as number)]),
+  ].sort((a, b) => a - b);
   // A missed day is forgiven once a week (rest day), so one slip doesn't wipe the streak.
   const bestStreak = bestStreakWithRest(completedDays);
   const current = streakWithRest(completedDays, today);

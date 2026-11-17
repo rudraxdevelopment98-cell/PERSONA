@@ -1,4 +1,4 @@
-/** Free vs Pro. The core daily programme is always free. */
+/** Free vs Pro. The daily check-in and streak are always free; full episodes are limited after week 1. */
 
 export const FREE_LIMITS = {
   decisionsPerWeek: 3,
@@ -6,6 +6,10 @@ export const FREE_LIMITS = {
   coachPerDay: 10,
   circlesOwned: 1,
   activeRacesCreated: 2,
+  /** Full daily episodes for everyone during the first week of the programme. */
+  dailyEpisodeDays: 7,
+  /** After that, free accounts get this many full episodes per rolling 7 days; other days are lite days. */
+  episodesPerWeek: 3,
 } as const;
 
 export const TRIAL_DAYS = 7;
@@ -13,8 +17,12 @@ export const TRIAL_DAYS = 7;
 /** Default display prices (USD). The checkout shows the local price and tax for the buyer's country. */
 export const DISPLAY_PRICES = { month: 6.99, year: 49.99 } as const;
 
+/** Prices shown to visitors in India; set the same amounts as India price overrides in Paddle. */
+export const DISPLAY_PRICES_INR = { month: 199, year: 1499 } as const;
+
 export const FEATURES: { label: string; free: string | boolean; pro: string | boolean }[] = [
-  { label: "Daily 30-minute session (check-in, story episode, scenarios, challenge, reflection)", free: true, pro: true },
+  { label: "Daily check-in, insight and streak", free: true, pro: true },
+  { label: "Full episode (story, scenarios, challenge, reflection)", free: `Daily in week 1, then ${FREE_LIMITS.episodesPerWeek} per week`, pro: "Every day" },
   { label: "Initial assessment - Quick, Standard or Deep", free: true, pro: true },
   { label: "Progress tracking, XP, levels, badges, streaks", free: true, pro: true },
   { label: "Friends, cheers and comparisons", free: true, pro: true },

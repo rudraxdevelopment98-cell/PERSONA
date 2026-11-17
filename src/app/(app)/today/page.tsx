@@ -8,6 +8,7 @@ import { SessionFlow, type ClientScenario } from "./session";
 import type { EpisodeInfo } from "./episode";
 import { pickSponsor } from "@/lib/server/sponsors";
 import { voiceAllowance } from "@/lib/server/voice";
+import { episodeAllowance } from "@/lib/server/plan";
 import { canUseAIVoice } from "@/lib/domain/voice";
 import { SponsorCard } from "@/components/sponsor-card";
 import { GENRES, WORLDS, byId } from "@/lib/domain/variety";
@@ -32,6 +33,9 @@ export default async function TodayPage() {
     db.from("daily_sessions").select("*").eq("user_id", user.id).eq("day_number", state.day).maybeSingle(),
   ]);
   const checkin = checkinData as CheckinRow | null;
+  // Free plan lite day: the check-in is done and today has no episode.
+  const liteCheck = !sessionData && (checkin as { lite?: boolean } | null)?.lite ? await episodeAllowance(user.id, state.day) : null;
+  const lite = liteCheck?.lite ? liteCheck : null;
   const session = sessionData as SessionRow | null;
 
   let story: StoryRow | null = null;
@@ -99,7 +103,7 @@ export default async function TodayPage() {
         action={focus.personalised ? <Badge tone="primary">✨ For you</Badge> : undefined}
       />
       {!checkin?.completed_at || !session ? (
-        <CheckinFlow checkin={checkin} hasSession={Boolean(session)} />
+        <CheckinFlow checkin={checkin} hasSession={Boolean(session)} lite={lite} />
       ) : (
         <SessionFlow
           session={{

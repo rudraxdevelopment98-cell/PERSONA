@@ -8,6 +8,7 @@ import { buildAIContext } from "@/lib/server/context";
 import { todaysFocus } from "@/lib/server/state";
 import { planDay, recipeText } from "@/lib/server/variety";
 import { countWords, storySize, writeSecondHalf } from "@/lib/server/story";
+import { UpgradeRequired, episodeAllowance } from "@/lib/server/plan";
 import { userData } from "@/lib/ai/prompts";
 import { momentTagLabel } from "@/lib/domain/moment";
 import { SCENARIO_FORMATS, byId, isMirrorDay } from "@/lib/domain/variety";
@@ -30,6 +31,11 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
     .eq("checkin_date", state.today)
     .maybeSingle();
   if (!checkin?.completed_at) throw new HttpError(409, "Complete today's check-in first - your session is built from it.");
+  const allowance = await episodeAllowance(user.id, state.day);
+  if (allowance.lite) {
+    await db.from("daily_checkins").update({ lite: true }).eq("user_id", user.id).eq("checkin_date", state.today);
+    throw new UpgradeRequired(`Today is a lite day: your streak is safe. Free accounts get ${allowance.limit} full episodes a week - Pro has one every day.`);
+  }
 
   const { data: pastStories } = await db
     .from("generated_stories")

@@ -86,6 +86,25 @@ export async function assertWithinLimit(userId: string, kind: Kind) {
   if (over) throw new UpgradeRequired(MESSAGES[kind]);
 }
 
+export type EpisodeAllowance = { lite: boolean; used: number; limit: number; nextAt: string | null; trialAvailable: boolean };
+
+/**
+ * Whether today gets a full episode. Pro, own-key users and everyone in their first
+ * week always do; free accounts then get FREE_LIMITS.episodesPerWeek per rolling 7 days.
+ */
+export async function episodeAllowance(userId: string, day: number): Promise<EpisodeAllowance> {
+  const plan = await getPlan(userId);
+  const limit = FREE_LIMITS.episodesPerWeek;
+  if (plan.unlimitedAI || day <= FREE_LIMITS.dailyEpisodeDays) return { lite: false, used: 0, limit, nextAt: null, trialAvailable: plan.trialAvailable };
+  const rows = await q<{ created_at: string }>(
+    "select created_at from public.daily_sessions where user_id = $1 and created_at > now() - interval '7 days' order by created_at asc",
+    [userId],
+  );
+  if (rows.length < limit) return { lite: false, used: rows.length, limit, nextAt: null, trialAvailable: plan.trialAvailable };
+  const nextAt = new Date(Date.parse(rows[rows.length - limit].created_at) + 7 * 86_400_000).toISOString();
+  return { lite: true, used: rows.length, limit, nextAt, trialAvailable: plan.trialAvailable };
+}
+
 /** Grants Pro for a number of days (trial, coupon or admin), extending any time left. */
 export async function grantPro(userId: string, days: number, source: "trial" | "coupon" | "admin") {
   await q(

@@ -7,6 +7,8 @@ import { Alert, Button, Card, CardHeader, Spinner } from "@/components/ui";
 import { CHECKIN_LENSES, byId } from "@/lib/domain/variety";
 import { WritingEpisode } from "./writing-episode";
 import { CheckinDeck, type TodayMoment } from "./checkin-deck";
+import { LiteDay } from "./lite-day";
+import type { EpisodeAllowance } from "@/lib/server/plan";
 import type { CheckinAnalysis } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import type { CheckinRow } from "@/lib/server/types";
@@ -23,7 +25,8 @@ function startSessionBuild() {
   return sessionBuild;
 }
 
-export function CheckinFlow({ checkin: initial, hasSession }: { checkin: CheckinRow | null; hasSession: boolean }) {
+export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = null }: { checkin: CheckinRow | null; hasSession: boolean; lite?: EpisodeAllowance | null }) {
+  const [lite, setLite] = useState<EpisodeAllowance | null>(initialLite);
   const router = useRouter();
   const [checkin, setCheckin] = useState(initial);
   const [analysis, setAnalysis] = useState<CheckinAnalysis | null>(initial?.analysis ?? null);
@@ -35,7 +38,7 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
 
   // Start writing the session in the background while the user reads the insight.
   function prebuild() {
-    if (hasSession) return;
+    if (hasSession || lite) return;
     setBuildStarted((t) => t ?? Date.now());
     startSessionBuild().then(
       () => setReady(true),
@@ -59,20 +62,21 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
 
   // Check-in already done (e.g. the page was reopened): start writing straight away.
   useEffect(() => {
-    if (initial?.completed_at && !hasSession) prebuild();
+    if (initial?.completed_at && !hasSession && !initialLite) prebuild();
     // Runs once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const submit = (answers: Record<string, string | number>, today: TodayMoment) =>
     run("submit", async () => {
-      const res = await postJSON<{ analysis: CheckinAnalysis | null; analysisError: string | null }>("/api/checkin/submit", {
+      const res = await postJSON<{ analysis: CheckinAnalysis | null; analysisError: string | null; lite: EpisodeAllowance | null }>("/api/checkin/submit", {
         answers: checkin!.questions.map((q) => ({ id: q.id, value: answers[q.id] ?? "" })),
         today,
       });
       setCheckin({ ...checkin!, completed_at: new Date().toISOString() });
       setAnalysis(res.analysis);
-      prebuild();
+      if (res.lite) setLite(res.lite);
+      else prebuild();
       if (res.analysisError) setError(`Your answers were saved. ${res.analysisError}`);
     });
 
@@ -146,7 +150,8 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
         </Card>
       )}
       {error && <Alert tone={analysis ? "danger" : "warning"}>{error}</Alert>}
-      {!hasSession && (ready || buildStarted !== null) && (
+      {lite && !hasSession && <LiteDay allowance={lite} />}
+      {!lite && !hasSession && (ready || buildStarted !== null) && (
         <Card className="p-6">
           {ready ? (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -167,7 +172,7 @@ export function CheckinFlow({ checkin: initial, hasSession }: { checkin: Checkin
           )}
         </Card>
       )}
-      {!hasSession && !ready && buildStarted === null && (
+      {!lite && !hasSession && !ready && buildStarted === null && (
         <Card className="p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

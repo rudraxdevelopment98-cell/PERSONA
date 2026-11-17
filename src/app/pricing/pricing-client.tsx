@@ -52,6 +52,7 @@ export function PricingClient({
   plan,
   config,
   prices,
+  currency = "$",
   features,
   justPaid,
 }: {
@@ -61,6 +62,8 @@ export function PricingClient({
   plan: PlanInfo | null;
   config: PublicPaymentConfig;
   prices: { month: number; year: number };
+  /** Symbol for the fallback prices before Paddle's localised price loads. */
+  currency?: string;
   features: { label: string; free: string | boolean; pro: string | boolean }[];
   justPaid: boolean;
 }) {
@@ -94,8 +97,9 @@ export function PricingClient({
   }, [paddleReady, config.priceMonth, config.priceYear]);
 
   const isPro = plan?.plan === "pro";
-  const priceLabel = cycle === "month" ? (local.month ?? `$${prices.month}`) : (local.year ?? `$${prices.year}`);
-  const perMonth = cycle === "year" && !local.year ? ` ($${(prices.year / 12).toFixed(2)}/month)` : "";
+  const fmt = (n: number) => (currency === "₹" ? `₹${Math.round(n).toLocaleString("en-IN")}` : `${currency}${n.toFixed(2).replace(/\.00$/, "")}`);
+  const priceLabel = cycle === "month" ? (local.month ?? fmt(prices.month)) : (local.year ?? fmt(prices.year));
+  const perMonth = cycle === "year" && !local.year ? ` (${fmt(prices.year / 12)}/month)` : "";
   const saving = Math.round((1 - prices.year / (prices.month * 12)) * 100);
 
   const checkout = () => {
