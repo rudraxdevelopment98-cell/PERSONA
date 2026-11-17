@@ -4,8 +4,8 @@ import Link from "next/link";
 import { Check, Download, Headphones, Pause, Play, Settings2, Sparkles, Volume2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { GOOD_VOICE, bestVoice, rankedVoices, saveVoiceName, savedVoiceName, sentences, voiceScore, voiceTip, type VoiceLang } from "@/lib/client/voices";
-import { PIPER_VOICES, isDownloaded, loadVoice, piperSupported, piperVoice, synthesize, type PiperVoiceId } from "@/lib/client/piper";
+import { GOOD_VOICE, bestVoice, langOf, rankedVoices, saveVoiceName, savedVoiceName, sentences, voiceScore, voiceTip, type VoiceLang } from "@/lib/client/voices";
+import { PIPER_VOICES, delivery, isDownloaded, loadVoice, piperSupported, piperVoice, speechSentences, synthesize, type PiperVoiceId } from "@/lib/client/piper";
 import { cx } from "./ui";
 
 const RATES = [1, 1.25, 0.85];
@@ -72,13 +72,18 @@ export function ListenButton({
   onParagraph,
   onEnd,
   ai,
+  sessionId,
 }: {
   paragraphs: string[];
   onParagraph?: (i: number | null) => void;
   onEnd?: () => void;
   ai?: AIVoice | null;
+  /** Lets Hinglish stories fetch a Devanagari listening script for Hindi voices. */
+  sessionId?: string;
 }) {
   const [deviceOk, setDeviceOk] = useState(false);
+  // Checked after mount: the server can't know, and the first render must match it.
+  const [piperOk, setPiperOk] = useState(false);
   const [state, setState] = useState<"idle" | "loading" | "playing" | "paused">("idle");
   const [rate, setRate] = useState(1);
   const [engineChoice, setEngineChoice] = useState<Engine>("device");
@@ -91,11 +96,15 @@ export function ListenButton({
   const audio = useRef<HTMLAudioElement | null>(null);
   const urls = useRef(new Map<string, Promise<string>>());
   const lang = storyLanguage(paragraphs.join(" ").slice(0, 3000));
+  // Listening script (Devanagari, expressive punctuation) for Hindi voices; null = read the story as written.
+  const script = useRef<{ key: string; paragraphs: string[] } | null>(null);
+  const textAt = (k: number) => script.current?.paragraphs[k] ?? paragraphs[k];
   const deviceLang: VoiceLang = lang === "hi" ? "hi" : "en";
 
   // Choose the engine: saved preference first, then AI if allowed, else the device.
   useEffect(() => {
     setDeviceOk(typeof window !== "undefined" && "speechSynthesis" in window);
+    setPiperOk(piperSupported());
     if ("speechSynthesis" in window) window.speechSynthesis.getVoices();
     const pref = readPref();
     if (pref?.startsWith("piper:") && piperSupported() && piperVoice(pref.slice(6))) {
@@ -130,18 +139,22 @@ export function ListenButton({
       if (k >= paragraphs.length) return finish();
       index.current = k;
       onParagraph?.(k);
-      const pieces = sentences(paragraphs[k]);
-      const { lang: code, voice } = bestVoice(deviceLang);
+      const text = textAt(k);
+      const pieces = speechSentences(text).flatMap((x) => sentences(x));
+      const { lang: code, voice } = bestVoice(langOf(text));
       const speakPiece = (j: number) => {
         if (myRun !== run.current) return;
         // A short breath between paragraphs.
-        if (j >= pieces.length) return void setTimeout(() => say(k + 1), 350);
+        if (j >= pieces.length) return void setTimeout(() => say(k + 1), 380);
         const u = new SpeechSynthesisUtterance(pieces[j]);
         u.lang = code;
         if (voice) u.voice = voice;
-        u.rate = r * 0.97;
-        u.pitch = 1;
-        u.onend = () => speakPiece(j + 1);
+        // Perform it: questions rise, exclamations lift, dialogue is brighter, suspense slows down.
+        const d = delivery(pieces[j]);
+        const t = pieces[j].trim();
+        u.rate = r * 0.97 * (d.length < 1 ? 1.05 : d.length > 1.1 ? 0.88 : 1);
+        u.pitch = /\?["”']?$/.test(t) ? 1.12 : /!["”']?$/.test(t) ? 1.08 : d.noise > 1.1 ? 1.04 : 1;
+        u.onend = () => setTimeout(() => speakPiece(j + 1), Math.round(d.pauseAfter * 250));
         u.onerror = (e) => {
           if (e.error !== "interrupted" && e.error !== "canceled") speakPiece(j + 1);
         };
@@ -154,10 +167,10 @@ export function ListenButton({
   };
 
   const fetchPart = (kind: "ai" | "piper", k: number) => {
-    const key = `${kind}:${kind === "piper" ? piperId : ""}:${k}`;
+    const key = `${kind}:${kind === "piper" ? `${piperId}:${script.current?.key ?? ""}` : ""}:${k}`;
     let p = urls.current.get(key);
     if (!p) {
-      p = kind === "ai" ? (ai ? aiPart(ai.sessionId, k) : Promise.reject(new Error("no ai"))) : synthesize(piperId!, paragraphs[k]);
+      p = kind === "ai" ? (ai ? aiPart(ai.sessionId, k) : Promise.reject(new Error("no ai"))) : synthesize(piperId!, textAt(k));
       urls.current.set(key, p);
       p.catch(() => urls.current.delete(key));
     }
@@ -175,7 +188,7 @@ export function ListenButton({
       index.current = k;
       onParagraph?.(k);
       try {
-        const key = `${kind}:${kind === "piper" ? piperId : ""}:${k}`;
+        const key = `${kind}:${kind === "piper" ? `${piperId}:${script.current?.key ?? ""}` : ""}:${k}`;
         if (!urls.current.has(key)) setState("loading");
         const src = await fetchPart(kind, k);
         if (myRun !== run.current) return;
@@ -198,7 +211,31 @@ export function ListenButton({
     void next(i);
   };
 
-  const start = (i: number, r = rate) => {
+  /** Hinglish story + a Hindi voice: fetch the Devanagari listening script once (cached on the server too). */
+  const ensureScript = async () => {
+    const hindiPiper = engineChoice === "piper" && piperVoice(piperId ?? "")?.lang === "hi";
+    const topHindi = rankedVoices("hi")[0];
+    const goodHindiPhone = engineChoice === "device" && topHindi && voiceScore(topHindi, "hi") >= GOOD_VOICE;
+    if (lang !== "hinglish" || !sessionId || !(hindiPiper || goodHindiPhone)) {
+      script.current = null;
+      return;
+    }
+    const key = paragraphs.join("\n").length + ":" + paragraphs.length;
+    if (script.current?.key === key) return;
+    try {
+      const res = await fetch("/api/story/narration", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) });
+      const json = (await res.json()) as { paragraphs?: string[] | null };
+      script.current = json.paragraphs && json.paragraphs.length === paragraphs.length ? { key, paragraphs: json.paragraphs } : null;
+    } catch {
+      script.current = null;
+    }
+  };
+
+  const start = async (i: number, r = rate) => {
+    if (!(engineChoice === "ai" && ai?.allowed)) {
+      setState("loading");
+      await ensureScript();
+    }
     if (engineChoice === "ai" && ai?.allowed) return playAudio("ai", i, r);
     if (engineChoice === "piper" && piperId) return playAudio("piper", i, r);
     return speakDevice(i, r);
@@ -218,7 +255,7 @@ export function ListenButton({
       setState("paused");
     } else if (state === "paused") {
       setState("playing");
-      if (engine.current !== "device") audio.current?.play().catch(() => start(index.current));
+      if (engine.current !== "device") audio.current?.play().catch(() => void start(index.current));
       else {
         const synth = window.speechSynthesis;
         synth.resume();
@@ -227,7 +264,7 @@ export function ListenButton({
           if (!synth.speaking) speakDevice(index.current);
         }, 300);
       }
-    } else if (state === "idle") start(0);
+    } else if (state === "idle") void start(0);
   };
 
   const cycleRate = () => {
@@ -252,7 +289,7 @@ export function ListenButton({
     [state],
   );
 
-  if (!deviceOk && !ai?.allowed && !piperSupported()) return null;
+  if (!deviceOk && !ai?.allowed && !piperOk) return null;
   const label = engineChoice === "ai" ? "AI voice" : engineChoice === "piper" ? "HD voice" : "Phone voice";
   return (
     <div className="flex shrink-0 items-center gap-1">

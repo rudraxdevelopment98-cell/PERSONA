@@ -23,7 +23,7 @@ function normalise(questions: CheckinQuestion[]): CheckinQuestion[] {
     style: "emoji" as const,
     purpose: "Daily confidence rating",
   };
-  const ordered = [scale, ...questions.filter((q) => q !== scale && q.type !== "scale")].slice(0, 6);
+  const ordered = [scale, ...questions.filter((q) => q !== scale)].slice(0, 6);
   return ordered.map((q, i) => ({
     ...q,
     id: `q${i + 1}`,

@@ -186,7 +186,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
         <BookOpen className="size-4 shrink-0 text-muted" strokeWidth={1.75} />
         <ProgressBar value={progress} />
         <span className="shrink-0 text-xs tabular-nums text-muted">{progress}%</span>
-        <ListenButton paragraphs={[story.title, ...paragraphs]} onParagraph={(i) => onParagraph(i === null || i === 0 ? null : i - 1)} onEnd={onListenEnd} ai={aiVoice} />
+        <ListenButton paragraphs={[story.title, ...paragraphs]} onParagraph={(i) => onParagraph(i === null || i === 0 ? null : i - 1)} onEnd={onListenEnd} ai={aiVoice} sessionId={sessionId} />
       </div>
       <article className="px-5 py-8 sm:px-10">
         {episode && (

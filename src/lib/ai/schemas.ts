@@ -121,6 +121,9 @@ export type StoryContent = z.infer<typeof storySchema>;
 
 export const storyExpansionSchema = z.object({ body: z.string() });
 
+/** Listening script: the same paragraphs, ready for a Hindi voice. */
+export const narrationSchema = z.object({ paragraphs: z.array(z.string()) });
+
 const conceptField = z.object({ name: z.string(), explanation: z.string() });
 
 const feedbackFields = {

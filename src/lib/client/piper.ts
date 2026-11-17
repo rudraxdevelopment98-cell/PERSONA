@@ -149,32 +149,61 @@ export async function loadVoice(id: PiperVoiceId, onProgress?: Progress): Promis
   }
 }
 
-/** Text → phoneme ids with espeak-ng (WebAssembly). */
-async function phonemize(text: string, espeakVoice: string): Promise<number[]> {
-  const { createPiperPhonemize } = await import("./vendor/piper-phonemize.js");
-  return new Promise((resolve, reject) => {
-    let done = false;
-    createPiperPhonemize({
-      print: (data: string) => {
-        if (done) return;
-        done = true;
-        try {
-          resolve(JSON.parse(data).phoneme_ids);
-        } catch (e) {
-          reject(e);
-        }
-      },
-      printErr: (m: string) => {
-        if (!done && /error/i.test(m)) {
-          done = true;
-          reject(new Error(m));
-        }
-      },
+type Phonemizer = { mod: { callMain: (args: string[]) => void }; out: string[] };
+let phonemizerPromise: Promise<Phonemizer> | null = null;
+
+/** One espeak-ng (WebAssembly) instance, reused for every sentence. */
+function phonemizer(): Promise<Phonemizer> {
+  phonemizerPromise ??= (async () => {
+    const { createPiperPhonemize } = await import("./vendor/piper-phonemize.js");
+    const out: string[] = [];
+    const mod = await createPiperPhonemize({
+      print: (data: string) => out.push(data),
+      printErr: () => {},
       locateFile: (url: string) => (url.endsWith(".wasm") ? `${PHONEMIZE_BASE}.wasm` : url.endsWith(".data") ? `${PHONEMIZE_BASE}.data` : url),
-    }).then((module: { callMain: (args: string[]) => void }) => {
-      module.callMain(["-l", espeakVoice, "--input", JSON.stringify([{ text }]), "--espeak_data", "/espeak-ng-data"]);
-    }, reject);
+    });
+    return { mod, out };
+  })().catch((e) => {
+    phonemizerPromise = null;
+    throw e;
   });
+  return phonemizerPromise;
+}
+
+/** Text → phoneme ids. callMain runs synchronously, so its output is read right after. */
+async function phonemize(text: string, espeakVoice: string): Promise<number[]> {
+  const { mod, out } = await phonemizer();
+  out.length = 0;
+  mod.callMain(["-l", espeakVoice, "--input", JSON.stringify([{ text }]), "--espeak_data", "/espeak-ng-data"]);
+  const line = out.pop();
+  if (!line) throw new Error("Could not read this sentence");
+  return JSON.parse(line).phoneme_ids as number[];
+}
+
+type Delivery = { noise: number; length: number; noiseW: number; pauseAfter: number };
+
+/**
+ * How to perform a sentence. Dialogue is livelier and a touch faster, questions and
+ * exclamations carry more variation, suspense ("…") slows down, narration stays calm.
+ */
+export function delivery(sentence: string): Delivery {
+  const t = sentence.trim();
+  const dialogue = /^["“'‘]|["”'’]$/.test(t) || /["“].{3,}["”]/.test(t);
+  const suspense = /(…|\.\.\.)\s*["”']?$/.test(t);
+  const exclaim = /!["”']?$/.test(t);
+  const question = /\?["”']?$/.test(t);
+  let d: Delivery = { noise: 1.0, length: 1.04, noiseW: 1.0, pauseAfter: 0.32 };
+  if (dialogue) d = { noise: 1.22, length: 0.95, noiseW: 1.2, pauseAfter: 0.36 };
+  if (exclaim) d = { ...d, noise: Math.max(d.noise, 1.25), length: Math.min(d.length, 0.93), pauseAfter: 0.4 };
+  if (question) d = { ...d, noise: Math.max(d.noise, 1.15), pauseAfter: 0.42 };
+  if (suspense) d = { ...d, length: 1.14, pauseAfter: 0.7 };
+  return d;
+}
+
+/** Sentences, keeping closing quotes with their sentence. */
+export function speechSentences(text: string): string[] {
+  const parts = text.match(/[^.!?।…]+(?:[.!?।…]+|\.\.\.)["'”’)]*\s*|[^.!?।…]+$/g) ?? [text];
+  return parts.map((p) => p.trim()).filter((p) => /[\p{L}\p{N}]/u.test(p));
 }
 
 function wav(pcm: Float32Array, sampleRate: number): Blob {
@@ -198,18 +227,33 @@ function wav(pcm: Float32Array, sampleRate: number): Blob {
   return new Blob([buffer], { type: "audio/wav" });
 }
 
-/** Speaks one paragraph into a WAV blob URL. */
+/** Performs one paragraph sentence by sentence (with natural pauses) into a WAV blob URL. */
 export async function synthesize(id: PiperVoiceId, text: string): Promise<string> {
   const { session, config } = await loadVoice(id);
   const ort = await loadOrt();
-  const ids = await phonemize(text.trim(), config.espeak.voice);
-  if (!ids?.length) throw new Error("Nothing to say");
-  const feeds: Record<string, unknown> = {
-    input: new ort.Tensor("int64", BigInt64Array.from(ids.map((n) => BigInt(n))), [1, ids.length]),
-    input_lengths: new ort.Tensor("int64", BigInt64Array.from([BigInt(ids.length)]), [1]),
-    scales: new ort.Tensor("float32", Float32Array.from([config.inference.noise_scale, config.inference.length_scale, config.inference.noise_w]), [3]),
-  };
-  if (config.speaker_id_map && Object.keys(config.speaker_id_map).length) feeds.sid = new ort.Tensor("int64", BigInt64Array.from([0n]), [1]);
-  const { output } = await session.run(feeds);
-  return URL.createObjectURL(wav(output.data, config.audio.sample_rate));
+  const sr = config.audio.sample_rate;
+  const base = config.inference;
+  const pcms: Float32Array[] = [];
+  for (const sentence of speechSentences(text)) {
+    const ids = await phonemize(sentence, config.espeak.voice);
+    if (!ids?.length) continue;
+    const d = delivery(sentence);
+    const feeds: Record<string, unknown> = {
+      input: new ort.Tensor("int64", BigInt64Array.from(ids.map((n) => BigInt(n))), [1, ids.length]),
+      input_lengths: new ort.Tensor("int64", BigInt64Array.from([BigInt(ids.length)]), [1]),
+      scales: new ort.Tensor("float32", Float32Array.from([base.noise_scale * d.noise, base.length_scale * d.length, base.noise_w * d.noiseW]), [3]),
+    };
+    if (config.speaker_id_map && Object.keys(config.speaker_id_map).length) feeds.sid = new ort.Tensor("int64", BigInt64Array.from([0n]), [1]);
+    const { output } = await session.run(feeds);
+    pcms.push(output.data, new Float32Array(Math.round(sr * d.pauseAfter)));
+  }
+  if (!pcms.length) throw new Error("Nothing to say");
+  const total = pcms.reduce((n, p) => n + p.length, 0);
+  const all = new Float32Array(total);
+  let o = 0;
+  for (const p of pcms) {
+    all.set(p, o);
+    o += p.length;
+  }
+  return URL.createObjectURL(wav(all, sr));
 }
