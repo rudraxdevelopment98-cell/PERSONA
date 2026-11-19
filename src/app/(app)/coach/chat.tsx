@@ -24,7 +24,13 @@ function Bubble({ m }: { m: Msg }) {
           m.role === "user" ? "bg-brand text-white" : "border border-line bg-surface text-ink",
         )}
       >
-        {m.content || <Spinner className="text-muted" />}
+        {m.content || (
+          <span className="flex items-center gap-1 py-1" aria-label="Coach is thinking">
+            {[0, 1, 2].map((d) => (
+              <span key={d} className="size-1.5 animate-bounce rounded-full bg-muted" style={{ animationDelay: `${d * 0.15}s` }} />
+            ))}
+          </span>
+        )}
       </div>
     </div>
   );

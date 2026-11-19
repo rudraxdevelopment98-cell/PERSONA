@@ -1,9 +1,10 @@
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { DISPLAY_PRICES } from "@/lib/domain/plans";
-import { listCoupons } from "@/lib/server/admin";
+import { androidSettings, listCoupons } from "@/lib/server/admin";
+import { ANDROID_PACKAGE, UPLOAD_KEY_SHA256 } from "@/lib/domain/android";
 import { adminConfig, revenueStats } from "@/lib/server/payments";
 import { requestOrigin } from "@/lib/server/origin";
-import { CouponManager, GrantPro, PaymentSettings } from "./plans-ui";
+import { AndroidApp, CouponManager, GrantPro, PaymentSettings } from "./plans-ui";
 
 export const metadata = { title: "Plans · Admin" };
 
@@ -51,6 +52,7 @@ export default async function AdminPlans() {
             </div>
           </Card>
         </div>
+        <AndroidApp pkg={ANDROID_PACKAGE} uploadKey={UPLOAD_KEY_SHA256} fingerprints={(await androidSettings()).fingerprints} />
       </div>
     </>
   );

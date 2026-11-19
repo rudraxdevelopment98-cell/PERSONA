@@ -57,6 +57,7 @@ export function AppNav({
   language = "en",
   adminReports = null,
   pro = false,
+  storeApp = false,
 }: {
   name: string;
   day: number;
@@ -66,10 +67,12 @@ export function AppNav({
   /** Open report count for admins; null for everyone else. */
   adminReports?: number | null;
   pro?: boolean;
+  /** Inside the Play Store app web checkout is not allowed, so "Go Pro" is hidden. */
+  storeApp?: boolean;
 }) {
   const path = usePathname();
   const extra = [
-    ...(pro ? [] : [{ href: "/pricing", label: "Go Pro", icon: Gem }]),
+    ...(pro || storeApp ? [] : [{ href: "/pricing", label: "Go Pro", icon: Gem }]),
     ...(adminReports == null ? [] : [{ href: "/admin", label: "Admin", icon: ShieldCheck }]),
   ];
 

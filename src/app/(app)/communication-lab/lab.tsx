@@ -1,5 +1,6 @@
 "use client";
 
+import { AIThinking } from "@/components/ai-thinking";
 import { UpgradeHint, isUpgradeError } from "@/components/upgrade";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -228,11 +229,15 @@ export function CommunicationLab({
                 )}
 
                 {error && <Alert tone="danger">{error}</Alert>}
-                <div className="flex justify-end">
-                  <Button onClick={submit} disabled={reply.trim().length < 10 || busy !== null}>
-                    {busy === "submit" && <Spinner />} {busy === "submit" ? "Evaluating…" : "Get feedback"}
-                  </Button>
-                </div>
+                {busy === "submit" ? (
+                  <AIThinking steps={["Listening to your words…", "Checking tone, clarity and respect…", "Writing a stronger version…"]} />
+                ) : (
+                  <div className="flex justify-end">
+                    <Button onClick={submit} disabled={reply.trim().length < 10 || busy !== null}>
+                      Get feedback
+                    </Button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="animate-pop space-y-4 rounded-2xl bg-bg p-4">

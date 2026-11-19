@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Trash2 } from "lucide-react";
 import { Alert, Button, Card, CardHeader, Input, Label, Select } from "@/components/ui";
-import { createCouponAction, deleteCouponAction, grantProAction, savePaymentsAction } from "../actions";
+import { createCouponAction, deleteCouponAction, grantProAction, saveAndroidAction, savePaymentsAction } from "../actions";
 
 function useRun() {
   const router = useRouter();
@@ -156,5 +156,48 @@ export function CouponManager({ coupons }: { coupons: { code: string; days: numb
         ))}
       </div>
     </div>
+  );
+}
+
+/** Play Store app: the package, the upload key and Google's app-signing key for /.well-known/assetlinks.json. */
+export function AndroidApp({ pkg, uploadKey, fingerprints }: { pkg: string; uploadKey: string; fingerprints: string[] }) {
+  const router = useRouter();
+  const [value, setValue] = useState(fingerprints.join("\n"));
+  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <Card>
+      <CardHeader title="Android app (Play Store)" description="The app opens this website full screen once these keys match Play Console." />
+      <div className="space-y-3 px-5 pb-5 text-sm">
+        <p>
+          Package: <code className="rounded bg-bg px-1.5 py-0.5">{pkg}</code>
+        </p>
+        <p className="break-all text-xs text-muted">Upload key (always included): {uploadKey}</p>
+        <div className="space-y-1.5">
+          <Label htmlFor="android-fp">App signing key SHA-256 (Play Console → Test and release → App integrity)</Label>
+          <textarea
+            id="android-fp"
+            rows={3}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="AB:CD:…"
+            className="w-full rounded-2xl border border-line bg-bg px-4 py-2.5 font-mono text-xs"
+          />
+        </div>
+        <Button
+          disabled={pending}
+          onClick={() =>
+            start(async () => {
+              const r = await saveAndroidAction(value);
+              setMsg(r.error ? { tone: "danger", text: r.error } : { tone: "success", text: "Saved. /.well-known/assetlinks.json updates within 5 minutes." });
+              router.refresh();
+            })
+          }
+        >
+          Save keys
+        </Button>
+        {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
+      </div>
+    </Card>
   );
 }

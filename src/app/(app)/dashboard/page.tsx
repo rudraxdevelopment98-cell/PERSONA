@@ -12,6 +12,7 @@ import { GENRES, WORLDS, byId, seasonFor } from "@/lib/domain/variety";
 import { REST_WINDOW } from "@/lib/domain/programme";
 import { pickSponsor } from "@/lib/server/sponsors";
 import { SponsorCard } from "@/components/sponsor-card";
+import { InstallApp } from "@/components/install-app";
 import type { CheckinRow, SessionRow } from "@/lib/server/types";
 
 export const metadata = { title: "Home" };
@@ -125,6 +126,8 @@ export default async function Dashboard() {
           </span>
         </div>
       </section>
+
+      <InstallApp />
 
       {/* Today's episode: the one thing to do */}
       <Link href="/today" className="group block">

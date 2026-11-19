@@ -426,6 +426,22 @@ export async function aiTiers(): Promise<{ free: string; pro: string; light: str
   return { free: id(r?.value.free), pro: id(r?.value.pro), light: id(r?.value.light), lightForPro: Boolean(r?.value.lightForPro) };
 }
 
+export async function androidSettings(): Promise<{ fingerprints: string[] }> {
+  const [r] = await q<{ value: { fingerprints?: string[] } }>("select value from public.app_settings where key = 'android'");
+  return { fingerprints: r?.value.fingerprints ?? [] };
+}
+
+/** Extra SHA-256 fingerprints (e.g. Google Play's app-signing key) served in assetlinks.json. */
+export async function saveAndroid(actor: string, raw: string) {
+  await requireAdmin(actor);
+  const { isFingerprint } = await import("@/lib/domain/android");
+  const list = [...new Set(raw.split(/[\s,]+/).map((s) => s.trim().toUpperCase()).filter(Boolean))];
+  const bad = list.filter((f) => !isFingerprint(f));
+  if (bad.length) throw new AdminError(`Not a SHA-256 fingerprint: ${bad[0].slice(0, 30)}. Copy it from Play Console > App integrity.`);
+  await q("insert into public.app_settings (key, value) values ('android', $1) on conflict (key) do update set value = excluded.value", [JSON.stringify({ fingerprints: list })]);
+  await audit(actor, "android.fingerprints", { label: `${list.length} fingerprint(s)` });
+}
+
 export async function saveVoice(actor: string, model: string, proPerMonth: number, freePerMonth: number) {
   await requireAdmin(actor);
   const { VOICE_CHOICES } = await import("@/lib/domain/voice");

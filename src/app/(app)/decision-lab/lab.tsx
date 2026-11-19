@@ -1,5 +1,6 @@
 "use client";
 
+import { AIThinking } from "@/components/ai-thinking";
 import { UpgradeHint, isUpgradeError } from "@/components/upgrade";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -117,6 +118,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
             {busy === "new" && <Spinner />} {busy === "new" ? "Creating…" : current ? "New scenario" : "Generate scenario"}
           </Button>
         </div>
+        {busy === "new" && <AIThinking className="mt-4" steps={["Imagining a situation that fits you…", "Adding the people and the pressure…", "Writing your options…"]} />}
         {error && !s && <div className="mt-4"><Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert><UpgradeHint show={upgrade} /></div>}
       </Card>
 
@@ -175,11 +177,15 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                     <UpgradeHint show={upgrade} />
                   </div>
                 )}
-                <div className="flex justify-end">
-                  <Button onClick={submit} disabled={!choice || reasoning.trim().length < 20 || busy !== null}>
-                    {busy === "submit" && <Spinner />} {busy === "submit" ? "Evaluating…" : "Commit to decision"}
-                  </Button>
-                </div>
+                {busy === "submit" ? (
+                  <AIThinking steps={["Reading your reasoning…", "Playing out what happens next…", "Scoring your decision…"]} />
+                ) : (
+                  <div className="flex justify-end">
+                    <Button onClick={submit} disabled={!choice || reasoning.trim().length < 20 || busy !== null}>
+                      Commit to decision
+                    </Button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="animate-pop space-y-4 rounded-2xl bg-bg p-4">

@@ -53,6 +53,7 @@ export function PricingClient({
   config,
   prices,
   currency = "$",
+  storeApp = false,
   features,
   justPaid,
 }: {
@@ -64,6 +65,8 @@ export function PricingClient({
   prices: { month: number; year: number };
   /** Symbol for the fallback prices before Paddle's localised price loads. */
   currency?: string;
+  /** Opened inside the Play Store app: Google Play's billing rules apply, so no web checkout here. */
+  storeApp?: boolean;
   features: { label: string; free: string | boolean; pro: string | boolean }[];
   justPaid: boolean;
 }) {
@@ -146,9 +149,9 @@ export function PricingClient({
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-6">
           <p className="text-sm font-bold uppercase tracking-wider text-muted">Free</p>
-          <p className="mt-2 text-4xl font-extrabold">$0</p>
+          <p className="mt-2 text-4xl font-extrabold">{currency === "₹" ? "₹0" : "$0"}</p>
           <p className="text-sm text-muted">forever</p>
-          <p className="mt-4 text-sm">The complete 90-day programme: a new story episode, scenarios and a real-world challenge every day, plus friends and progress tracking.</p>
+          <p className="mt-4 text-sm">Daily check-in, insight and streak for all 90 days. A full episode every day in week 1, then 3 a week, plus friends and progress tracking.</p>
           <div className="mt-6">
             {signedIn ? (
               <span className="inline-flex h-10 items-center rounded-xl bg-bg px-4 text-sm font-semibold text-muted">{isPro ? "Included in Pro" : "Your current plan"}</span>
@@ -168,7 +171,7 @@ export function PricingClient({
             <span className="text-base font-semibold text-muted">/{cycle === "month" ? "month" : "year"}</span>
           </p>
           <p className="text-sm text-muted">{cycle === "year" ? `billed yearly${perMonth}` : "billed monthly"} · local currency and taxes at checkout</p>
-          <p className="mt-4 text-sm">Unlimited Decision Lab, Communication Lab and AI coaching, more circles and races, and full control of your story seasons.</p>
+          <p className="mt-4 text-sm">A new episode every day, the AI narrator, unlimited Decision Lab, Communication Lab and AI coaching, more circles and races, and full control of your story seasons.</p>
           <div className="mt-6 space-y-2">
             {!signedIn ? (
               <ButtonLink href="/signup">Start free - try Pro later</ButtonLink>
@@ -178,12 +181,12 @@ export function PricingClient({
                   You have Pro{plan?.source === "paddle" ? "" : plan?.source === "trial" ? " (free trial)" : plan?.source === "admin" ? " (gift)" : plan?.source === "coupon" ? " (code)" : ""}
                   {plan?.endsAt ? ` · ${plan.cancelAt || plan.source !== "paddle" ? "until" : "renews"} ${new Date(plan.cancelAt ?? plan.endsAt).toLocaleDateString()}` : ""}
                 </p>
-                {plan?.source === "paddle" && (
+                {plan?.source === "paddle" && !storeApp && (
                   <Button variant="secondary" disabled={pending} onClick={() => act(portalAction as never, (r) => (window.open(String(r.url), "_blank", "noopener"), "Opening your billing portal…"))}>
                     Manage subscription
                   </Button>
                 )}
-                {plan?.source !== "paddle" && config.enabled && (
+                {plan?.source !== "paddle" && config.enabled && !storeApp && (
                   <Button variant="secondary" onClick={checkout} disabled={!paddleReady}>Subscribe to keep Pro</Button>
                 )}
               </div>
@@ -194,7 +197,9 @@ export function PricingClient({
                     <Gift className="size-4" /> Start 7-day free trial - no card
                   </Button>
                 )}
-                {config.enabled ? (
+                {storeApp ? (
+                  !plan?.trialAvailable && <p className="text-sm text-muted">In-app subscription jaldi aa raha hai.</p>
+                ) : config.enabled ? (
                   <Button className="w-full" variant={plan?.trialAvailable ? "secondary" : "primary"} onClick={checkout} disabled={!paddleReady}>
                     <Sparkles className="size-4" /> {paddleReady ? `Upgrade - ${priceLabel}/${cycle === "month" ? "month" : "year"}` : "Loading checkout…"}
                   </Button>

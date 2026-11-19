@@ -22,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const adminReports = admin ? await openReportCount().catch(() => 0) : null;
   const plan = await getPlan(user.id).catch(() => null);
   const name = state.profile.display_name || "You";
+  const storeApp = (await cookies()).get("p90_store")?.value === "play";
   return (
     <div className="min-h-screen">
       <AppNav
@@ -31,6 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         language={state.profile.language}
         adminReports={adminReports}
         pro={plan?.plan === "pro"}
+        storeApp={storeApp}
         stats={{ level: level.level, levelName: level.name, progress: level.progress, toNext: level.toNext, xp: stats.xp, streak: stats.streak }}
       />
       <main className="lg:pl-60">

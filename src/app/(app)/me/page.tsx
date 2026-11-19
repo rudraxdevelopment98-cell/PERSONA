@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShareProgress } from "@/components/share-progress";
+import { InstallApp } from "@/components/install-app";
 import { ChevronRight, ClipboardList, Gem, LineChart, LogOut, Map, NotebookPen, Settings, ShieldCheck, Trophy } from "lucide-react";
 import { isAdmin } from "@/lib/server/admin";
 import { Card, IconTile, ProgressBar } from "@/components/ui";
@@ -62,6 +63,7 @@ export default async function MePage() {
         </div>
       </Card>
       <Card className="divide-y divide-line">
+        <InstallApp variant="row" />
         {links.map((l) => (
           <Link key={l.href} href={l.href} className="flex items-center gap-3 px-4 py-3 hover:bg-bg">
             <IconTile tone={l.tone} size="sm">

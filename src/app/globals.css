@@ -209,3 +209,21 @@ input[type="range"] {
   100% { transform: translateY(115vh) rotate(540deg); opacity: 0.9; }
 }
 .confetti { animation-name: confetti-fall; animation-timing-function: cubic-bezier(.25,.7,.5,1); animation-fill-mode: both; animation-iteration-count: 1; }
+
+/* AI thinking: orbiting dots around a breathing core. */
+@keyframes think-orbit { to { transform: rotate(360deg); } }
+@keyframes think-breathe { 0%, 100% { transform: scale(0.85); opacity: 0.75; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes think-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes step-in { 0% { transform: translateX(24px) scale(0.98); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.think-orbit { animation: think-orbit 2.4s linear infinite; }
+.think-orbit-slow { animation: think-orbit 4s linear infinite reverse; }
+.think-breathe { animation: think-breathe 1.8s ease-in-out infinite; }
+.think-shimmer {
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent);
+  background-size: 200% 100%;
+  animation: think-shimmer 1.6s linear infinite;
+}
+.animate-step-in { animation: step-in 0.38s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .think-orbit, .think-orbit-slow, .think-breathe, .think-shimmer, .animate-step-in { animation: none; }
+}

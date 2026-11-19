@@ -1,5 +1,6 @@
 "use client";
 
+import { AIThinking } from "@/components/ai-thinking";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -100,9 +101,13 @@ export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = 
         <h2 className="mt-3 text-xl font-extrabold">How was your last day?</h2>
         <p className="mt-1 text-sm text-muted">3 min · shapes today&apos;s story</p>
         {error && <div className="mt-4"><Alert tone="danger">{error}</Alert></div>}
-        <Button className="mt-6" onClick={start} disabled={busy !== null}>
-          {busy === "start" ? <Spinner /> : null} {busy === "start" ? "Preparing your questions…" : "Begin check-in"}
-        </Button>
+        {busy === "start" ? (
+          <AIThinking className="mt-6" steps={["Remembering your last few days…", "Picking today's questions…", "Shuffling the cards…"]} />
+        ) : (
+          <Button className="mt-6" onClick={start} disabled={busy !== null}>
+            Begin check-in
+          </Button>
+        )}
       </Card>
     );
   }

@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BookOpen, Check, Lock, Target } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Target } from "lucide-react";
+import { AIThinking } from "@/components/ai-thinking";
 import { DeepFeedback } from "@/components/feedback";
 import { ListenButton, type AIVoice } from "@/components/listen-button";
 import { StoryChoice, type StoryChoiceData } from "./story-choice";
@@ -50,45 +51,108 @@ type Story = {
 import { EpisodeTag, NextEpisode, Previously, type EpisodeInfo } from "./episode";
 import { CelebrationOverlay, type Celebration } from "./celebration";
 
-function Section({
-  n,
-  title,
-  minutes,
-  locked,
-  done,
-  lockedText,
-  children,
-}: {
-  n: number;
-  title: string;
-  minutes: string;
-  locked: boolean;
-  done: boolean;
-  lockedText: string;
-  children: React.ReactNode;
-}) {
+type Step = { key: string; title: string; minutes: string; done: boolean };
+
+/** Five small steps instead of a list of locked boxes: done ones can be reopened, future ones stay quiet. */
+function StepHeader({ steps, view, current, onPick }: { steps: Step[]; view: number; current: number; onPick: (i: number) => void }) {
+  const doneCount = steps.filter((x) => x.done).length;
   return (
-    <section className="relative">
-      <div className="mb-3 flex items-center gap-3">
-        <span
-          className={cx(
-            "flex size-6 items-center justify-center rounded-full border text-xs font-medium tabular-nums",
-            done ? "border-success bg-success text-white" : locked ? "border-line-strong text-muted" : "border-primary text-primary",
-          )}
-        >
-          {done ? <Check className="size-3.5" strokeWidth={3} /> : n}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-xs text-muted">
+        <span>
+          Step {view + 1} of {steps.length} · <span className="font-medium text-ink">{steps[view].title}</span> · {steps[view].minutes}
         </span>
-        <h2 className={cx("text-sm font-semibold", locked && "text-muted")}>{title}</h2>
-        <span className="text-xs text-muted">{minutes}</span>
+        <span className="tabular-nums">{doneCount}/{steps.length} done</span>
       </div>
-      {locked ? (
-        <div className="flex items-center gap-2 rounded-2xl border border-dashed border-line-strong px-5 py-4 text-sm text-muted">
-          <Lock className="size-4" strokeWidth={1.75} /> {lockedText}
+      <ol className="flex items-center gap-1.5" aria-label="Today's steps">
+        {steps.map((st, i) => {
+          const open = st.done || i <= current;
+          return (
+            <li key={st.key} className="flex-1">
+              <button
+                type="button"
+                disabled={!open}
+                onClick={() => onPick(i)}
+                aria-current={i === view ? "step" : undefined}
+                aria-label={`${st.title}${st.done ? " (done)" : ""}`}
+                className={cx(
+                  "group flex w-full flex-col items-center gap-1 rounded-xl py-1 transition",
+                  open ? "cursor-pointer" : "cursor-default",
+                )}
+              >
+                <span
+                  className={cx(
+                    "h-1.5 w-full rounded-full transition-all duration-500",
+                    st.done ? "bg-success" : i === view ? "bg-primary" : i <= current ? "bg-primary/40" : "bg-line",
+                  )}
+                />
+                <span
+                  className={cx(
+                    "flex items-center gap-0.5 text-[11px] leading-none",
+                    i === view ? "font-semibold text-ink" : st.done ? "text-success" : "text-muted",
+                  )}
+                >
+                  {st.done && <Check className="size-3" strokeWidth={3} />}
+                  <span className="hidden sm:inline">{st.title}</span>
+                  <span className="sm:hidden">{st.title.split(" ")[0]}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function NextStep({ to, minutes, onClick, label }: { to: string; minutes: string; onClick: () => void; label?: string }) {
+  return (
+    <div className="animate-pop flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-xs text-muted">{label ?? "Nice, step done."} Up next</p>
+        <p className="truncate text-sm font-semibold">
+          {to} <span className="font-normal text-muted">· {minutes}</span>
+        </p>
+      </div>
+      <Button onClick={onClick}>
+        Continue <ArrowRight className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+/** Scenarios one at a time, with small dots for where you are. */
+function ScenarioDeck({ sessionId, scenarios, onAnswered }: { sessionId: string; scenarios: ClientScenario[]; onAnswered: (i: number, s: ClientScenario) => void }) {
+  const firstOpen = scenarios.findIndex((x) => !x.response);
+  const [i, setI] = useState(firstOpen === -1 ? 0 : firstOpen);
+  const sc = scenarios[i];
+  return (
+    <div className="space-y-3">
+      {scenarios.length > 1 && (
+        <div className="flex items-center justify-center gap-2" aria-label={`Scenario ${i + 1} of ${scenarios.length}`}>
+          {scenarios.map((x, j) => (
+            <button
+              key={j}
+              type="button"
+              aria-label={`Scenario ${j + 1}`}
+              disabled={!x.response && j !== i && j !== firstOpen}
+              onClick={() => setI(j)}
+              className={cx("h-2 rounded-full transition-all", j === i ? "w-6 bg-primary" : x.response ? "w-2 bg-success" : "w-2 bg-line-strong")}
+            />
+          ))}
         </div>
-      ) : (
-        children
       )}
-    </section>
+      <div key={i} className="animate-step-in">
+        <ScenarioCard sessionId={sessionId} index={i} scenario={sc} onAnswered={(u) => onAnswered(i, u)} />
+      </div>
+      {sc.response && i < scenarios.length - 1 && (
+        <div className="flex justify-end">
+          <Button variant="secondary" onClick={() => setI(i + 1)}>
+            {scenarios[i + 1].response ? "Next scenario" : `Next scenario (${i + 2}/${scenarios.length})`} <ArrowRight className="size-4" />
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -314,11 +378,15 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
               <Textarea id={`reason-${index}`} rows={3} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
             </div>
             {error && <Alert tone="danger">{error}</Alert>}
-            <div className="flex justify-end">
-              <Button onClick={submit} disabled={!choice || reasoning.trim().length < 15 || busy}>
-                {busy && <Spinner />} {busy ? "Evaluating…" : "Submit answer"}
-              </Button>
-            </div>
+            {busy ? (
+              <AIThinking steps={["Reading your answer…", "Comparing it with how confident people reply…", "Writing your feedback…"]} />
+            ) : (
+              <div className="flex justify-end">
+                <Button onClick={submit} disabled={!choice || reasoning.trim().length < 15}>
+                  Submit answer
+                </Button>
+              </div>
+            )}
           </>
         ) : (
           r.evaluation && (
@@ -478,10 +546,16 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
         )
       ) : (
         <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          {error ? <Alert tone="danger">{error}</Alert> : <span />}
-          <Button onClick={submit} disabled={busy || answers.some((a) => a.trim().length < 10)}>
-            {busy && <Spinner />} {busy ? "Saving…" : "Complete session"}
-          </Button>
+          {busy ? (
+            <AIThinking className="w-full" steps={["Reading your reflection…", "Connecting it with today's story…", "Picking what to practise tomorrow…"]} />
+          ) : (
+            <>
+              {error ? <Alert tone="danger">{error}</Alert> : <span />}
+              <Button onClick={submit} disabled={answers.some((a) => a.trim().length < 10)}>
+                Complete session
+              </Button>
+            </>
+          )}
         </div>
       )}
     </Card>
@@ -508,9 +582,27 @@ export function SessionFlow({
   const [started, setStarted] = useState(initial.story_progress > 0 || initial.story_completed);
   const intro = session.introduction;
   const scenariosDone = scenarios.every((s) => s.response);
+  const [challengeSeen, setChallengeSeen] = useState(session.challenge_status !== "pending" || Boolean(session.reflection_answers));
+  const steps: Step[] = [
+    { key: "intro", title: "Introduction", minutes: "3 min", done: started },
+    { key: "story", title: "Story", minutes: "10 min", done: session.story_completed },
+    { key: "scenarios", title: "Scenarios", minutes: "7 min", done: scenariosDone },
+    { key: "challenge", title: "Challenge", minutes: "2 min to plan", done: session.challenge_status !== "pending" || challengeSeen },
+    { key: "reflection", title: "Reflection", minutes: "3 min", done: session.completed },
+  ];
+  const current = !started ? 0 : !session.story_completed ? 1 : !scenariosDone ? 2 : !challengeSeen ? 3 : 4;
+  const [view, setView] = useState(current);
+  const top = useRef<HTMLDivElement>(null);
+  const go = (i: number) => {
+    setView(i);
+    const el = top.current;
+    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const next = view < 4 ? steps[view + 1] : null;
+  const canContinue = next && steps[view].done && view !== 3;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       {session.completed && (
         <Alert tone="success">
           Today&apos;s session is complete.{" "}
@@ -519,92 +611,104 @@ export function SessionFlow({
       )}
       {session.completed && episode && <NextEpisode info={episode} />}
 
-      <Section n={1} title="Introduction" minutes="3 min" locked={false} done={started} lockedText="">
-        <Card className="p-5 sm:p-6">
-          <h3 className="text-lg font-semibold">{intro.title}</h3>
-          <p className="mt-3 text-sm leading-relaxed">{intro.why_it_matters}</p>
-          <div className="mt-4 rounded-xl border-l-2 border-primary bg-bg px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">Key idea</p>
-            <p className="mt-1 text-sm leading-relaxed">{intro.key_idea}</p>
-          </div>
-          <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted">Today you will practise</p>
-          <ul className="mt-1.5 space-y-1 text-sm">
-            {intro.what_you_will_practise.map((p, i) => (
-              <li key={i}>· {p}</li>
-            ))}
-          </ul>
-          {!started && (
-            <Button className="mt-5" onClick={() => setStarted(true)}>
-              Begin the story
+      <div ref={top} className="scroll-mt-20">
+        <StepHeader steps={steps} view={view} current={current} onPick={go} />
+      </div>
+
+      <div key={view} className="animate-step-in space-y-4">
+        {view === 0 && (
+          <Card className="p-5 sm:p-6">
+            <h3 className="text-lg font-semibold">{intro.title}</h3>
+            <p className="mt-3 text-sm leading-relaxed">{intro.why_it_matters}</p>
+            <div className="mt-4 rounded-xl border-l-2 border-primary bg-bg px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">Key idea</p>
+              <p className="mt-1 text-sm leading-relaxed">{intro.key_idea}</p>
+            </div>
+            <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted">Today you will practise</p>
+            <ul className="mt-1.5 space-y-1 text-sm">
+              {intro.what_you_will_practise.map((p, i) => (
+                <li key={i}>· {p}</li>
+              ))}
+            </ul>
+            <Button
+              className="mt-5"
+              onClick={() => {
+                setStarted(true);
+                go(1);
+              }}
+            >
+              {started ? "Back to the story" : "Begin the story"} <ArrowRight className="size-4" />
             </Button>
-          )}
-        </Card>
-      </Section>
-
-      <Section n={2} title="Story" minutes="10 min" locked={!started} done={session.story_completed} lockedText="Read the introduction first.">
-        {story ? (
-          <div className="space-y-3">
-          {episode && <Previously info={episode} />}
-          <StoryReader
-            episode={episode}
-            aiVoice={aiVoice}
-            sessionId={session.id}
-            story={story}
-            initialProgress={session.story_progress}
-            completed={session.story_completed}
-            onComplete={() => setSession((s) => ({ ...s, story_completed: true, story_progress: 100 }))}
-          />
-          </div>
-        ) : (
-          <Alert tone="danger">The story for this session could not be loaded.</Alert>
+          </Card>
         )}
-      </Section>
 
-      <Section n={3} title="Interactive scenarios" minutes="7 min" locked={!session.story_completed} done={scenariosDone} lockedText="Finish the story to unlock the scenarios.">
-        <div className="space-y-4">
-          {scenarios.map((sc, i) => (
-            <ScenarioCard
-              key={i}
-              sessionId={session.id}
-              index={i}
-              scenario={sc}
-              onAnswered={(updated) => {
-                const next = scenarios.map((x, j) => (j === i ? updated : x));
-                setScenarios(next);
-                if (next.every((x) => x.response)) setSession((s) => ({ ...s, scenarios_completed: true }));
+        {view === 1 &&
+          (story ? (
+            <div className="space-y-3">
+              {episode && <Previously info={episode} />}
+              <StoryReader
+                episode={episode}
+                aiVoice={aiVoice}
+                sessionId={session.id}
+                story={story}
+                initialProgress={session.story_progress}
+                completed={session.story_completed}
+                onComplete={() => setSession((s) => ({ ...s, story_completed: true, story_progress: 100 }))}
+              />
+            </div>
+          ) : (
+            <Alert tone="danger">The story for this session could not be loaded.</Alert>
+          ))}
+
+        {view === 2 && (
+          <ScenarioDeck
+            sessionId={session.id}
+            scenarios={scenarios}
+            onAnswered={(i, updated) => {
+              const nextList = scenarios.map((x, j) => (j === i ? updated : x));
+              setScenarios(nextList);
+              if (nextList.every((x) => x.response)) setSession((s) => ({ ...s, scenarios_completed: true }));
+            }}
+          />
+        )}
+
+        {view === 3 && (
+          <>
+            <ChallengeCard
+              session={session}
+              onSaved={(status, notes) => {
+                setSession((s) => ({ ...s, challenge_status: status, challenge_notes: notes }));
+                setChallengeSeen(true);
+                router.refresh();
               }}
             />
-          ))}
-        </div>
-      </Section>
+            {!session.completed && (
+              <NextStep
+                to="Reflection"
+                minutes="3 min"
+                label={session.challenge_status === "pending" ? "Try it later today and come back to record it." : "Saved."}
+                onClick={() => {
+                  setChallengeSeen(true);
+                  go(4);
+                }}
+              />
+            )}
+          </>
+        )}
 
-      <Section
-        n={4}
-        title="Real-world challenge"
-        minutes="7 min to plan"
-        locked={!scenariosDone}
-        done={session.challenge_status === "completed"}
-        lockedText="Complete the scenarios to see today's challenge."
-      >
-        <ChallengeCard
-          session={session}
-          onSaved={(status, notes) => {
-            setSession((s) => ({ ...s, challenge_status: status, challenge_notes: notes }));
-            router.refresh();
-          }}
-        />
-      </Section>
+        {view === 4 && (
+          <ReflectionCard
+            session={session}
+            onDone={(answers, feedback, celebration) => {
+              setSession((s) => ({ ...s, reflection_answers: answers, reflection_feedback: feedback, completed: true }));
+              if (celebration) setCelebrate(celebration);
+              router.refresh();
+            }}
+          />
+        )}
 
-      <Section n={5} title="Reflection" minutes="3 min" locked={!scenariosDone} done={session.completed} lockedText="Complete the scenarios first.">
-        <ReflectionCard
-          session={session}
-          onDone={(answers, feedback, celebration) => {
-            setSession((s) => ({ ...s, reflection_answers: answers, reflection_feedback: feedback, completed: true }));
-            if (celebration) setCelebrate(celebration);
-            router.refresh();
-          }}
-        />
-      </Section>
+        {canContinue && next && <NextStep to={next.title} minutes={next.minutes} onClick={() => go(view + 1)} />}
+      </div>
       {celebrate && <CelebrationOverlay data={celebrate} onClose={() => setCelebrate(null)} />}
     </div>
   );

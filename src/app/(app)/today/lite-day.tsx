@@ -4,9 +4,13 @@ import Link from "next/link";
 import { Dumbbell, Gem, Leaf } from "lucide-react";
 import { ButtonLink, Card } from "@/components/ui";
 import type { EpisodeAllowance } from "@/lib/server/plan";
+import { readStore } from "@/lib/client/app-context";
+import { useEffect, useState } from "react";
 
 /** Free plan, no episode today: the check-in kept the streak; offer the trial and free things to do. */
 export function LiteDay({ allowance }: { allowance: EpisodeAllowance }) {
+  const [storeApp, setStoreApp] = useState(false);
+  useEffect(() => setStoreApp(Boolean(readStore())), []);
   const next = allowance.nextAt
     ? new Date(allowance.nextAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" })
     : null;
@@ -20,9 +24,11 @@ export function LiteDay({ allowance }: { allowance: EpisodeAllowance }) {
         </p>
       </div>
       <div className="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
-        <ButtonLink href="/pricing" className="sm:col-span-3">
-          <Gem className="size-4" /> {allowance.trialAvailable ? "7 din Pro free try karo · aaj ka episode abhi" : "Pro lo · roz naya episode"}
-        </ButtonLink>
+        {(allowance.trialAvailable || !storeApp) && (
+          <ButtonLink href="/pricing" className="sm:col-span-3">
+            <Gem className="size-4" /> {allowance.trialAvailable ? "7 din Pro free try karo · aaj ka episode abhi" : "Pro lo · roz naya episode"}
+          </ButtonLink>
+        )}
         <Link href="/calm" className="flex items-center gap-3 rounded-2xl bg-bg p-3 transition hover:brightness-95">
           <Leaf className="size-5 text-accent" />
           <span className="text-sm font-semibold">Calm Corner</span>

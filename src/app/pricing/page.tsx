@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
 import { Logo } from "@/components/logo";
 import { getSessionUser } from "@/lib/db/server";
@@ -16,6 +16,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
   const plan = user ? await getPlan(user.id) : null;
   // Visitors in India see rupee prices until Paddle's own localised price loads.
   const india = (await headers()).get("x-vercel-ip-country") === "IN";
+  const storeApp = (await cookies()).get("p90_store")?.value === "play";
   return (
     <div className="min-h-screen bg-bg">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
@@ -43,6 +44,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           config={config}
           prices={india ? DISPLAY_PRICES_INR : DISPLAY_PRICES}
           currency={india ? "₹" : "$"}
+          storeApp={storeApp}
           features={FEATURES}
           justPaid={sp.checkout === "success"}
         />

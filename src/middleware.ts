@@ -1,7 +1,7 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth", "/about", "/api/auth", "/api/recovery", "/i", "/api/cron", "/api/payments", "/pricing", "/advertise"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth", "/about", "/api/auth", "/api/recovery", "/i", "/api/cron", "/api/payments", "/pricing", "/advertise", "/api/assetlinks", "/.well-known"];
 
 /**
  * Fast, optimistic redirect based on the presence of a session cookie. Every
@@ -24,5 +24,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|sw.js|manifest.webmanifest|offline.html|icons/|voice-samples/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|sw.js|manifest.webmanifest|offline.html|icons/|voice-samples/|\\.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
