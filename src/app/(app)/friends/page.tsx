@@ -1,122 +1,249 @@
 import Link from "next/link";
-import { Bell, ChevronRight, Flag, Lock, Plus, Users } from "lucide-react";
-import { Avatar, CheerBar, FriendMenu, InviteBox, ProgressTile } from "@/components/social";
-import { Alert, ButtonLink, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
+import { Bell, ChevronRight, Flag, Lock, Pencil, Plus, UserPlus, Users } from "lucide-react";
+import { InviteBox } from "@/components/social";
+import { FaceAvatar, MomentRings, QuickCheer, WatchMoments } from "@/components/moments";
+import { Alert, ButtonLink, Card, EmptyState, cx } from "@/components/ui";
 import { requireUser } from "@/lib/db/server";
+import { coverBg, streakMark } from "@/lib/domain/moments";
 import { RACE_KINDS } from "@/lib/domain/social";
-import { getSharing, listFriends, myCircles, myRaces, unreadCount } from "@/lib/server/social";
+import { duoStreaks, doneToday, getProfileCard, momentFeed } from "@/lib/server/moments";
+import { getSharing, listFriends, loadSnapshots, myCircles, myRaces, nameOf, unreadCount } from "@/lib/server/social";
 
 export const metadata = { title: "Friends" };
 export const dynamic = "force-dynamic";
 
-export default async function FriendsPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
+const TABS = [
+  { id: "friends", label: "Friends" },
+  { id: "circles", label: "Circles" },
+  { id: "races", label: "Races" },
+] as const;
+
+export default async function FriendsPage({ searchParams }: { searchParams: Promise<{ joined?: string; tab?: string }> }) {
   const { user } = await requireUser();
-  const [friends, circles, races, sharing, unread, sp] = await Promise.all([
+  const sp = await searchParams;
+  const tab = TABS.find((t) => t.id === sp.tab)?.id ?? "friends";
+  const [friends, circles, races, sharing, unread, feed, card, name, mine] = await Promise.all([
     listFriends(user.id),
     myCircles(user.id),
     myRaces(user.id),
     getSharing(user.id),
     unreadCount(user.id),
-    searchParams,
+    momentFeed(user.id),
+    getProfileCard(user.id),
+    nameOf(user.id),
+    loadSnapshots([user.id]),
   ]);
+  const ids = friends.map((f) => f.id);
+  const [duos, today] = await Promise.all([duoStreaks(user.id, ids), doneToday(ids)]);
+  const me = mine.get(user.id);
   const liveRaces = races.filter((r) => Date.parse(r.ends_at) > Date.now());
+  const feedOf = new Map(feed.map((p) => [p.id, p]));
+  const activeFriends = friends.filter((f) => f.view?.shared.includes("activity"));
+  const showedUp = activeFriends.filter((f) => today.get(f.id)).length;
+  // Longest friend streak first.
+  const sorted = [...friends].sort((a, b) => (duos.get(b.id)?.streak ?? 0) - (duos.get(a.id)?.streak ?? 0));
 
   return (
-    <>
-      <PageHeader
-        eyebrow="Together"
-        title="Friends"
-        description="Grow alongside people you trust. They only see what you choose to share - never your journal, answers or coach chats."
-        action={
-          <div className="flex gap-2">
-            <ButtonLink href="/inbox" variant="secondary">
-              <Bell className="size-4" /> Inbox{unread > 0 && <span className="rounded-full bg-coral px-1.5 text-[11px] text-white">{unread}</span>}
-            </ButtonLink>
-            <ButtonLink href="/friends/sharing" variant="secondary">
-              <Lock className="size-4" /> Privacy
-            </ButtonLink>
-          </div>
-        }
-      />
-
-      <div className="space-y-6">
-        {sp.joined && <Alert tone="success">You&apos;re connected! You can now see each other&apos;s shared progress.</Alert>}
-        {sharing.paused && (
-          <Alert tone="warning">
-            Sharing is paused - friends and circles can&apos;t see your progress. <Link href="/friends/sharing" className="font-semibold underline">Resume</Link>
-          </Alert>
-        )}
-
-        <InviteBox title="Invite a friend" text="Private link · no public profiles" />
-
-        <section>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Your friends ({friends.length})</h2>
-          {friends.length === 0 ? (
-            <Card>
-              <EmptyState icon={<Users className="size-6" />} title="No friends yet" description="Share your invite link to add one." />
-            </Card>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {friends.map((f) => {
-                const name = f.view?.display_name ?? f.name;
-                return (
-                  <Card key={f.id} className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Avatar name={name} id={f.id} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <Link href={`/friends/${f.id}`} className="truncate font-bold hover:underline">{name}</Link>
-                          <FriendMenu userId={f.id} name={name} />
-                        </div>
-                        <div className="mt-2">
-                          {f.view ? <ProgressTile view={f.view} week={f.week} compact /> : <p className="text-sm text-muted">{name} has paused sharing.</p>}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
-                      <CheerBar to={f.id} />
-                      <Link href={`/friends/${f.id}`} className="shrink-0 text-xs font-semibold text-primary">Compare</Link>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader title="Circles" description="Small groups with a shared board" action={<ButtonLink href="/circles" variant="ghost" className="h-8 px-2">All <ChevronRight className="size-4" /></ButtonLink>} />
-            <div className="space-y-1 p-3">
-              {circles.length === 0 && <p className="px-2 pb-2 text-sm text-muted">No circles yet.</p>}
-              {circles.slice(0, 4).map((c) => (
-                <Link key={c.id} href={`/circles/${c.id}`} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-bg">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-accent-soft text-lg">{c.emoji || "👥"}</span>
-                  <span className="min-w-0 flex-1 truncate font-semibold">{c.name}</span>
-                  <span className="text-xs text-muted">{c.members} members</span>
-                </Link>
-              ))}
-              <ButtonLink href="/circles#new" variant="secondary" className="mt-2 w-full"><Plus className="size-4" /> New circle</ButtonLink>
-            </div>
-          </Card>
-          <Card>
-            <CardHeader title="Races" description="Friendly, time-boxed competitions" />
-            <div className="space-y-1 p-3">
-              {liveRaces.length === 0 && <p className="px-2 pb-2 text-sm text-muted">No races yet.</p>}
-              {liveRaces.slice(0, 5).map((r) => (
-                <Link key={r.id} href={`/races/${r.id}`} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-bg">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-sun-soft text-warning"><Flag className="size-4" /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{r.title}</span>
-                    <span className="text-xs text-muted">{RACE_KINDS.find((k) => k.id === r.kind)?.label} · ends {new Date(r.ends_at).toLocaleDateString()}</span>
-                  </span>
-                  {!r.joined && <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-bold text-primary">Join</span>}
-                </Link>
-              ))}
-            </div>
-          </Card>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-extrabold tracking-tight">Friends</h1>
+        <div className="flex items-center gap-1">
+          <IconLink href="/inbox" label="Inbox" badge={unread}>
+            <Bell className="size-5" />
+          </IconLink>
+          <IconLink href="/friends/sharing" label="Privacy">
+            <Lock className="size-5" />
+          </IconLink>
+          <IconLink href="/friends?tab=friends#invite" label="Add friends">
+            <UserPlus className="size-5" />
+          </IconLink>
         </div>
       </div>
-    </>
+
+      {sp.joined && <Alert tone="success">You&apos;re connected! You can now see each other&apos;s shared progress.</Alert>}
+      {sharing.paused && (
+        <Alert tone="warning">
+          Sharing is paused - friends and circles can&apos;t see your progress or moments.{" "}
+          <Link href="/friends/sharing" className="font-semibold underline">
+            Resume
+          </Link>
+        </Alert>
+      )}
+
+      {/* My profile card */}
+      <section className="overflow-hidden rounded-3xl border border-line bg-surface">
+        <div className="h-20" style={{ background: coverBg(card.cover) }} />
+        <div className="flex items-end gap-3 px-4">
+          <div className="-mt-9 shrink-0">
+            <FaceAvatar name={name} emoji={card.avatar_emoji} cover={card.cover} size="lg" className="ring-4 ring-surface" />
+          </div>
+          <div className="min-w-0 flex-1 pt-2">
+            <p className="truncate font-extrabold">{name}</p>
+            <p className="truncate text-xs text-muted">{card.bio || "Add a line about what you're working on"}</p>
+          </div>
+          <ButtonLink href="/friends/profile" variant="secondary" className="mb-1 h-8 px-3 text-xs">
+            <Pencil className="size-3.5" /> Edit
+          </ButtonLink>
+        </div>
+        {me && (
+          <div className="grid grid-cols-4 gap-1 px-3 pb-4 pt-3 text-center">
+            <Stat value={me.programme_day ? `${me.programme_day}` : "-"} label="Day" />
+            <Stat value={`🔥 ${me.streak}`} label="Streak" />
+            <Stat value={`${me.level}`} label={me.level_name} />
+            <Stat value={`${me.badges.length}`} label="Badges" />
+          </div>
+        )}
+      </section>
+
+      <MomentRings feed={feed} me={{ name, emoji: card.avatar_emoji, cover: card.cover }} />
+
+      {/* Tabs */}
+      <nav className="flex rounded-2xl bg-bg p-1 text-sm font-semibold" aria-label="Friends sections">
+        {TABS.map((t) => {
+          const count = t.id === "friends" ? friends.length : t.id === "circles" ? circles.length : liveRaces.length;
+          return (
+            <Link
+              key={t.id}
+              href={`/friends?tab=${t.id}`}
+              aria-current={tab === t.id ? "page" : undefined}
+              className={cx("flex-1 rounded-xl py-2 text-center transition", tab === t.id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink")}
+            >
+              {t.label} <span className="text-xs font-normal text-muted">{count}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {tab === "friends" && (
+        <div className="space-y-4">
+          {activeFriends.length > 0 && (
+            <p className="text-sm text-muted">
+              <b className="text-ink">{showedUp}</b> of {activeFriends.length} friends showed up today
+            </p>
+          )}
+          {friends.length === 0 ? (
+            <Card>
+              <EmptyState icon={<Users className="size-6" />} title="No friends yet" description="Invite one person you trust. Friend streaks, moments and cheers start here." />
+            </Card>
+          ) : (
+            <Card className="divide-y divide-line">
+              {sorted.map((f) => {
+                const fname = f.view?.display_name ?? f.name;
+                const person = feedOf.get(f.id);
+                const activity = f.view?.shared.includes("activity");
+                const duo = activity ? duos.get(f.id) : undefined;
+                const doneNow = activity ? today.get(f.id) : undefined;
+                const face = <FaceAvatar name={fname} emoji={f.view?.avatar_emoji} cover={f.view?.cover} size="md" ring={person ? (person.allSeen ? "seen" : "new") : "none"} />;
+                return (
+                  <div key={f.id} className="flex items-center gap-3 px-3 py-3">
+                    {person ? <WatchMoments person={person}>{face}</WatchMoments> : <Link href={`/friends/${f.id}`}>{face}</Link>}
+                    <Link href={`/friends/${f.id}`} className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate font-bold">{fname}</span>
+                        {duo && duo.streak > 0 && (
+                          <span className="shrink-0 text-sm font-bold tabular-nums" title="Friend streak: days you both showed up">
+                            🔥{duo.streak}
+                            {streakMark(duo.streak) && streakMark(duo.streak) !== "🔥" ? streakMark(duo.streak) : ""}
+                            {!(duo.todayMe && duo.todayThem) && " ⏳"}
+                          </span>
+                        )}
+                      </span>
+                      <span className="block truncate text-xs text-muted">
+                        {!f.view
+                          ? "Sharing paused"
+                          : person && !person.allSeen
+                            ? "New moment · tap the photo"
+                            : doneNow === true
+                              ? `✓ Showed up today${f.view.programme_day ? ` · Day ${f.view.programme_day}` : ""}`
+                              : doneNow === false
+                                ? duo && duo.streak > 0 && duo.todayMe
+                                  ? `Waiting for ${fname.split(" ")[0]} to keep your streak`
+                                  : "Not yet today"
+                                : f.view.bio || (f.view.level ? `Level ${f.view.level} · ${f.view.level_name}` : "Friend")}
+                      </span>
+                    </Link>
+                    <QuickCheer to={f.id} name={fname} />
+                  </div>
+                );
+              })}
+            </Card>
+          )}
+          <p className="px-1 text-xs text-muted">🔥 Friend streak = days in a row you both checked in. ⏳ means one of you hasn&apos;t shown up today yet.</p>
+          <div id="invite" className="scroll-mt-20">
+            <InviteBox title="Add a friend" text="Private invite link or QR · there are no public profiles" />
+          </div>
+        </div>
+      )}
+
+      {tab === "circles" && (
+        <div className="space-y-3">
+          {circles.length === 0 && (
+            <Card>
+              <EmptyState icon={<Users className="size-6" />} title="No circles yet" description="A circle is a small group - your hostel wing, team or batch - with a shared board, moments and races." />
+            </Card>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {circles.map((c) => (
+              <Link key={c.id} href={`/circles/${c.id}`} className="flex items-center gap-3 rounded-3xl border border-line bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-raised">
+                <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-3xl">{c.emoji || "👥"}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-bold">{c.name}</span>
+                  <span className="text-xs text-muted">
+                    {c.members} members{c.live_races > 0 ? ` · ${c.live_races} live race${c.live_races > 1 ? "s" : ""} 🏁` : ""}
+                  </span>
+                </span>
+                <ChevronRight className="size-4 text-muted" />
+              </Link>
+            ))}
+          </div>
+          <ButtonLink href="/circles#new" variant="secondary" className="w-full">
+            <Plus className="size-4" /> New circle
+          </ButtonLink>
+        </div>
+      )}
+
+      {tab === "races" && (
+        <div className="space-y-3">
+          {liveRaces.length === 0 && (
+            <Card>
+              <EmptyState icon={<Flag className="size-6" />} title="No races right now" description="Open a friend's profile or a circle to start a friendly race." />
+            </Card>
+          )}
+          {liveRaces.map((r) => {
+            const daysLeft = Math.max(0, Math.ceil((Date.parse(r.ends_at) - Date.now()) / 86_400_000));
+            return (
+              <Link key={r.id} href={`/races/${r.id}`} className="flex items-center gap-3 rounded-3xl border border-line bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-raised">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sun-soft text-2xl">🏁</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-bold">{r.title}</span>
+                  <span className="text-xs text-muted">
+                    {RACE_KINDS.find((k) => k.id === r.kind)?.label} · {daysLeft} day{daysLeft === 1 ? "" : "s"} left
+                  </span>
+                </span>
+                {!r.joined ? <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">Join</span> : <ChevronRight className="size-4 text-muted" />}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="min-w-0 rounded-2xl bg-bg px-1 py-2">
+      <p className="truncate text-base font-extrabold tabular-nums">{value}</p>
+      <p className="truncate text-[11px] text-muted">{label}</p>
+    </div>
+  );
+}
+
+function IconLink({ href, label, badge = 0, children }: { href: string; label: string; badge?: number; children: React.ReactNode }) {
+  return (
+    <Link href={href} aria-label={label} title={label} className="relative flex size-10 items-center justify-center rounded-full text-ink hover:bg-bg">
+      {children}
+      {badge > 0 && <span className="absolute right-1 top-1 min-w-4 rounded-full bg-coral px-1 text-center text-[10px] font-bold leading-4 text-white">{badge}</span>}
+    </Link>
   );
 }

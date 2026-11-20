@@ -227,3 +227,8 @@ input[type="range"] {
 @media (prefers-reduced-motion: reduce) {
   .think-orbit, .think-orbit-slow, .think-breathe, .think-shimmer, .animate-step-in { animation: none; }
 }
+
+/* Moments */
+@keyframes sticker-bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
+.moment-sticker { display: inline-block; animation: sticker-bob 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .moment-sticker { animation: none; } }

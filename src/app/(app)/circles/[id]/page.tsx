@@ -5,7 +5,9 @@ import { Avatar, CheerBar, InviteBox, ProgressTile } from "@/components/social";
 import { Badge, ButtonLink, Card, CardHeader, PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/db/server";
 import { RACE_KINDS } from "@/lib/domain/social";
-import { CHEERS, SocialError, circleBoard } from "@/lib/server/social";
+import { CHEERS, SocialError, circleBoard, nameOf } from "@/lib/server/social";
+import { doneToday, getProfileCard, momentFeed } from "@/lib/server/moments";
+import { FaceAvatar, MomentRings } from "@/components/moments";
 import { RaceStarter } from "../../races/race-starter";
 import { CircleAdmin, MemberActions } from "./circle-admin";
 
@@ -23,6 +25,14 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
     throw err;
   }
   const { circle, members, cheers, races, myRole } = board;
+  const [feed, card, myName, today] = await Promise.all([
+    momentFeed(user.id, { circleId: id }),
+    getProfileCard(user.id),
+    nameOf(user.id),
+    doneToday(members.filter((m) => m.isMe || m.view?.shared.includes("activity")).map((m) => m.id)),
+  ]);
+  const tracked = members.filter((m) => today.has(m.id));
+  const doneCount = tracked.filter((m) => today.get(m.id)).length;
   const sort = sp.sort === "xp" ? "xp" : "week";
   // Members who don't share activity/xp sort last; ties keep join order.
   const score = (m: (typeof members)[number]) => (sort === "xp" ? (m.view?.xp ?? -1) : m.week ? m.week.sessions * 3 + m.week.checkins + m.week.challenges * 2 : -1);
@@ -35,6 +45,31 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
     <>
       <ButtonLink href="/circles" variant="ghost" className="mb-3 -ml-2 h-8 px-2"><ArrowLeft className="size-4" /> Circles</ButtonLink>
       <PageHeader eyebrow={`${members.length} member${members.length === 1 ? "" : "s"}`} title={`${circle.emoji ?? "👥"} ${circle.name}`} />
+      <div className="mb-4 space-y-4">
+        <MomentRings feed={feed} me={{ name: myName, emoji: card.avatar_emoji, cover: card.cover }} emptyHint={false} />
+        {tracked.length > 0 && (
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold">
+                  {doneCount === tracked.length ? "Everyone showed up today! 🎉" : `${doneCount} of ${tracked.length} showed up today`}
+                </p>
+                <p className="text-xs text-muted">Check in to light up your face for the group.</p>
+              </div>
+              <div className="flex -space-x-2">
+                {tracked.slice(0, 8).map((m) => (
+                  <span key={m.id} className={today.get(m.id) ? "" : "opacity-35 grayscale"} title={`${m.isMe ? "You" : m.name}${today.get(m.id) ? " ✓" : ""}`}>
+                    <FaceAvatar name={m.name} emoji={m.view?.avatar_emoji} cover={m.view?.cover} size="sm" className="ring-2 ring-surface" />
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-bg">
+              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${(doneCount / tracked.length) * 100}%` }} />
+            </div>
+          </Card>
+        )}
+      </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
           <Card>
@@ -52,7 +87,7 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
               {sorted.map((m, i) => (
                 <div key={m.id} className="flex gap-3 px-3 py-3">
                   <span className="w-5 pt-3 text-center text-sm font-bold text-muted">{i + 1}</span>
-                  <Avatar name={m.name} id={m.id} />
+                  <Avatar name={m.name} id={m.id} emoji={m.view?.avatar_emoji} cover={m.view?.cover} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="truncate font-bold">{m.isMe ? "You" : m.name}</span>

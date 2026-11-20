@@ -48,8 +48,16 @@ const hashToken = (t: string) => createHash("sha256").update(`persona90-invite:$
 
 /** Recomputes the shareable summary for a user (numbers, badges, relative growth only). */
 export async function refreshSnapshot(userId: string) {
-  const [profile] = await q<{ display_name: string | null; timezone: string; programme_start_date: string | null }>(
-    "select display_name, timezone, programme_start_date::text from public.profiles where id = $1",
+  const [profile] = await q<{
+    display_name: string | null;
+    timezone: string;
+    programme_start_date: string | null;
+    avatar_emoji: string | null;
+    cover: string | null;
+    bio: string | null;
+    pinned_badges: string[];
+  }>(
+    "select display_name, timezone, programme_start_date::text, avatar_emoji, cover, bio, pinned_badges from public.profiles where id = $1",
     [userId],
   );
   if (!profile) return;
@@ -80,14 +88,16 @@ export async function refreshSnapshot(userId: string) {
 
   await q(
     `insert into public.share_snapshots (user_id, display_name, timezone, programme_day, phase, sessions_completed, streak, best_streak,
-       last_active_date, xp, level, level_name, challenges_completed, badges, growth, scores, focus, updated_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, now())
+       last_active_date, xp, level, level_name, challenges_completed, badges, growth, scores, focus,
+       avatar_emoji, cover, bio, pinned_badges, updated_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21, now())
      on conflict (user_id) do update set display_name = excluded.display_name, timezone = excluded.timezone,
        programme_day = excluded.programme_day, phase = excluded.phase, sessions_completed = excluded.sessions_completed,
        streak = excluded.streak, best_streak = excluded.best_streak, last_active_date = excluded.last_active_date,
        xp = excluded.xp, level = excluded.level, level_name = excluded.level_name,
        challenges_completed = excluded.challenges_completed, badges = excluded.badges, growth = excluded.growth,
-       scores = excluded.scores, focus = excluded.focus, updated_at = now()`,
+       scores = excluded.scores, focus = excluded.focus, avatar_emoji = excluded.avatar_emoji, cover = excluded.cover,
+       bio = excluded.bio, pinned_badges = excluded.pinned_badges, updated_at = now()`,
     [
       userId,
       (profile.display_name || "").trim() || "Member",
@@ -106,6 +116,10 @@ export async function refreshSnapshot(userId: string) {
       JSON.stringify(growth),
       JSON.stringify(scores),
       focus ? JSON.stringify({ title: focus.title, dimension: focus.dimension }) : null,
+      profile.avatar_emoji,
+      profile.cover,
+      profile.bio,
+      profile.pinned_badges ?? [],
     ],
   );
 }
@@ -131,7 +145,7 @@ export async function refreshSnapshotSafe(userId: string) {
   }
 }
 
-async function loadSnapshots(ids: string[]): Promise<Map<string, Snapshot>> {
+export async function loadSnapshots(ids: string[]): Promise<Map<string, Snapshot>> {
   if (ids.length === 0) return new Map();
   let rows = await q<Snapshot>("select *, last_active_date::text as last_active_date from public.share_snapshots where user_id = any($1)", [ids]);
   const missing = ids.filter((id) => !rows.some((r) => r.user_id === id));
@@ -181,7 +195,7 @@ async function isBlocked(a: string, b: string) {
   return r.length > 0;
 }
 
-async function areFriends(a: string, b: string) {
+export async function areFriends(a: string, b: string) {
   const [lo, hi] = pair(a, b);
   const r = await q("select 1 from public.friendships where user_low = $1 and user_high = $2 and status = 'accepted'", [lo, hi]);
   return r.length > 0;
@@ -277,7 +291,7 @@ export async function markAllRead(userId: string) {
   await q("update public.notifications set read_at = now() where user_id = $1 and read_at is null", [userId]);
 }
 
-async function nameOf(userId: string) {
+export async function nameOf(userId: string) {
   const [p] = await q<{ display_name: string | null }>("select display_name from public.profiles where id = $1", [userId]);
   return (p?.display_name || "").trim() || "A friend";
 }
@@ -482,7 +496,7 @@ export const CIRCLE_MAX = 30;
 const MAX_CIRCLES_OWNED = 5;
 const MAX_CIRCLES_JOINED = 10;
 
-async function isMember(userId: string, circleId: string) {
+export async function isMember(userId: string, circleId: string) {
   const r = await q("select 1 from public.circle_members where circle_id = $1 and user_id = $2", [circleId, userId]);
   return r.length > 0;
 }

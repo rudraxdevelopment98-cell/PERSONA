@@ -1,6 +1,7 @@
 import { dbForUser, getSessionUser } from "@/lib/db/server";
 
 const TABLES = [
+  "moments",
   "assessments",
   "assessment_responses",
   "daily_checkins",
@@ -43,6 +44,8 @@ export async function GET() {
     db.from("friendships").select("*"),
     db.from("cheers").select("*"),
   ]);
+  const { data: momentViews } = await db.from("moment_views").select("*").eq("viewer", user.id);
+  out.moment_views = momentViews ?? [];
   out.invites = invites ?? [];
   out.friendships = friendships ?? [];
   out.cheers = cheers ?? [];

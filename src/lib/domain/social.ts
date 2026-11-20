@@ -33,6 +33,10 @@ export type Snapshot = {
   growth: Record<string, number>;
   scores: Record<string, number>;
   focus: { title: string; dimension: string } | null;
+  avatar_emoji?: string | null;
+  cover?: string | null;
+  bio?: string | null;
+  pinned_badges?: string[];
 };
 
 /** What another person may see. Fields that are not shared are absent (undefined). */
@@ -54,6 +58,12 @@ export type SharedView = {
   growth?: Record<string, number>;
   scores?: Record<string, number>;
   focus?: Snapshot["focus"];
+  /** Profile card: always visible to connections. */
+  avatar_emoji?: string | null;
+  cover?: string | null;
+  bio?: string | null;
+  /** Pinned badges, only when badges are shared. */
+  pinned?: Snapshot["badges"];
 };
 
 /** A streak is current if the last session was today, yesterday, or the day before (a weekly rest day). */
@@ -65,7 +75,14 @@ export function liveStreak(streak: number, lastActive: string | null, today: str
 
 export function filterSnapshot(s: Snapshot, items: ShareItem[], ownerToday: string): SharedView {
   const has = (i: ShareItem) => items.includes(i);
-  const v: SharedView = { user_id: s.user_id, display_name: s.display_name, shared: SHARE_ITEM_IDS.filter(has) };
+  const v: SharedView = {
+    user_id: s.user_id,
+    display_name: s.display_name,
+    shared: SHARE_ITEM_IDS.filter(has),
+    avatar_emoji: s.avatar_emoji ?? null,
+    cover: s.cover ?? null,
+    bio: s.bio ?? null,
+  };
   if (has("activity")) {
     v.programme_day = s.programme_day;
     v.phase = s.phase;
@@ -79,7 +96,10 @@ export function filterSnapshot(s: Snapshot, items: ShareItem[], ownerToday: stri
     v.level = s.level;
     v.level_name = s.level_name;
   }
-  if (has("badges")) v.badges = s.badges;
+  if (has("badges")) {
+    v.badges = s.badges;
+    v.pinned = (s.pinned_badges ?? []).map((c) => s.badges.find((b) => b.code === c)).filter((b): b is Snapshot["badges"][number] => Boolean(b));
+  }
   if (has("challenges")) v.challenges_completed = s.challenges_completed;
   if (has("growth")) v.growth = s.growth;
   if (has("scores")) v.scores = s.scores;

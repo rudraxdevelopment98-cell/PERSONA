@@ -207,3 +207,47 @@ export async function setRemindersAction(enabled: boolean) {
   if (error) return { error: "Could not save." };
   return {};
 }
+
+// Moments and profile card ----------------------------------------------
+
+export async function momentOptionsAction() {
+  const { momentOptions, getProfileCard } = await import("@/lib/server/moments");
+  return run(async (userId) => {
+    const [options, card, name] = await Promise.all([momentOptions(userId), getProfileCard(userId), social.nameOf(userId)]);
+    return { options, me: { name, emoji: card.avatar_emoji, cover: card.cover } };
+  });
+}
+
+export async function postMomentAction(input: { kind: string; cover: string; caption?: string | null }) {
+  const parsed = z.object({ kind: z.string().max(20), cover: z.string().max(20), caption: z.string().max(200).nullish() }).safeParse(input);
+  if (!parsed.success) return { error: "Invalid moment." };
+  const { postMoment } = await import("@/lib/server/moments");
+  return run(async (userId) => ({ id: await postMoment(userId, parsed.data) }), ["/friends"]);
+}
+
+export async function deleteMomentAction(momentId: string) {
+  if (!uuid.safeParse(momentId).success) return { error: "Invalid moment." };
+  const { deleteMoment } = await import("@/lib/server/moments");
+  return run(async (userId) => (await deleteMoment(userId, momentId), {}), ["/friends"]);
+}
+
+export async function viewMomentAction(momentId: string, reaction?: string | null) {
+  if (!uuid.safeParse(momentId).success) return { error: "Invalid moment." };
+  const { viewMoment } = await import("@/lib/server/moments");
+  return run(async (userId) => (await viewMoment(userId, momentId, reaction ?? null), {}));
+}
+
+export async function momentViewersAction(momentId: string) {
+  if (!uuid.safeParse(momentId).success) return { error: "Invalid moment." };
+  const { momentViewers } = await import("@/lib/server/moments");
+  return run(async (userId) => ({ viewers: await momentViewers(userId, momentId) }));
+}
+
+export async function saveProfileCardAction(input: { avatar_emoji: string | null; cover: string; bio: string; pinned: string[] }) {
+  const parsed = z
+    .object({ avatar_emoji: z.string().max(16).nullable(), cover: z.string().max(20), bio: z.string().max(200), pinned: z.array(z.string().max(40)).max(10) })
+    .safeParse(input);
+  if (!parsed.success) return { error: "Please check your profile." };
+  const { saveProfileCard } = await import("@/lib/server/moments");
+  return run(async (userId) => (await saveProfileCard(userId, parsed.data), {}), ["/friends", "/friends/profile"]);
+}

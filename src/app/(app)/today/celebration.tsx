@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Flame, Sparkles, Trophy, X, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { ShareProgress } from "@/components/share-progress";
+import { ShareMomentButton } from "@/components/moments";
 import { Button, ProgressBar } from "@/components/ui";
 
 export type Celebration = {
@@ -103,6 +104,12 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
             </div>
           )}
           {data.finale && <p className="text-sm text-muted">Season complete! Pick the world for your next season on this page.</p>}
+          <ShareMomentButton
+            preferred={data.badges.length ? "badge" : data.levelUp ? "level" : "day"}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-400 via-pink-500 to-violet-500 text-sm font-bold text-white shadow-sm active:scale-[0.98]"
+          >
+            ✨ Post as a moment for friends
+          </ShareMomentButton>
           <ShareProgress label="Share today's win" />
           <Button className="w-full" onClick={onClose}>
             Done for today

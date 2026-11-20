@@ -16,6 +16,7 @@ import {
   savePushAction,
 } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card, Input, Select, Textarea, cx } from "./ui";
+import { FaceAvatar } from "./moments";
 
 export function initials(name: string) {
   return (
@@ -30,7 +31,8 @@ export function initials(name: string) {
 
 const AVATAR_TONES = ["bg-primary-soft text-primary", "bg-accent-soft text-accent", "bg-coral-soft text-coral", "bg-sky-soft text-sky", "bg-sun-soft text-warning"];
 
-export function Avatar({ name, id, size = "md" }: { name: string; id: string; size?: "sm" | "md" | "lg" }) {
+export function Avatar({ name, id, size = "md", emoji, cover }: { name: string; id: string; size?: "sm" | "md" | "lg"; emoji?: string | null; cover?: string | null }) {
+  if (emoji || cover) return <FaceAvatar name={name} emoji={emoji} cover={cover} size={size === "sm" ? "sm" : size === "lg" ? "lg" : "md"} />;
   const tone = AVATAR_TONES[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_TONES.length];
   const s = { sm: "size-8 text-xs", md: "size-11 text-sm", lg: "size-14 text-base" }[size];
   return <span className={cx("flex shrink-0 items-center justify-center rounded-full font-extrabold", s, tone)}>{initials(name)}</span>;
