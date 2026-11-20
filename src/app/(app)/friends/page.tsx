@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bell, ChevronRight, Flag, Lock, Pencil, Plus, UserPlus, Users } from "lucide-react";
 import { InviteBox } from "@/components/social";
-import { FaceAvatar, MomentRings, QuickCheer, WatchMoments } from "@/components/moments";
+import { FaceAvatar, MomentRings, NudgeButton, QuickCheer, WatchMoments } from "@/components/moments";
 import { Alert, ButtonLink, Card, EmptyState, cx } from "@/components/ui";
 import { requireUser } from "@/lib/db/server";
 import { coverBg, streakMark } from "@/lib/domain/moments";
@@ -162,13 +162,13 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
                                 : f.view.bio || (f.view.level ? `Level ${f.view.level} · ${f.view.level_name}` : "Friend")}
                       </span>
                     </Link>
-                    <QuickCheer to={f.id} name={fname} />
+                    {duo && duo.todayMe && !duo.todayThem ? <NudgeButton to={f.id} name={fname} /> : <QuickCheer to={f.id} name={fname} />}
                   </div>
                 );
               })}
             </Card>
           )}
-          <p className="px-1 text-xs text-muted">🔥 Friend streak = days in a row you both checked in. ⏳ means one of you hasn&apos;t shown up today yet.</p>
+          <p className="px-1 text-xs text-muted">🔥 Friend streak = days in a row you both checked in. ⏳ means one of you hasn&apos;t shown up today - tap it to nudge them.</p>
           <div id="invite" className="scroll-mt-20">
             <InviteBox title="Add a friend" text="Private invite link or QR · there are no public profiles" />
           </div>

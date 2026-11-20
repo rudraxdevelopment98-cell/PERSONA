@@ -251,3 +251,9 @@ export async function saveProfileCardAction(input: { avatar_emoji: string | null
   const { saveProfileCard } = await import("@/lib/server/moments");
   return run(async (userId) => (await saveProfileCard(userId, parsed.data), {}), ["/friends", "/friends/profile"]);
 }
+
+export async function nudgeAction(to: string) {
+  if (!id.safeParse(to).success) return { error: "Invalid friend." };
+  const { sendNudge } = await import("@/lib/server/streaks");
+  return run(async (userId) => sendNudge(userId, to));
+}

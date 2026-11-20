@@ -7,7 +7,7 @@ import { Eye, Plus, Trash2, X } from "lucide-react";
 import { BadgeIcon } from "./badge-icon";
 import { Alert, Button, Input, cx } from "./ui";
 import { COVERS, CAPTION_MAX, MOMENT_LABEL, REACTIONS, coverBg, momentFace, reactionEmoji, type MomentData, type MomentKind } from "@/lib/domain/moments";
-import { cheerAction, deleteMomentAction, momentOptionsAction, momentViewersAction, postMomentAction, viewMomentAction } from "@/app/(app)/friends/actions";
+import { cheerAction, nudgeAction, deleteMomentAction, momentOptionsAction, momentViewersAction, postMomentAction, viewMomentAction } from "@/app/(app)/friends/actions";
 
 const initials = (name: string) =>
   name
@@ -601,5 +601,50 @@ export function ShareMomentButton({ preferred, className, children }: { preferre
       </button>
       {open && <MomentComposer preferred={preferred} onClose={() => setOpen(false)} />}
     </>
+  );
+}
+
+/** "I'm done, your turn": nudge a friend who hasn't shown up today. */
+export function NudgeButton({ to, name, variant = "icon" }: { to: string; name: string; variant?: "icon" | "pill" }) {
+  const [state, setState] = useState<"idle" | "sent" | "error">("idle");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const nudge = () =>
+    start(async () => {
+      const r = await nudgeAction(to);
+      if (r.error !== undefined) {
+        setState("error");
+        setMsg(r.error);
+        setTimeout(() => setMsg(null), 3000);
+      } else setState("sent");
+    });
+  if (variant === "pill")
+    return (
+      <span className="inline-flex flex-col items-center gap-1">
+        <button
+          type="button"
+          onClick={nudge}
+          disabled={pending || state === "sent"}
+          className={cx("inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95", state === "sent" ? "bg-accent-soft text-accent" : "bg-ink text-bg")}
+        >
+          {state === "sent" ? "Nudged ✓" : `⏳ Nudge ${name.split(" ")[0]}`}
+        </button>
+        {msg && <span className="text-xs text-danger">{msg}</span>}
+      </span>
+    );
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={nudge}
+        disabled={pending || state === "sent"}
+        aria-label={`Nudge ${name}`}
+        title={`Nudge ${name}`}
+        className={cx("flex size-10 items-center justify-center rounded-full border text-lg transition active:scale-90", state === "sent" ? "border-accent bg-accent-soft" : "nudge-pulse border-warning bg-sun-soft")}
+      >
+        {state === "sent" ? "✓" : "⏳"}
+      </button>
+      {msg && <p className="absolute right-0 top-11 z-20 w-52 rounded-xl bg-surface p-2 text-xs text-danger shadow-raised">{msg}</p>}
+    </div>
   );
 }

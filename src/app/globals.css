@@ -232,3 +232,6 @@ input[type="range"] {
 @keyframes sticker-bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
 .moment-sticker { display: inline-block; animation: sticker-bob 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .moment-sticker { animation: none; } }
+@keyframes nudge-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); } 50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); } }
+.nudge-pulse { animation: nudge-pulse 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .nudge-pulse { animation: none; } }

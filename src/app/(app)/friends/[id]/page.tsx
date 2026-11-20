@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Play } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { CheerBar, FriendMenu } from "@/components/social";
-import { FaceAvatar, WatchMoments } from "@/components/moments";
+import { FaceAvatar, NudgeButton, WatchMoments } from "@/components/moments";
 import { ButtonLink, Card, CardHeader } from "@/components/ui";
 import { requireUser } from "@/lib/db/server";
 import { DIMENSIONS, DIMENSION_META } from "@/lib/domain/dimensions";
@@ -100,6 +100,11 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
                     ? `${first} showed up today - your turn ⏳`
                     : "Neither of you has checked in today yet."}
             </p>
+          )}
+          {duo && duo.todayMe && !duo.todayThem && (
+            <div className="mt-3">
+              <NudgeButton to={id} name={name} variant="pill" />
+            </div>
           )}
         </div>
         {activity && (

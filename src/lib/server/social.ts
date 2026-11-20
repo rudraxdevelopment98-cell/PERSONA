@@ -66,7 +66,11 @@ export async function refreshSnapshot(userId: string) {
   const stats = await loadStats(dbForUser(userId), userId, Math.max(1, day));
   const level = levelInfo(stats.xp);
   const [last] = await q<{ d: string | null }>(
-    "select max(session_date)::text as d from public.daily_sessions where user_id = $1 and completed_at is not null",
+    // Lite-day check-ins keep the streak too, so they count as activity.
+    `select greatest(
+       (select max(session_date) from public.daily_sessions where user_id = $1 and completed_at is not null),
+       (select max(checkin_date) from public.daily_checkins where user_id = $1 and completed_at is not null and lite)
+     )::text as d`,
     [userId],
   );
   const badges = await q<{ code: string; title: string; earned_at: string }>(
@@ -189,7 +193,7 @@ export async function setPaused(userId: string, paused: boolean) {
   await q("update public.profiles set social_paused = $2 where id = $1", [userId, paused]);
 }
 
-async function isBlocked(a: string, b: string) {
+export async function isBlocked(a: string, b: string) {
   const [lo, hi] = pair(a, b);
   const r = await q("select 1 from public.friendships where user_low = $1 and user_high = $2 and status = 'blocked'", [lo, hi]);
   return r.length > 0;
@@ -270,9 +274,14 @@ export async function weekStats(ids: string[]): Promise<Map<string, WeekStats>> 
 // Notifications
 // ---------------------------------------------------------------------------
 
-export async function notify(userId: string, type: string, payload: { title: string; body: string; url: string } & Record<string, unknown>) {
+export async function notify(
+  userId: string,
+  type: string,
+  payload: { title: string; body: string; url: string } & Record<string, unknown>,
+  opts: { push?: boolean } = {},
+) {
   await q("insert into public.notifications (user_id, type, payload) values ($1, $2, $3)", [userId, type, JSON.stringify(payload)]);
-  await sendPush(userId, { title: payload.title, body: payload.body, url: payload.url });
+  if (opts.push !== false) await sendPush(userId, { title: payload.title, body: payload.body, url: payload.url });
 }
 
 export async function unreadCount(userId: string): Promise<number> {

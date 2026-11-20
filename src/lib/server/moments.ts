@@ -17,6 +17,7 @@ import {
   REACTIONS,
 } from "@/lib/domain/moments";
 import { ACHIEVEMENTS } from "./gamification";
+import { showUpDates } from "./streaks";
 import { SocialError, itemsVisibleTo, loadSnapshots, notify, refreshSnapshot, refreshSnapshotSafe } from "./social";
 
 /**
@@ -240,19 +241,6 @@ export async function momentViewers(owner: string, momentId: string) {
 // ---------------------------------------------------------------------------
 // Friend streaks and "done today"
 // ---------------------------------------------------------------------------
-
-/** Local dates (last 120 days) each person showed up: a completed check-in or session. */
-async function showUpDates(ids: string[]): Promise<Map<string, string[]>> {
-  if (ids.length === 0) return new Map();
-  const rows = await q<{ user_id: string; d: string }>(
-    `select user_id, checkin_date::text as d from public.daily_checkins where user_id = any($1) and completed_at is not null and checkin_date > current_date - 120
-     union select user_id, session_date::text from public.daily_sessions where user_id = any($1) and completed_at is not null and session_date > current_date - 120`,
-    [ids],
-  );
-  const out = new Map<string, string[]>(ids.map((i) => [i, []]));
-  for (const r of rows) out.get(r.user_id)!.push(r.d);
-  return out;
-}
 
 export type Duo = { streak: number; todayMe: boolean; todayThem: boolean };
 

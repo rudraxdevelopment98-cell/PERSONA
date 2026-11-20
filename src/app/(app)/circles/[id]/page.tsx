@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/db/server";
 import { RACE_KINDS } from "@/lib/domain/social";
 import { CHEERS, SocialError, circleBoard, nameOf } from "@/lib/server/social";
 import { doneToday, getProfileCard, momentFeed } from "@/lib/server/moments";
+import { circleWeek } from "@/lib/server/streaks";
 import { FaceAvatar, MomentRings } from "@/components/moments";
 import { RaceStarter } from "../../races/race-starter";
 import { CircleAdmin, MemberActions } from "./circle-admin";
@@ -25,11 +26,12 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
     throw err;
   }
   const { circle, members, cheers, races, myRole } = board;
-  const [feed, card, myName, today] = await Promise.all([
+  const [feed, card, myName, today, week] = await Promise.all([
     momentFeed(user.id, { circleId: id }),
     getProfileCard(user.id),
     nameOf(user.id),
     doneToday(members.filter((m) => m.isMe || m.view?.shared.includes("activity")).map((m) => m.id)),
+    circleWeek(user.id, id),
   ]);
   const tracked = members.filter((m) => today.has(m.id));
   const doneCount = tracked.filter((m) => today.get(m.id)).length;
@@ -67,6 +69,45 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-bg">
               <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${(doneCount / tracked.length) * 100}%` }} />
             </div>
+          </Card>
+        )}
+        {week.sharing > 0 && week.checkins + week.sessions > 0 && (
+          <Card className="p-4">
+            <p className="text-sm font-bold">📊 This week in {circle.name}</p>
+            <div className="mt-3 flex items-end justify-between gap-1.5" aria-label="Members who showed up on each of the last 7 days">
+              {week.days.map((d) => {
+                const pct = week.sharing ? d.done / week.sharing : 0;
+                const label = new Date(`${d.date}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "narrow", timeZone: "UTC" });
+                return (
+                  <div key={d.date} className="flex flex-1 flex-col items-center gap-1" title={`${d.done}/${week.sharing}`}>
+                    <div className="flex h-14 w-full items-end overflow-hidden rounded-lg bg-bg">
+                      <div className={`w-full rounded-lg ${pct === 1 ? "bg-accent" : "bg-primary/60"}`} style={{ height: `${Math.max(pct * 100, d.done ? 12 : 0)}%` }} />
+                    </div>
+                    <span className="text-[10px] text-muted">{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-bg py-2">
+                <p className="font-extrabold tabular-nums">{week.checkins}</p>
+                <p className="text-[11px] text-muted">check-ins</p>
+              </div>
+              <div className="rounded-xl bg-bg py-2">
+                <p className="font-extrabold tabular-nums">{week.sessions}</p>
+                <p className="text-[11px] text-muted">episodes</p>
+              </div>
+              <div className="rounded-xl bg-bg py-2">
+                <p className="font-extrabold tabular-nums">{week.fullHouse}/7</p>
+                <p className="text-[11px] text-muted">full-house days</p>
+              </div>
+            </div>
+            {(week.topStreak || week.hype) && (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                {week.topStreak && <span className="rounded-full bg-sun-soft px-3 py-1 text-warning">👑 Streak leader: {week.topStreak.name} · 🔥{week.topStreak.streak}</span>}
+                {week.hype && <span className="rounded-full bg-coral-soft px-3 py-1 text-coral">📣 Hype person: {week.hype.name} · {week.hype.cheers} cheers</span>}
+              </div>
+            )}
           </Card>
         )}
       </div>
