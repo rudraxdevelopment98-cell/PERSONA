@@ -153,6 +153,12 @@ export default async function Landing() {
           <Link href="/about" className="underline underline-offset-2">
             How scoring and privacy work
           </Link>
+          {" · "}
+          <Link href="/terms" className="underline underline-offset-2">Terms</Link>
+          {" · "}
+          <Link href="/privacy" className="underline underline-offset-2">Privacy</Link>
+          {" · "}
+          <Link href="/refund" className="underline underline-offset-2">Refunds</Link>
         </footer>
       </main>
     </div>

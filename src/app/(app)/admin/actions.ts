@@ -125,6 +125,11 @@ export async function saveAiTiersAction(free: string, pro: string, light = "defa
   return run((u) => admin.saveAiTiers(u, free.slice(0, 80), pro.slice(0, 80), light.slice(0, 80), Boolean(lightForPro)));
 }
 
+export async function saveLegalAction(input: { business: string; email: string; grievanceName: string; city: string }) {
+  if (!input || typeof input !== "object") return { error: "Fill in the form." };
+  return run((u) => admin.saveLegal(u, input as Record<string, unknown>));
+}
+
 export async function saveAndroidAction(fingerprints: string) {
   if (typeof fingerprints !== "string") return { error: "Paste the fingerprints." };
   return run((u) => admin.saveAndroid(u, fingerprints.slice(0, 2000)));

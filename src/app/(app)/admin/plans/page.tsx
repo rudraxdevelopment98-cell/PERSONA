@@ -4,7 +4,8 @@ import { androidSettings, listCoupons } from "@/lib/server/admin";
 import { ANDROID_PACKAGE, UPLOAD_KEY_SHA256 } from "@/lib/domain/android";
 import { adminConfig, revenueStats } from "@/lib/server/payments";
 import { requestOrigin } from "@/lib/server/origin";
-import { AndroidApp, CouponManager, GrantPro, PaymentSettings } from "./plans-ui";
+import { AndroidApp, CouponManager, GrantPro, LegalContact, PaymentSettings } from "./plans-ui";
+import { legalSettings } from "@/lib/server/legal";
 
 export const metadata = { title: "Plans · Admin" };
 
@@ -52,6 +53,7 @@ export default async function AdminPlans() {
             </div>
           </Card>
         </div>
+        <LegalContact initial={await legalSettings()} />
         <AndroidApp pkg={ANDROID_PACKAGE} uploadKey={UPLOAD_KEY_SHA256} fingerprints={(await androidSettings()).fingerprints} />
       </div>
     </>

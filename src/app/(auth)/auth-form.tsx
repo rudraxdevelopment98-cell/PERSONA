@@ -17,6 +17,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(params.get("error"));
 
@@ -26,9 +27,12 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setError(null);
     try {
       if (mode === "signup") {
+        if (!agree) throw new Error("Please confirm you are 18+ and agree to the Terms and Privacy Policy.");
         if (password.length < 10) throw new Error("Use a password of at least 10 characters.");
         const { error } = await authClient.signUp.email({ email, password, name: name.trim().slice(0, 80) || "Member" });
         if (error) throw new Error(error.message || "Could not create your account.");
+        // Record the agreement (if this fails, the app asks again on the first screen).
+        await fetch("/api/consent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agree: true }) }).catch(() => {});
         router.replace("/welcome");
         return;
       } else {
@@ -85,8 +89,25 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               autoComplete={mode === "login" ? "current-password" : "new-password"}
             />
           </div>
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                id="agree"
+                type="checkbox"
+                required
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+                className="mt-0.5 size-4 accent-[var(--color-accent)]"
+              />
+              <span className="text-muted">
+                I am 18 or older and I agree to the{" "}
+                <Link href="/terms" target="_blank" className="font-semibold text-ink underline underline-offset-2">Terms</Link> and{" "}
+                <Link href="/privacy" target="_blank" className="font-semibold text-ink underline underline-offset-2">Privacy Policy</Link>.
+              </span>
+            </label>
+          )}
           {error && <Alert tone="danger">{error}</Alert>}
-          <Button type="submit" disabled={busy} className="w-full">
+          <Button type="submit" disabled={busy || (mode === "signup" && !agree)} className="w-full">
             {busy && <Spinner />} {mode === "login" ? "Sign in" : "Create account"}
           </Button>
         </form>

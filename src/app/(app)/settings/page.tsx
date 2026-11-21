@@ -7,6 +7,7 @@ import { SettingsForm } from "./form";
 import { SecuritySettings } from "./security";
 import { YourAI } from "./your-ai";
 import { ThemeSetting } from "@/components/theme-toggle";
+import { HelpContact } from "./help-contact";
 
 export const metadata = { title: "Settings" };
 
@@ -43,6 +44,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         language={state.profile.language}
         startDate={state.profile.programme_start_date}
       />
+      <div className="mt-6">
+        <HelpContact />
+      </div>
     </>
   );
 }

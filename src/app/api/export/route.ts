@@ -2,6 +2,7 @@ import { dbForUser, getSessionUser } from "@/lib/db/server";
 
 const TABLES = [
   "moments",
+  "consents",
   "assessments",
   "assessment_responses",
   "daily_checkins",

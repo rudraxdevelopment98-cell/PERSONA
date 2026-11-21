@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Trash2 } from "lucide-react";
 import { Alert, Button, Card, CardHeader, Input, Label, Select } from "@/components/ui";
-import { createCouponAction, deleteCouponAction, grantProAction, saveAndroidAction, savePaymentsAction } from "../actions";
+import { createCouponAction, deleteCouponAction, grantProAction, saveAndroidAction, saveLegalAction, savePaymentsAction } from "../actions";
 
 function useRun() {
   const router = useRouter();
@@ -197,6 +197,50 @@ export function AndroidApp({ pkg, uploadKey, fingerprints }: { pkg: string; uplo
           Save keys
         </Button>
         {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
+      </div>
+    </Card>
+  );
+}
+
+/** Who runs the service and how to reach the Grievance Officer: shown on the Terms, Privacy and Refund pages. */
+export function LegalContact({ initial }: { initial: { business: string; email: string; grievanceName: string; city: string } }) {
+  const router = useRouter();
+  const [v, setV] = useState(initial);
+  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  const field = (key: keyof typeof v, label: string, placeholder: string) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={`legal-${key}`}>{label}</Label>
+      <Input id={`legal-${key}`} value={v[key]} placeholder={placeholder} onChange={(e) => setV({ ...v, [key]: e.target.value })} />
+    </div>
+  );
+  return (
+    <Card>
+      <CardHeader
+        title="Legal and contact"
+        description="Shown on /terms, /privacy and /refund. Paddle and Google Play need a real support email; India's DPDP Rules need a grievance contact."
+      />
+      <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
+        {field("business", "Business or your name", "PERSONA 90")}
+        {field("email", "Support / grievance email", "support@yourdomain.com")}
+        {field("grievanceName", "Grievance Officer name", "Your name")}
+        {field("city", "City, State", "Ahmedabad, Gujarat")}
+        <div className="flex items-center gap-3 sm:col-span-2">
+          <Button
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                const r = await saveLegalAction(v);
+                setMsg(r.error ? { tone: "danger", text: r.error } : { tone: "success", text: "Saved. The legal pages show it now." });
+                router.refresh();
+              })
+            }
+          >
+            Save
+          </Button>
+          {!initial.email && <span className="text-xs text-muted">Until an email is set, pages point people to Settings → Help and contact.</span>}
+        </div>
+        {msg && <div className="sm:col-span-2"><Alert tone={msg.tone}>{msg.text}</Alert></div>}
       </div>
     </Card>
   );

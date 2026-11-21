@@ -242,3 +242,15 @@ input[type="range"] {
 @keyframes nudge-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(14, 159, 138, 0.45); } 50% { box-shadow: 0 0 0 6px rgba(14, 159, 138, 0); } }
 .nudge-pulse { animation: nudge-pulse 2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .nudge-pulse { animation: none; } }
+
+/* Legal pages */
+.legal h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.01em; }
+.legal h2 { margin-top: 2rem; font-size: 1.05rem; font-weight: 700; }
+.legal p, .legal li { font-size: 0.9rem; line-height: 1.65; color: var(--color-ink); }
+.legal p { margin-top: 0.6rem; }
+.legal ul { margin-top: 0.5rem; padding-left: 1.2rem; list-style: disc; }
+.legal li { margin-top: 0.3rem; }
+.legal a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
+.legal table { margin-top: 0.75rem; width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.legal th, .legal td { border-top: 1px solid var(--color-line); padding: 0.5rem 0.5rem 0.5rem 0; text-align: left; vertical-align: top; }
+.legal th { color: var(--color-muted); font-weight: 600; }

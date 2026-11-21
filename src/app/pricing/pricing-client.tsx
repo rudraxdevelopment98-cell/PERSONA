@@ -252,6 +252,12 @@ export function PricingClient({
           </form>
         </Card>
       )}
+
+      <p className="text-center text-xs text-muted">
+        Cancel any time. Refund within 14 days of your first payment.{" "}
+        <a href="/terms" className="underline underline-offset-2">Terms</a> · <a href="/privacy" className="underline underline-offset-2">Privacy</a> ·{" "}
+        <a href="/refund" className="underline underline-offset-2">Refund policy</a>
+      </p>
     </div>
   );
 }

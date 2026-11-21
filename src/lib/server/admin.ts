@@ -426,6 +426,16 @@ export async function aiTiers(): Promise<{ free: string; pro: string; light: str
   return { free: id(r?.value.free), pro: id(r?.value.pro), light: id(r?.value.light), lightForPro: Boolean(r?.value.lightForPro) };
 }
 
+/** Business name and grievance contact shown on /terms, /privacy and /refund. */
+export async function saveLegal(actor: string, raw: Record<string, unknown>) {
+  await requireAdmin(actor);
+  const { cleanLegal } = await import("./legal");
+  const out = cleanLegal(raw);
+  if (typeof out === "string") throw new AdminError(out);
+  await q("insert into public.app_settings (key, value) values ('legal', $1) on conflict (key) do update set value = excluded.value", [JSON.stringify(out)]);
+  await audit(actor, "legal.contact", { label: out.business });
+}
+
 export async function androidSettings(): Promise<{ fingerprints: string[] }> {
   const [r] = await q<{ value: { fingerprints?: string[] } }>("select value from public.app_settings where key = 'android'");
   return { fingerprints: r?.value.fingerprints ?? [] };

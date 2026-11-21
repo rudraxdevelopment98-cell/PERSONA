@@ -6,6 +6,8 @@ import { isAdmin, openReportCount } from "@/lib/server/admin";
 import { getPlan } from "@/lib/server/plan";
 import { getUserState } from "@/lib/server/state";
 import { InviteBanner } from "./invite-banner";
+import { ConsentBanner } from "./consent-banner";
+import { hasAcceptedLegal } from "@/lib/server/legal";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const plan = await getPlan(user.id).catch(() => null);
   const name = state.profile.display_name || "You";
   const storeApp = (await cookies()).get("p90_store")?.value === "play";
+  const agreed = await hasAcceptedLegal(user.id).catch(() => true);
   return (
     <div className="min-h-screen">
       <AppNav
@@ -37,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <main className="lg:pl-60">
         <div className="pb-safe mx-auto max-w-4xl px-4 pt-4 sm:px-6 lg:pt-10">
+          {!agreed && <ConsentBanner />}
           {invite && (
             <InviteBanner
               token={invite.token}

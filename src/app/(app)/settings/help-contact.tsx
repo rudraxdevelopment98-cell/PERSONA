@@ -1,0 +1,50 @@
+"use client";
+
+import Link from "next/link";
+import { useState, useTransition } from "react";
+import { reportAction } from "../friends/actions";
+import { Alert, Button, Card, CardHeader, Select, Textarea } from "@/components/ui";
+
+const TOPICS = ["Question", "Refund or payment", "Privacy or my data", "Grievance", "Bug", "Feedback"];
+
+/** Help and contact: goes to the admins' Reports list. Also the grievance channel named in the Privacy Policy. */
+export function HelpContact() {
+  const [topic, setTopic] = useState(TOPICS[0]);
+  const [text, setText] = useState("");
+  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <Card id="help" className="mb-6 scroll-mt-20">
+      <CardHeader title="Help and contact" description="Questions, refunds, privacy requests or a grievance. We reply by email." />
+      <form
+        className="space-y-3 px-5 pb-5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          start(async () => {
+            const r = await reportAction({ reason: `Contact: ${topic}`, details: text });
+            if (r.error !== undefined) setMsg({ tone: "danger", text: r.error });
+            else {
+              setMsg({ tone: "success", text: "Sent. We'll reply to your account email." });
+              setText("");
+            }
+          });
+        }}
+      >
+        <Select value={topic} onChange={(e) => setTopic(e.target.value)} aria-label="Topic">
+          {TOPICS.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </Select>
+        <Textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} rows={4} placeholder="How can we help?" aria-label="Message" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted">
+            <Link href="/terms" className="underline">Terms</Link> · <Link href="/privacy" className="underline">Privacy</Link> ·{" "}
+            <Link href="/refund" className="underline">Refunds</Link>
+          </p>
+          <Button disabled={pending || text.trim().length < 5}>{pending ? "Sending…" : "Send"}</Button>
+        </div>
+        {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
+      </form>
+    </Card>
+  );
+}
