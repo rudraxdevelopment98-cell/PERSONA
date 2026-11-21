@@ -64,7 +64,7 @@ export function FaceAvatar({
   return (
     <span
       className={cx("inline-flex shrink-0 rounded-full p-[2.5px]", className)}
-      style={{ background: ring === "new" ? "conic-gradient(from 200deg,#f97316,#ec4899,#8b5cf6,#2dd4bf,#f97316)" : "var(--color-line-strong)" }}
+      style={{ background: ring === "new" ? "conic-gradient(from 200deg,#2dd4bf,#0e9f8a,#26364a,#5a7ba8,#2dd4bf)" : "var(--color-line-strong)" }}
     >
       <span className="rounded-full bg-bg p-[2px]">{face}</span>
     </span>

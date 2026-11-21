@@ -14,21 +14,22 @@
   --color-primary-hover: #1b2738;
   --color-primary-soft: #eef1f6;
 
-  /* Accents - each has one job */
-  --color-accent: #0e9f8a; /* progress */
+  /* Two brand colours only: navy (primary) and teal (accent), in shades.
+     The older role names map onto those shades so every screen stays on-brand. */
+  --color-accent: #0e9f8a; /* teal: progress */
   --color-accent-soft: #e3f6f2;
-  --color-sun: #f59e0b; /* streaks, XP */
-  --color-sun-soft: #fff4dd;
-  --color-coral: #ef6a5b; /* challenges, unread */
-  --color-coral-soft: #fdecea;
-  --color-sky: #3b82f6; /* stories */
-  --color-sky-soft: #e8f0fe;
+  --color-sun: #0b7d6d; /* deep teal: streaks, XP */
+  --color-sun-soft: #e3f6f2;
+  --color-coral: #3e5878; /* mid navy: challenges, unread */
+  --color-coral-soft: #e6ebf2;
+  --color-sky: #5a7ba8; /* light navy: stories */
+  --color-sky-soft: #eef1f6;
 
-  /* Status */
-  --color-success: #138a5a;
-  --color-success-soft: #e5f5ec;
-  --color-warning: #a35f00;
-  --color-warning-soft: #fff4dd;
+  /* Status: red only where it really matters (errors, delete, block). */
+  --color-success: #0e9f8a;
+  --color-success-soft: #e3f6f2;
+  --color-warning: #3e5878;
+  --color-warning-soft: #e6ebf2;
   --color-danger: #c03a2b;
   --color-danger-soft: #fdecea;
 
@@ -57,13 +58,16 @@
     --color-primary-soft: #1b2433;
     --color-accent: #2dd4bf;
     --color-accent-soft: #0f2a27;
-    --color-sun-soft: #2b2110;
-    --color-coral-soft: #2e1617;
-    --color-sky-soft: #14213a;
-    --color-success: #34d399;
-    --color-success-soft: #0f2a1f;
-    --color-warning: #fbbf24;
-    --color-warning-soft: #2b2110;
+    --color-sun: #2dd4bf;
+    --color-sun-soft: #0f2a27;
+    --color-coral: #7f9cc4;
+    --color-coral-soft: #1b2433;
+    --color-sky: #7f9cc4;
+    --color-sky-soft: #1b2433;
+    --color-success: #2dd4bf;
+    --color-success-soft: #0f2a27;
+    --color-warning: #9fb3d1;
+    --color-warning-soft: #1b2433;
     --color-danger: #f87171;
     --color-danger-soft: #2e1617;
     --shadow-card: 0 0 0 transparent;
@@ -82,13 +86,16 @@
   --color-primary-soft: #1b2433;
   --color-accent: #2dd4bf;
   --color-accent-soft: #0f2a27;
-  --color-sun-soft: #2b2110;
-  --color-coral-soft: #2e1617;
-  --color-sky-soft: #14213a;
-  --color-success: #34d399;
-  --color-success-soft: #0f2a1f;
-  --color-warning: #fbbf24;
-  --color-warning-soft: #2b2110;
+  --color-sun: #2dd4bf;
+  --color-sun-soft: #0f2a27;
+  --color-coral: #7f9cc4;
+  --color-coral-soft: #1b2433;
+  --color-sky: #7f9cc4;
+  --color-sky-soft: #1b2433;
+  --color-success: #2dd4bf;
+  --color-success-soft: #0f2a27;
+  --color-warning: #9fb3d1;
+  --color-warning-soft: #1b2433;
   --color-danger: #f87171;
   --color-danger-soft: #2e1617;
   --shadow-card: 0 0 0 transparent;
@@ -117,11 +124,11 @@
 .burn-text span { display: inline-block; white-space: pre; animation: burn 1s ease-in forwards; }
 @keyframes burn {
   0% { color: inherit; transform: translateY(0); opacity: 1; }
-  40% { color: #ffb347; text-shadow: 0 0 8px #ff6a00; }
-  100% { color: #ff3d00; transform: translateY(-28px) scale(0.6); opacity: 0; }
+  40% { color: #2dd4bf; text-shadow: 0 0 8px #0e9f8a; }
+  100% { color: #26364a; transform: translateY(-28px) scale(0.6); opacity: 0; }
 }
 .burn-fire {
-  background: radial-gradient(ellipse at 50% 120%, rgba(255, 120, 0, 0.85), rgba(255, 60, 0, 0.35) 45%, transparent 70%);
+  background: radial-gradient(ellipse at 50% 120%, rgba(14, 159, 138, 0.75), rgba(38, 54, 74, 0.35) 45%, transparent 70%);
   animation: fire 2.6s ease-out forwards;
 }
 @keyframes fire {
@@ -163,7 +170,7 @@ body {
 }
 
 ::selection {
-  background: #d7e6f7;
+  background: #c9efe8;
 }
 
 /* Hide scrollbars on horizontal chip/story rows. */
@@ -232,6 +239,6 @@ input[type="range"] {
 @keyframes sticker-bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
 .moment-sticker { display: inline-block; animation: sticker-bob 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .moment-sticker { animation: none; } }
-@keyframes nudge-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); } 50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); } }
+@keyframes nudge-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(14, 159, 138, 0.45); } 50% { box-shadow: 0 0 0 6px rgba(14, 159, 138, 0); } }
 .nudge-pulse { animation: nudge-pulse 2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .nudge-pulse { animation: none; } }

@@ -3,14 +3,15 @@ import type { ShareItem } from "./social";
 
 /** Cover themes for profile banners and moment cards. Colours work in light and dark mode. */
 export const COVERS = [
-  { id: "sunrise", label: "Sunrise", bg: "linear-gradient(160deg,#ff9a62 0%,#ff5e7e 55%,#a64dff 100%)" },
-  { id: "ocean", label: "Ocean", bg: "linear-gradient(160deg,#22d3ee 0%,#3b82f6 55%,#1e3a8a 100%)" },
-  { id: "forest", label: "Forest", bg: "linear-gradient(160deg,#a3e635 0%,#10b981 50%,#065f46 100%)" },
-  { id: "neon", label: "Neon", bg: "linear-gradient(160deg,#f0abfc 0%,#8b5cf6 50%,#0ea5e9 100%)" },
-  { id: "midnight", label: "Midnight", bg: "linear-gradient(160deg,#334155 0%,#1e1b4b 55%,#0f172a 100%)" },
-  { id: "candy", label: "Candy", bg: "linear-gradient(160deg,#fda4af 0%,#f472b6 50%,#c084fc 100%)" },
-  { id: "fire", label: "Fire", bg: "linear-gradient(160deg,#fde047 0%,#f97316 50%,#dc2626 100%)" },
+  // Shades of the two brand colours only (ids kept so saved covers still work).
   { id: "teal", label: "Persona", bg: "linear-gradient(160deg,#2dd4bf 0%,#0e9f8a 45%,#26364a 100%)" },
+  { id: "sunrise", label: "Mint", bg: "linear-gradient(160deg,#99f6e4 0%,#2dd4bf 45%,#0e9f8a 100%)" },
+  { id: "forest", label: "Lagoon", bg: "linear-gradient(160deg,#14b8a6 0%,#0b7d6d 55%,#064e45 100%)" },
+  { id: "ocean", label: "Ocean", bg: "linear-gradient(160deg,#0e9f8a 0%,#3e5878 60%,#26364a 100%)" },
+  { id: "neon", label: "Steel", bg: "linear-gradient(160deg,#9fb3d1 0%,#5a7ba8 50%,#3e5878 100%)" },
+  { id: "candy", label: "Dusk", bg: "linear-gradient(160deg,#5a7ba8 0%,#3e5878 50%,#26364a 100%)" },
+  { id: "fire", label: "Navy", bg: "linear-gradient(160deg,#3e5878 0%,#26364a 55%,#141d29 100%)" },
+  { id: "midnight", label: "Midnight", bg: "linear-gradient(160deg,#26364a 0%,#141d29 55%,#0b1018 100%)" },
 ] as const;
 export type CoverId = (typeof COVERS)[number]["id"];
 export const DEFAULT_COVER: CoverId = "teal";

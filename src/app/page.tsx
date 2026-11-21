@@ -29,7 +29,7 @@ function PhonePreview() {
           </ProgressRing>
         </div>
         <div className="mt-2 flex gap-2 text-[11px] font-bold">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-amber-200">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-teal-200">
             <Flame className="size-3" /> 11 days
           </span>
           <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-white">

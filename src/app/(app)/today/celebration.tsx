@@ -22,7 +22,7 @@ export type Celebration = {
   finale: boolean;
 };
 
-const COLORS = ["#2dd4bf", "#fbbf24", "#f97316", "#60a5fa", "#a78bfa", "#f472b6"];
+const COLORS = ["#2dd4bf", "#0e9f8a", "#99f6e4", "#5a7ba8", "#9fb3d1", "#ffffff"];
 
 /** Full-screen "session complete" moment with real numbers from today. */
 export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClose: () => void }) {
@@ -60,12 +60,12 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
               <p className="text-[11px] text-white/70">XP today</p>
             </div>
             <div className="rounded-2xl bg-white/10 py-3">
-              <Flame className="mx-auto size-5 text-amber-300" />
+              <Flame className="mx-auto size-5 text-teal-300" />
               <p className="mt-1 text-xl font-extrabold tabular-nums">{data.streak}</p>
               <p className="text-[11px] text-white/70">day streak</p>
             </div>
             <div className="rounded-2xl bg-white/10 py-3">
-              <Trophy className="mx-auto size-5 text-sky-200" />
+              <Trophy className="mx-auto size-5 text-teal-100" />
               <p className="mt-1 text-xl font-extrabold tabular-nums">{data.level}</p>
               <p className="text-[11px] text-white/70">level</p>
             </div>
@@ -106,7 +106,7 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
           {data.finale && <p className="text-sm text-muted">Season complete! Pick the world for your next season on this page.</p>}
           <ShareMomentButton
             preferred={data.badges.length ? "badge" : data.levelUp ? "level" : "day"}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-400 via-pink-500 to-violet-500 text-sm font-bold text-white shadow-sm active:scale-[0.98]"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent text-sm font-bold text-white shadow-sm active:scale-[0.98]"
           >
             ✨ Post as a moment for friends
           </ShareMomentButton>

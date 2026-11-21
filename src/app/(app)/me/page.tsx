@@ -24,7 +24,7 @@ const LINKS = [
 
 export default async function MePage() {
   const [{ state, user }, { stats, level }] = await Promise.all([getUserState(), getGamification()]);
-  const links = (await isAdmin(user.id).catch(() => false)) ? [...LINKS, { href: "/admin", label: "Admin", icon: ShieldCheck, tone: "danger" as const }] : LINKS;
+  const links = (await isAdmin(user.id).catch(() => false)) ? [...LINKS, { href: "/admin", label: "Admin", icon: ShieldCheck, tone: "primary" as const }] : LINKS;
   const name = state.profile.display_name || state.email?.split("@")[0] || "You";
   const card = await getProfileCard(user.id);
   return (
@@ -32,11 +32,11 @@ export default async function MePage() {
       <Card className="mb-5 overflow-hidden">
         <div className="h-16" style={{ background: coverBg(card.cover) }} />
         <div className="p-5 pt-0">
-          <div className="-mt-8 flex items-end gap-4">
-            <Link href="/friends/profile" aria-label="Edit profile card" className="rounded-full bg-surface p-1">
+          <div className="flex items-end gap-4">
+            <Link href="/friends/profile" aria-label="Edit profile card" className="-mt-8 shrink-0 rounded-full bg-surface p-1">
               <FaceAvatar name={name} emoji={card.avatar_emoji} cover={card.cover} size="lg" />
             </Link>
-            <div className="min-w-0 pb-1">
+            <div className="min-w-0 pt-2">
               <p className="truncate text-xl font-extrabold">{name}</p>
               <p className="text-sm text-muted">
                 Level {level.level} · {level.name}
@@ -84,7 +84,7 @@ export default async function MePage() {
         ))}
         <form action="/auth/signout" method="post">
           <button className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-bg">
-            <IconTile tone="danger" size="sm">
+            <IconTile tone="neutral" size="sm">
               <LogOut className="size-4" />
             </IconTile>
             <span className="text-sm font-semibold text-danger">Sign out</span>
