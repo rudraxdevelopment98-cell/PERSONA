@@ -236,7 +236,7 @@ export function LegalContact({ initial }: { initial: { business: string; email: 
               })
             }
           >
-            Save
+            Save contact
           </Button>
           {!initial.email && <span className="text-xs text-muted">Until an email is set, pages point people to Settings → Help and contact.</span>}
         </div>
