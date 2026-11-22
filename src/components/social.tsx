@@ -9,14 +9,13 @@ import {
   blockAction,
   cheerAction,
   createInviteAction,
-  pushKeyAction,
   removeFriendAction,
   removePushAction,
   reportAction,
-  savePushAction,
 } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card, Input, Select, Textarea, cx } from "./ui";
 import { FaceAvatar } from "./moments";
+import { enablePush, pushState } from "@/lib/client/push";
 
 export function initials(name: string) {
   return (
@@ -307,45 +306,23 @@ export function FriendMenu({ userId, name }: { userId: string; name: string }) {
 // Push notifications
 // ---------------------------------------------------------------------------
 
-function urlB64ToUint8Array(base64: string) {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
-  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
-}
-
 export function PushToggle() {
   const [state, setState] = useState<"loading" | "unsupported" | "denied" | "off" | "on">("loading");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   useEffect(() => {
-    (async () => {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return setState("unsupported");
-      if (Notification.permission === "denied") return setState("denied");
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
-      setState(sub ? "on" : "off");
-    })().catch(() => setState("unsupported"));
+    pushState()
+      .then(setState)
+      .catch(() => setState("unsupported"));
   }, []);
 
   const enable = () =>
     start(async () => {
       setError(null);
-      try {
-        const perm = await Notification.requestPermission();
-        if (perm !== "granted") return setState(perm === "denied" ? "denied" : "off");
-        const keyRes = await pushKeyAction();
-        if (keyRes.error !== undefined) return setError(keyRes.error);
-        const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register("/sw.js"));
-        await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(keyRes.key!) });
-        const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-        const res = await savePushAction({ endpoint: json.endpoint, keys: json.keys });
-        if (res.error) return setError(res.error);
-        setState("on");
-      } catch {
-        setError("Couldn't turn on notifications in this browser. On iPhone, add the app to your Home Screen first.");
-      }
+      const r = await enablePush();
+      setState(r.state);
+      if (r.error) setError(r.error);
     });
 
   const disable = () =>

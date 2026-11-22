@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { enablePush, pushState } from "@/lib/client/push";
 import { Flame, Sparkles, Trophy, X, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { ShareProgress } from "@/components/share-progress";
@@ -20,6 +21,7 @@ export type Celebration = {
   badges: { title: string; icon: string; description: string }[];
   teaser: string | null;
   finale: boolean;
+  referral?: { days: number; inviterName: string } | null;
 };
 
 const COLORS = ["#2dd4bf", "#0e9f8a", "#99f6e4", "#5a7ba8", "#9fb3d1", "#ffffff"];
@@ -101,6 +103,12 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
                 <Sparkles className="size-3.5" /> Tomorrow
               </p>
               <p className="mt-1 font-serif text-[15px] leading-snug">{data.teaser}</p>
+              <RemindMe />
+            </div>
+          )}
+          {data.referral && (
+            <div className="rounded-2xl bg-accent-soft p-4 text-sm">
+              🎁 <b>{data.referral.days} din Pro free!</b> {data.referral.inviterName} ne tumhe invite kiya tha, isliye tum dono ko gift mila.
             </div>
           )}
           {data.finale && <p className="text-sm text-muted">Season complete! Pick the world for your next season on this page.</p>}
@@ -117,5 +125,32 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
         </div>
       </div>
     </div>
+  );
+}
+
+/** The moment people most want tomorrow's episode: offer the reminder here, once, instead of in a settings page. */
+function RemindMe() {
+  const [state, setState] = useState<"hidden" | "ask" | "busy" | "on" | "blocked">("hidden");
+  useEffect(() => {
+    pushState()
+      .then((s) => setState(s === "off" ? "ask" : "hidden"))
+      .catch(() => setState("hidden"));
+  }, []);
+  if (state === "hidden") return null;
+  if (state === "on") return <p className="mt-2 text-xs font-semibold text-accent">🔔 Done! Episode ready hote hi bata denge.</p>;
+  if (state === "blocked") return <p className="mt-2 text-xs text-muted">Notifications blocked hain. Browser settings se allow karo.</p>;
+  return (
+    <button
+      type="button"
+      disabled={state === "busy"}
+      onClick={async () => {
+        setState("busy");
+        const r = await enablePush();
+        setState(r.state === "on" ? "on" : r.state === "denied" ? "blocked" : "ask");
+      }}
+      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-white active:scale-95"
+    >
+      🔔 Kal yaad dilana
+    </button>
   );
 }

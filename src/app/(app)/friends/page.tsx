@@ -170,7 +170,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
           )}
           <p className="px-1 text-xs text-muted">🔥 Friend streak = days in a row you both checked in. ⏳ means one of you hasn&apos;t shown up today - tap it to nudge them.</p>
           <div id="invite" className="scroll-mt-20">
-            <InviteBox title="Add a friend" text="Private invite link or QR · there are no public profiles" />
+            <InviteBox title="Add a friend · dono ko 7 din Pro" text="Jab dost apna pehla episode poora karega, tum dono ko 7 din Pro free milega. Private link ya QR." />
           </div>
         </div>
       )}

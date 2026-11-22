@@ -390,6 +390,13 @@ export async function redeemInvite(userId: string, token: string): Promise<{ fri
     client.release();
   }
   await Promise.all([awardSocial(userId), awardSocial(inv.created_by)]);
+  // A new account (joined in the last 7 days) counts as the inviter's referral.
+  await q(
+    `insert into public.referrals (invitee, inviter)
+     select $1, $2 from "user" u where u.id = $1 and u."createdAt" > now() - interval '7 days'
+     on conflict (invitee) do nothing`,
+    [userId, inv.created_by],
+  ).catch(() => {});
   const who = await nameOf(userId);
   await notify(inv.created_by, "invite_accepted", {
     title: inv.circle_id ? `${who} joined ${info.circleName}` : `${who} accepted your invite`,

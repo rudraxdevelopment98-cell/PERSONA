@@ -245,7 +245,15 @@ export function scoreAssessment(answers: AssessmentAnswer[]): Record<Dimension, 
   const out = {} as Record<Dimension, number | null>;
   for (const d of DIMENSIONS) {
     const s = sums.get(d);
-    out[d] = s && s.n > 0 ? Math.round(((s.total / s.n - 1) / 4) * 100) : null;
+    if (!s || s.n === 0) {
+      out[d] = null;
+      continue;
+    }
+    // One or two answers are a rough read, so they are pulled toward the middle
+    // (no "0" or "100" from a single question); three or more count fully.
+    const raw = ((s.total / s.n - 1) / 4) * 100;
+    const weight = s.n >= 3 ? 1 : s.n === 2 ? 0.8 : 0.5;
+    out[d] = Math.round(50 + (raw - 50) * weight);
   }
   return out;
 }

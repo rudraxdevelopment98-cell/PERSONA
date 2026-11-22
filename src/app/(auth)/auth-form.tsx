@@ -33,7 +33,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         if (error) throw new Error(error.message || "Could not create your account.");
         // Record the agreement (if this fails, the app asks again on the first screen).
         await fetch("/api/consent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agree: true }) }).catch(() => {});
-        router.replace("/welcome");
+        router.replace("/assessment");
         return;
       } else {
         const { error } = await authClient.signIn.email({ email, password });

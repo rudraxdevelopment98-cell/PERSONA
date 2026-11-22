@@ -34,7 +34,7 @@ export function WelcomeCodes({ email }: { email: string }) {
       <p className="mt-4 text-sm text-muted">
         Tip: also set two backup security questions in <span className="font-semibold text-ink">Settings → Backup security questions</span>, in case you lose these codes.
       </p>
-      <ButtonLink href="/assessment" className="mt-6">
+      <ButtonLink href="/dashboard" className="mt-6">
         I&apos;ve saved them - continue <ArrowRight className="size-4" />
       </ButtonLink>
     </>

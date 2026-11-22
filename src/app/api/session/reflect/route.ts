@@ -51,6 +51,8 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { db, user,
     .eq("id", session.id);
   dbError(error);
   await recomputeScores(db, user.id, "session");
+  const { rewardReferral } = await import("@/lib/server/referrals");
+  const referral = await rewardReferral(user.id).catch(() => null);
 
   // Everything the celebration screen shows, from real activity.
   const after = await loadStats(db, user.id, day);
@@ -70,6 +72,7 @@ export const POST = apiRoute(schema, async ({ session_id, answers }, { db, user,
     badges: (fresh ?? []).map((b) => defs.get(b.code)).filter(Boolean).map((d) => ({ title: d!.title, icon: d!.icon, description: d!.description })),
     teaser: session.variety?.finale ? null : (session.variety?.teaser ?? null),
     finale: Boolean(session.variety?.finale),
+    referral,
   };
   return { feedback, celebration };
 });

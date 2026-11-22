@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Lightbulb, Mic, Leaf, PenLine, Sparkles, Target, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Lightbulb, Mic, Leaf, PenLine, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
@@ -13,6 +13,9 @@ import { REST_WINDOW } from "@/lib/domain/programme";
 import { pickSponsor } from "@/lib/server/sponsors";
 import { SponsorCard } from "@/components/sponsor-card";
 import { InstallApp } from "@/components/install-app";
+import { DailyPoll } from "@/components/daily-poll";
+import { todayPoll } from "@/lib/server/poll";
+import { recoveryStatus } from "@/lib/server/recovery";
 import type { CheckinRow, SessionRow } from "@/lib/server/types";
 
 export const metadata = { title: "Home" };
@@ -127,7 +130,19 @@ export default async function Dashboard() {
         </div>
       </section>
 
-      <InstallApp />
+      {/* Small asks wait until the first episode is done, so day 1 is only about the episode. */}
+      {stats.sessionsCompleted > 0 && (await recoveryStatus(db, user.id)).total === 0 && (
+        <Link href="/welcome" className="flex items-center gap-3 rounded-3xl border border-line bg-surface p-4 transition hover:shadow-raised">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+            <ShieldCheck className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">Account secure karo · 1 min</span>
+            <span className="block text-xs text-muted">Password bhool gaye to bhi wapas aa sako: recovery codes save karo.</span>
+          </span>
+        </Link>
+      )}
+      {stats.sessionsCompleted > 0 && <InstallApp />}
 
       {/* Today's episode: the one thing to do */}
       <Link href="/today" className="group block">
@@ -165,6 +180,8 @@ export default async function Dashboard() {
           <p className="text-sm leading-relaxed">{c.analysis.suggestion_for_today}</p>
         </div>
       )}
+
+      <DailyPoll initial={await todayPoll(user.id)} />
 
       {/* Quick practice, story-row style */}
       <nav aria-label="Quick practice" className="no-scrollbar -mx-4 flex justify-between gap-3 overflow-x-auto px-4 sm:mx-0 sm:justify-start sm:gap-5 sm:px-0">

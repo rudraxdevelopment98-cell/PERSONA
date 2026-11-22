@@ -254,3 +254,8 @@ input[type="range"] {
 .legal table { margin-top: 0.75rem; width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .legal th, .legal td { border-top: 1px solid var(--color-line); padding: 0.5rem 0.5rem 0.5rem 0; text-align: left; vertical-align: top; }
 .legal th { color: var(--color-muted); font-weight: 600; }
+
+/* A ready call-to-action: a soft teal glow, never a fade that looks disabled. */
+@keyframes cta-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(14, 159, 138, 0.45); } 50% { box-shadow: 0 0 0 8px rgba(14, 159, 138, 0); } }
+.cta-glow { animation: cta-glow 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .cta-glow { animation: none; } }

@@ -136,7 +136,7 @@ export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = 
               <p className="text-muted">{analysis.observation}</p>
             </div>
             <div className="space-y-3">
-              {analysis.patterns.length > 0 && (
+              {analysis.patterns.length > 0 && checkin.day_number >= 3 && (
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted">Recurring patterns</p>
                   <ul className="mt-1.5 space-y-1 text-sm">
@@ -164,7 +164,7 @@ export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = 
                 <h2 className="font-semibold">Your episode is ready 🎬</h2>
                 <p className="mt-1 text-sm text-muted">Story, scenarios and today&apos;s mission are waiting.</p>
               </div>
-              <Button onClick={() => router.refresh()} className="motion-safe:animate-pulse">
+              <Button onClick={() => router.refresh()} className="cta-glow">
                 <Sparkles className="size-4" /> Open today&apos;s session <ArrowRight className="size-4" />
               </Button>
             </div>

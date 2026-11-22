@@ -106,7 +106,7 @@ export async function episodeAllowance(userId: string, day: number): Promise<Epi
 }
 
 /** Grants Pro for a number of days (trial, coupon or admin), extending any time left. */
-export async function grantPro(userId: string, days: number, source: "trial" | "coupon" | "admin") {
+export async function grantPro(userId: string, days: number, source: "trial" | "coupon" | "admin" | "referral") {
   await q(
     `insert into public.subscriptions (user_id, status, source, current_period_end, trial_used_at, updated_at)
      values ($1, $2, $3, now() + make_interval(days => $4), case when $3 = 'trial' then now() end, now())
