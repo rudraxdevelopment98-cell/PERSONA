@@ -3,6 +3,8 @@ import { dbForUser, getSessionUser } from "@/lib/db/server";
 const TABLES = [
   "moments",
   "consents",
+  "poll_votes",
+  "card_answers",
   "assessments",
   "assessment_responses",
   "daily_checkins",

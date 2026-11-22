@@ -1,6 +1,6 @@
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { WORLDS, byId } from "@/lib/domain/variety";
-import { insights, stats } from "@/lib/server/admin";
+import { habitHealth, insights, stats } from "@/lib/server/admin";
 
 export const metadata = { title: "Admin" };
 
@@ -41,7 +41,7 @@ function Breakdown({ title, rows, label }: { title: string; rows: { k: string; n
 }
 
 export default async function AdminOverview() {
-  const [s, ins] = await Promise.all([stats(), insights()]);
+  const [s, ins, hh] = await Promise.all([stats(), insights(), habitHealth()]);
   const f = ins.funnel;
   const steps = [
     { label: "Signed up", n: f.signed_up },
@@ -68,6 +68,66 @@ export default async function AdminOverview() {
           <Stat label="Open reports" value={s.open_reports} />
           <Stat label="Suspended" value={s.suspended} />
         </div>
+
+        <Card>
+          <CardHeader
+            title="Daily habit"
+            description="Activity = check-in, episode, poll vote, quick card or moment. Stickiness (DAU ÷ MAU) above 20% is good for a daily app; 50%+ is Instagram level."
+          />
+          <div className="grid grid-cols-2 gap-3 px-5 pb-5 md:grid-cols-4">
+            <Stat label="Stickiness" value={pct(hh.dau, hh.mau)} hint={`${hh.dau} today · ${hh.wau} this week · ${hh.mau} this month`} />
+            <Stat label="Day-30 return" value={pct(hh.d30, hh.d30_base)} hint={`${hh.d30} of ${hh.d30_base} active in days 28-34`} />
+            <Stat label="Notifications on" value={pct(hh.push, hh.users)} hint={`${hh.push} of ${hh.users} users`} />
+            <Stat label="Have a friend" value={pct(hh.with_friend, hh.users)} hint={`${hh.with_friend} users`} />
+            <Stat label="Poll votes (24h)" value={hh.poll_today} hint="Aaj ka sawaal" />
+            <Stat label="Referrals" value={hh.ref_rewarded} hint={`${hh.ref_joined} joined via invite · ${hh.ref_rewarded} finished episode 1`} />
+          </div>
+          <div className="overflow-x-auto px-5 pb-5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Weekly signup cohorts: % active in each week after joining</p>
+            {hh.cohorts.length === 0 ? (
+              <p className="text-sm text-muted">Shows once people have been signed up for a full week.</p>
+            ) : (
+              <table className="w-full min-w-[420px] text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted">
+                    <th className="py-1 font-semibold">Joined week</th>
+                    <th className="py-1 font-semibold">Users</th>
+                    {[1, 2, 3, 4].map((w) => (
+                      <th key={w} className="py-1 text-center font-semibold">Week {w}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {hh.cohorts.map((c) => (
+                    <tr key={c.week} className="border-t border-line">
+                      <td className="py-1.5">{c.week}</td>
+                      <td className="py-1.5 tabular-nums">{c.size}</td>
+                      {[c.w1, c.w2, c.w3, c.w4].map((v, i) => {
+                        if (i + 1 >= c.age)
+                          return (
+                            <td key={i} className="py-1.5 text-center text-xs text-muted">
+                              –
+                            </td>
+                          );
+                        const share = c.size ? v / c.size : 0;
+                        return (
+                          <td key={i} className="p-0.5 text-center tabular-nums">
+                            <span
+                              className="block rounded-md py-1 text-xs font-semibold"
+                              style={{ background: `color-mix(in oklab, var(--color-accent) ${Math.round(share * 85)}%, transparent)`, color: share > 0.5 ? "white" : undefined }}
+                            >
+                              {pct(v, c.size)}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </Card>
 
         <Card>
           <CardHeader title="Where people drop off" description="How many users reached each step. The biggest drop is where to improve next." />

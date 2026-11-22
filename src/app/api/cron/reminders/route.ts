@@ -1,5 +1,6 @@
 import { checkCostAlert, sendDailyReminders } from "@/lib/server/reminders";
 import { sendCircleRecaps, sendStreakNudges } from "@/lib/server/streaks";
+import { sendPollResults } from "@/lib/server/poll";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
   const result = await sendDailyReminders();
   const streaks = await sendStreakNudges().catch((e) => ({ error: (e as Error).message }));
   const recaps = await sendCircleRecaps().catch((e) => ({ error: (e as Error).message }));
+  const polls = await sendPollResults().catch((e) => ({ error: (e as Error).message }));
   const cost = await checkCostAlert().catch((e) => ({ error: (e as Error).message }));
-  return Response.json({ ...result, streaks, recaps, cost });
+  return Response.json({ ...result, streaks, recaps, polls, cost });
 }

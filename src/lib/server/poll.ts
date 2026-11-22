@@ -68,3 +68,47 @@ export async function votePoll(userId: string, choice: number) {
   ]);
   return todayPoll(userId);
 }
+
+/**
+ * Evening nudge from the daily job: "62% chose the same as you". Only for people who voted today,
+ * have reminders on, already showed up today (so it never doubles the "episode waiting" reminder),
+ * once a day, between 16:00 and 22:00 local time.
+ */
+export async function sendPollResults(now = new Date()) {
+  const { notify } = await import("./social");
+  const rows = await q<{ user_id: string; timezone: string; poll_date: string; poll_id: string; choice: number }>(
+    `select v.user_id, p.timezone, v.poll_date::text, v.poll_id, v.choice
+       from public.poll_votes v join public.profiles p on p.id = v.user_id
+      where v.poll_date >= current_date - 1 and p.reminders_enabled and p.suspended_at is null
+        and exists (select 1 from public.push_subscriptions s where s.user_id = v.user_id)`,
+  );
+  let sent = 0;
+  for (const r of rows) {
+    if (todayIn(r.timezone) !== r.poll_date) continue;
+    const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: r.timezone || "UTC" }).format(now));
+    if (hour < 16 || hour >= 22) continue;
+    const done = await q(
+      `select 1 where exists (select 1 from public.daily_checkins where user_id = $1 and checkin_date = $2 and completed_at is not null)
+          or exists (select 1 from public.daily_sessions where user_id = $1 and session_date = $2 and completed_at is not null)`,
+      [r.user_id, r.poll_date],
+    );
+    if (!done.length) continue;
+    const dup = await q("select 1 from public.notifications where user_id = $1 and type = 'poll_result' and payload->>'date' = $2", [r.user_id, r.poll_date]);
+    if (dup.length) continue;
+    const counts = await q<{ choice: number; n: number }>("select choice, count(*)::int as n from public.poll_votes where poll_date = $1 and poll_id = $2 group by choice", [
+      r.poll_date,
+      r.poll_id,
+    ]);
+    const total = counts.reduce((a, c) => a + c.n, 0);
+    if (total < 3) continue;
+    const same = Math.round(((counts.find((c) => c.choice === r.choice)?.n ?? 0) / total) * 100);
+    await notify(r.user_id, "poll_result", {
+      title: `🗳️ Aaj ka result: ${same}% ne tumhare jaisa chuna`,
+      body: `${total} logon ne vote kiya. Kal subah naya sawaal aur 5 naye quick cards.`,
+      url: "/dashboard",
+      date: r.poll_date,
+    });
+    sent++;
+  }
+  return { voters: rows.length, sent };
+}

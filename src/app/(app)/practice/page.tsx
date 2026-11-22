@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ChevronRight, GitBranch, Leaf, Mic, MessagesSquare, Sparkles } from "lucide-react";
+import { ChevronRight, GitBranch, Layers, Leaf, MessagesSquare, Mic, Sparkles } from "lucide-react";
 import { Card, IconTile, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Practice" };
 
 const ITEMS = [
+  { href: "/practice/cards", title: "Quick cards", text: "5 situations · 1 minute · roz naye", icon: Layers, tone: "accent" as const, extra: "New" },
   { href: "/decision-lab", title: "Decision Lab", text: "Make tough calls", icon: GitBranch, tone: "sky" as const },
   { href: "/communication-lab", title: "Communication Lab", text: "Say it out loud", icon: MessagesSquare, tone: "coral" as const, extra: "Voice" },
   { href: "/coach", title: "AI Coach", text: "Talk it through", icon: Sparkles, tone: "accent" as const },

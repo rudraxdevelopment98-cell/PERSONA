@@ -222,6 +222,51 @@ export async function insights() {
   return { funnel, ret, languages, depths, worlds, daily };
 }
 
+/** Activity = any real use: check-in, session, poll vote, quick card, moment posted or viewed. */
+const ACTIVITY_SQL = `
+  select user_id, completed_at as at from public.daily_checkins where completed_at is not null
+  union all select user_id, completed_at from public.daily_sessions where completed_at is not null
+  union all select user_id, created_at from public.poll_votes
+  union all select user_id, created_at from public.moments
+  union all select viewer, viewed_at from public.moment_views
+  union all select user_id, created_at from public.card_answers`;
+
+/** Is the app becoming a daily habit? Stickiness, day-30 return, weekly cohorts and habit signals. */
+export async function habitHealth() {
+  const [h] = await q<{
+    dau: number; wau: number; mau: number; d30_base: number; d30: number;
+    push: number; with_friend: number; users: number; poll_today: number; ref_joined: number; ref_rewarded: number;
+  }>(`
+    with act as (${ACTIVITY_SQL}),
+    u as (select id, "createdAt"::date as joined from "user")
+    select
+      (select count(distinct user_id)::int from act where at > now() - interval '1 day') as dau,
+      (select count(distinct user_id)::int from act where at > now() - interval '7 days') as wau,
+      (select count(distinct user_id)::int from act where at > now() - interval '30 days') as mau,
+      (select count(*)::int from u where joined <= current_date - 31) as d30_base,
+      (select count(distinct u.id)::int from u join act on act.user_id = u.id and act.at::date between u.joined + 28 and u.joined + 34 where u.joined <= current_date - 35) as d30,
+      (select count(distinct user_id)::int from public.push_subscriptions) as push,
+      (select count(distinct x)::int from (select user_low as x from public.friendships where status = 'accepted' union select user_high from public.friendships where status = 'accepted') f) as with_friend,
+      (select count(*)::int from "user") as users,
+      (select count(*)::int from public.poll_votes where created_at > now() - interval '1 day') as poll_today,
+      (select count(*)::int from public.referrals) as ref_joined,
+      (select count(*)::int from public.referrals where rewarded_at is not null) as ref_rewarded`);
+  // Weekly signup cohorts (last 6 full weeks): share active in each of their first 4 weeks.
+  const cohorts = await q<{ week: string; size: number; age: number; w1: number; w2: number; w3: number; w4: number }>(`
+    with act as (${ACTIVITY_SQL}),
+    u as (select id, date_trunc('week', "createdAt")::date as wk, "createdAt" as joined from "user"
+          where "createdAt" > date_trunc('week', now()) - interval '6 weeks' and "createdAt" < date_trunc('week', now()))
+    select to_char(wk, 'DD Mon') as week, count(*)::int as size, ((current_date - wk) / 7)::int as age,
+      ${[1, 2, 3, 4]
+        .map(
+          (w) =>
+            `count(*) filter (where exists (select 1 from act where act.user_id = u.id and act.at >= u.joined + interval '${w * 7} days' and act.at < u.joined + interval '${(w + 1) * 7} days'))::int as w${w}`,
+        )
+        .join(",\n      ")}
+    from u group by wk order by wk desc`);
+  return { ...h, cohorts };
+}
+
 // ---------------------------------------------------------------------------
 // Users
 // ---------------------------------------------------------------------------

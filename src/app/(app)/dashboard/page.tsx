@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Lightbulb, Mic, Leaf, PenLine, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Layers, Lightbulb, Mic, Leaf, PenLine, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
@@ -95,6 +95,7 @@ export default async function Dashboard() {
     : null;
 
   const quick = [
+    { href: "/practice/cards", label: "Cards", icon: Layers, tone: "bg-accent text-white" },
     { href: "/decision-lab", label: "Decide", icon: GitBranch, tone: "bg-sky-soft text-sky" },
     { href: "/communication-lab", label: "Speak", icon: Mic, tone: "bg-coral-soft text-coral" },
     { href: "/coach", label: "Coach", icon: Sparkles, tone: "bg-accent-soft text-accent" },
