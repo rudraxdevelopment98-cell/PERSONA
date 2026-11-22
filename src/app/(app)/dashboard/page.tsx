@@ -114,7 +114,7 @@ export default async function Dashboard() {
           </p>
           <h1 className="text-3xl font-extrabold tracking-tight">
             Day {state.day}
-            <span className="text-muted/50"> / {PROGRAMME_LENGTH}</span>
+            <span className="text-muted"> / {PROGRAMME_LENGTH}</span>
           </h1>
         </div>
         <div className="flex shrink-0 gap-1.5 text-xs font-bold">

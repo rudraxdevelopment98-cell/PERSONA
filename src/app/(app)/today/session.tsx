@@ -618,7 +618,7 @@ export function SessionFlow({
       <div key={view} className="animate-step-in space-y-4">
         {view === 0 && (
           <Card className="p-5 sm:p-6">
-            <h3 className="text-lg font-semibold">{intro.title}</h3>
+            <h2 className="text-lg font-semibold">{intro.title}</h2>
             <p className="mt-3 text-sm leading-relaxed">{intro.why_it_matters}</p>
             <div className="mt-4 rounded-xl border-l-2 border-primary bg-bg px-4 py-3">
               <p className="text-xs font-medium uppercase tracking-wide text-muted">Key idea</p>

@@ -11,6 +11,18 @@ export const metadata: Metadata = {
   applicationName: "PERSONA 90",
   appleWebApp: { capable: true, title: "PERSONA 90", statusBarStyle: "default" },
   icons: { icon: "/icon.svg", apple: "/icons/apple-touch-icon.png" },
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
+  ),
+  openGraph: {
+    type: "website",
+    siteName: "PERSONA 90",
+    title: "PERSONA 90 · Roz ek kahani, faisla tumhara",
+    description: "90 days, 30 minutes a day: interactive stories, practice and an AI coach for confidence, communication and decisions. Free to start.",
+    locale: "en_IN",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

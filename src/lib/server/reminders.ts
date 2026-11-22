@@ -33,6 +33,9 @@ export async function sendDailyReminders(now = new Date()) {
     if (hour < 9 || hour >= 22) continue;
     const done = await pool.query("select 1 from public.daily_sessions where user_id = $1 and session_date = $2 and completed_at is not null", [u.id, today]);
     if (done.rowCount) continue;
+    // A friend-streak reminder already went out today: one evening nudge is enough.
+    const nudged = await pool.query("select 1 from public.nudges where to_user = $1 and kind = 'auto' and nudge_date = $2", [u.id, today]);
+    if (nudged.rowCount) continue;
     const { rows: last } = await pool.query<{ variety: { season: number; episode: number; teaser?: string; finale?: boolean } | null }>(
       "select variety from public.daily_sessions where user_id = $1 and variety is not null order by day_number desc limit 1",
       [u.id],

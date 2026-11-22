@@ -67,7 +67,7 @@ export function CardDeck({ initial }: { initial: CardsView }) {
         {initial.streak > 0 && <span className="rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">🔥 {initial.streak} din</span>}
       </div>
 
-      <div className="flex gap-1.5" aria-label={`Card ${Math.min(i + 1, total)} of ${total}`}>
+      <div className="flex gap-1.5" role="img" aria-label={`Card ${Math.min(i + 1, total)} of ${total}`}>
         {initial.cards.map((_, k) => {
           const a = answers.find((x) => x.idx === k);
           return <span key={k} className={cx("h-1.5 flex-1 rounded-full", a ? (a.correct ? "bg-accent" : "bg-primary/40") : k === i ? "bg-primary" : "bg-line")} />;

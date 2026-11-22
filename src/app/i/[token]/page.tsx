@@ -8,7 +8,13 @@ import { InviteActions } from "./invite-actions";
 
 export const dynamic = "force-dynamic";
 // Invite links must not leak into search results or referrers.
-export const metadata: Metadata = { title: "You're invited", robots: { index: false, follow: false }, referrer: "no-referrer" };
+export const metadata: Metadata = {
+  title: "You're invited",
+  description: "Join me on PERSONA 90: a free 90-day programme for confidence, communication and decisions.",
+  robots: { index: false, follow: false },
+  referrer: "no-referrer",
+  openGraph: { title: "Tumhe PERSONA 90 par invite kiya gaya hai", description: "Roz ek kahani, faisla tumhara. Saath mein grow karo." },
+};
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
