@@ -23,6 +23,7 @@ async function run<T extends object>(fn: (userId: string) => Promise<T>, revalid
     if (err instanceof social.SocialError) return { error: err.message };
     if (err instanceof UpgradeRequired) return { error: err.message, upgrade: true };
     console.error("[social action]", err);
+    await (await import("@/lib/server/errors")).logError("server", "action:social", err);
     return { error: "Something went wrong. Please try again." };
   }
 }

@@ -6,6 +6,7 @@ import { AIError, runWithAIContext, runWithUserAI } from "@/lib/ai/client";
 import { getUserAI } from "./ai-connection";
 import { dbForUser, getSessionUser, type Db, type SessionUser } from "@/lib/db/server";
 import { loadUserState, type UserState } from "./state";
+import { logError } from "./errors";
 
 export class HttpError extends Error {
   constructor(
@@ -24,8 +25,10 @@ type Ctx = { db: Db; user: SessionUser; state: UserState };
  */
 export function apiRoute<S extends z.ZodType>(schema: S, handler: (body: z.infer<S>, ctx: Ctx) => Promise<unknown>) {
   return async (request: Request) => {
+    let userId: string | null = null;
     try {
       const user = await getSessionUser();
+      userId = user?.id ?? null;
       if (!user) throw new HttpError(401, "Please sign in again.");
       const db = dbForUser(user.id);
 
@@ -53,9 +56,11 @@ export function apiRoute<S extends z.ZodType>(schema: S, handler: (body: z.infer
       if (err instanceof UpgradeRequired) return NextResponse.json({ error: err.message, upgrade: true }, { status: 402 });
       if (err instanceof AIError) {
         const status = err.code === "not_configured" ? 503 : err.code === "refusal" ? 422 : 502;
+        if (status !== 422) await logError("ai", new URL(request.url).pathname, err, userId);
         return NextResponse.json({ error: err.message }, { status });
       }
       console.error("API error", err);
+      await logError("server", new URL(request.url).pathname, err, userId);
       return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
   };

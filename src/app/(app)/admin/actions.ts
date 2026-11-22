@@ -14,6 +14,7 @@ async function run(fn: (userId: string) => Promise<void>): Promise<{ error?: str
   } catch (err) {
     if (err instanceof admin.AdminError) return { error: err.message };
     console.error("[admin action]", err);
+    await (await import("@/lib/server/errors")).logError("server", "action:admin", err);
     return { error: "Something went wrong." };
   }
 }
