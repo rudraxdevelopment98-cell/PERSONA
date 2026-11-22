@@ -6,7 +6,7 @@ export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 /**
- * Called once a day by Vercel Cron. If CRON_SECRET is set, Vercel sends it
+ * Called every hour by the GitHub "Hourly jobs" workflow (and once a day by Vercel Cron as a backup). If CRON_SECRET is set, Vercel sends it
  * and we require it. Either way the job is safe to run repeatedly: each
  * person gets at most one reminder per day.
  */

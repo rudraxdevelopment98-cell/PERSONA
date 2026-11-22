@@ -4,7 +4,7 @@ import { todayIn } from "@/lib/domain/programme";
 import { sendPush } from "./push";
 
 /**
- * Evening nudge for people who haven't done today's session: tomorrow's
+ * Evening nudge (6-10pm local) for people who haven't done today's session: tomorrow's
  * teaser and their streak. Only users with notifications turned on, never
  * at night in their own timezone, and at most once per local day.
  */
@@ -30,7 +30,8 @@ export async function sendDailyReminders(now = new Date()) {
     const today = todayIn(u.timezone);
     if (u.last_reminder_date === today) continue;
     const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: u.timezone || "UTC" }).format(now));
-    if (hour < 9 || hour >= 22) continue;
+    // Evening only: the job runs hourly, so this lands at 6-10pm in every time zone.
+    if (hour < 18 || hour >= 22) continue;
     const done = await pool.query("select 1 from public.daily_sessions where user_id = $1 and session_date = $2 and completed_at is not null", [u.id, today]);
     if (done.rowCount) continue;
     // A friend-streak reminder already went out today: one evening nudge is enough.
