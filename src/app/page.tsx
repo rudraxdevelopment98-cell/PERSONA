@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BookOpen, Check, ClipboardCheck, Flame, GitBranch, Languages, LineChart, Mic, PenLine, Sparkles, Target, Trophy, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ClipboardCheck, Flame, GitBranch, Layers, Leaf, LineChart, Lock, Mic, PenLine, Target, Users, Vote, Zap } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ButtonLink, IconTile, ProgressRing, cx } from "@/components/ui";
 import { PHASES } from "@/lib/domain/programme";
@@ -72,12 +72,26 @@ export default async function Landing() {
   if (process.env.DATABASE_URL && (await getSessionUser().catch(() => null))) redirect("/dashboard");
 
   const features = [
-    { icon: BookOpen, tone: "sky" as const, title: "A 30-minute daily session", text: "A story written around you, every day." },
-    { icon: Mic, tone: "coral" as const, title: "Speak, don't just type", text: "Practise hard conversations out loud." },
-    { icon: GitBranch, tone: "accent" as const, title: "Decision Lab", text: "Real dilemmas. Feedback on how you think." },
-    { icon: Sparkles, tone: "primary" as const, title: "An AI coach who knows you", text: "Advice built on your own progress." },
-    { icon: Trophy, tone: "sun" as const, title: "Streaks, XP and badges", text: "Level up as you practise." },
-    { icon: Languages, tone: "sky" as const, title: "English, Hinglish or Hindi", text: "In the language you think in." },
+    { icon: BookOpen, tone: "primary" as const, title: "Interactive kahani", text: "Roz ek naya episode. Turning point par faisla tum karte ho." },
+    { icon: Layers, tone: "accent" as const, title: "Quick cards", text: "5 situations, 1 minute. Sahi move kya hota, turant dekho." },
+    { icon: Vote, tone: "accent" as const, title: "Aaj ka sawaal", text: "10 second ka poll. Dekho baaki log aur tumhare dost kya karte." },
+    { icon: Users, tone: "primary" as const, title: "Dost aur friend streak", text: "Saath mein streak, moments, cheers aur races." },
+    { icon: Mic, tone: "primary" as const, title: "Bol ke practice", text: "Mushkil baatein out loud practice karo, AI feedback ke saath." },
+    { icon: Leaf, tone: "accent" as const, title: "Calm Corner", text: "Stress ho to 2 minute: saans, vent & burn, sounds." },
+  ];
+  const loop = [
+    { icon: ClipboardCheck, time: "2 min", title: "Check-in", text: "Mood aur din kaisa gaya, game jaise cards mein." },
+    { icon: BookOpen, time: "10 min", title: "Episode", text: "Kahani tumhari skill par, faisla tumhara." },
+    { icon: GitBranch, time: "10 min", title: "Practice", text: "Scenarios, feedback aur aaj ka real-life challenge." },
+    { icon: PenLine, time: "3 min", title: "Reflect", text: "Kya seekha, kal kya alag karoge." },
+  ];
+  const faqs = [
+    { q: "Kya ye free hai?", a: "Haan. Free plan mein roz check-in, streak, poll aur quick cards; pehle hafte roz poora episode, phir hafte mein 3. Pro mein roz naya episode aur AI narrator. Card ke bina 7 din Pro try kar sakte ho." },
+    { q: "Roz kitna time chahiye?", a: "Poora session ~30 minute. Busy din par sirf 2 minute ka check-in bhi streak bachata hai." },
+    { q: "Hindi ya Hinglish mein milega?", a: "Haan: English, Hinglish ya हिन्दी. Kahaniyan, sawaal aur awaaz tumhari bhasha mein." },
+    { q: "Mera data safe hai?", a: "Journal, jawab aur coach chats sirf tumhare hain. Dost sirf wahi dekhte hain jo tum share karo. Data kabhi bhi download ya delete kar sakte ho." },
+    { q: "Kya ye therapy hai?", a: "Nahi. Ye self-development ke liye hai, diagnosis ya ilaaj nahi. Mushkil waqt mein professional se baat karo; India mein Tele-MANAS 14416." },
+    { q: "App kahan milega?", a: "Abhi browser mein kholo aur \"Install\" dabao, phone par app jaisa chalega. Play Store app jaldi." },
   ];
 
   return (
@@ -96,28 +110,52 @@ export default async function Landing() {
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div className="animate-rise">
             <span className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
-              <LineChart className="size-3.5" /> 90 days · 30 minutes a day
+              <LineChart className="size-3.5" /> 90 din · 30 minute roz · free
             </span>
             <h1 className="mt-4 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-              Understand yourself.
+              Roz ek kahani.
               <br />
-              <span className="text-brand">Challenge</span> yourself.
-              <br />
-              Become yourself.
+              <span className="text-accent">Faisla</span> tumhara.
             </h1>
-            <p className="mt-5 max-w-md text-lg text-muted">Confidence, communication and decisions. 30 minutes a day.</p>
+            <p className="mt-5 max-w-md text-lg text-muted">
+              Confidence, baat-cheet aur faisle lene ki skill, interactive kahaniyon aur roz ki chhoti practice se. English, Hinglish ya हिन्दी.
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/signup" className="h-12 px-6 text-base">
-                Start free <ArrowRight className="size-4" />
+                Free shuru karo <ArrowRight className="size-4" />
               </ButtonLink>
               <ButtonLink href="/login" variant="secondary" className="h-12 px-6 text-base">
-                I have an account
+                Mera account hai
               </ButtonLink>
             </div>
+            <p className="mt-3 text-xs text-muted">2 minute mein shuru · card nahi chahiye · kabhi bhi data delete</p>
           </div>
           <div className="animate-pop">
             <PhonePreview />
           </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-labelledby="loop-title">
+          <h2 id="loop-title" className="text-2xl font-extrabold tracking-tight">Roz ke 30 minute, aise</h2>
+          <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {loop.map((l, i) => (
+              <li key={l.title} className="rounded-3xl border border-line/70 bg-surface p-5">
+                <div className="flex items-center justify-between">
+                  <span className="flex size-10 items-center justify-center rounded-2xl bg-primary text-white">
+                    <l.icon className="size-5" />
+                  </span>
+                  <span className="text-xs font-bold text-muted">
+                    {i + 1} · {l.time}
+                  </span>
+                </div>
+                <h3 className="mt-3 font-bold">{l.title}</h3>
+                <p className="mt-1 text-sm text-muted">{l.text}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-3 text-sm text-muted">
+            Din mein kabhi bhi: <b className="text-ink">Aaj ka sawaal</b> (10 sec), <b className="text-ink">Quick cards</b> (1 min), dosto ke <b className="text-ink">moments</b>.
+          </p>
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -135,7 +173,7 @@ export default async function Landing() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-          <h2 className="text-2xl font-extrabold tracking-tight">Three phases, ninety days</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight">Teen phase, 90 din</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {PHASES.map((p, i) => (
               <div key={p.number} className="bg-brand relative rounded-3xl p-6 text-white" style={{ opacity: 1 - i * 0.08 }}>
@@ -145,6 +183,51 @@ export default async function Landing() {
                 <h3 className="mt-1 text-lg font-extrabold">{p.name}</h3>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+          <div className="grid gap-6 rounded-3xl border border-line/70 bg-surface p-6 sm:grid-cols-[auto_1fr] sm:p-8">
+            <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+              <Lock className="size-6" />
+            </span>
+            <div>
+              <h2 className="text-xl font-extrabold tracking-tight">Tumhari baatein, sirf tumhari</h2>
+              <ul className="mt-3 grid gap-2 text-sm text-muted sm:grid-cols-2">
+                {["Journal aur jawab kisi ko nahi dikhte", "Dost sirf wahi dekhte jo tum share karo", "Hum data bechte nahi, ads ke liye use nahi", "Kabhi bhi poora data download ya delete"].map((t) => (
+                  <li key={t} className="flex items-start gap-2">
+                    <Check className="mt-0.5 size-4 shrink-0 text-accent" strokeWidth={3} /> {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6" aria-labelledby="faq-title">
+          <h2 id="faq-title" className="text-2xl font-extrabold tracking-tight">Aksar puche jaane wale sawaal</h2>
+          <div className="mt-5 divide-y divide-line rounded-3xl border border-line/70 bg-surface">
+            {faqs.map((f) => (
+              <details key={f.q} className="group px-5 py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold">
+                  {f.q}
+                  <span className="text-muted transition group-open:rotate-45" aria-hidden>
+                    +
+                  </span>
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 pb-14 pt-4 sm:px-6">
+          <div className="bg-brand rounded-[32px] p-8 text-center text-white sm:p-12">
+            <h2 className="text-3xl font-extrabold tracking-tight">Aaj se shuru karo. Day 1 sirf 10 minute ka.</h2>
+            <p className="mx-auto mt-3 max-w-md text-white/75">Quick check, pehli kahani, aur tumhara pehla faisla.</p>
+            <ButtonLink href="/signup" variant="secondary" className="mt-6 h-12 px-6 text-base">
+              Free shuru karo <ArrowRight className="size-4" />
+            </ButtonLink>
           </div>
         </section>
 
