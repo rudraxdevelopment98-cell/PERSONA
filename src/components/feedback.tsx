@@ -1,7 +1,7 @@
 "use client";
 
-import { Lightbulb, MessageSquareQuote, Sparkles, ThumbsUp, TrendingUp, Wand2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { ChevronDown, Lightbulb, MessageSquareQuote, Sparkles, ThumbsUp, TrendingUp, Wand2 } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { IconTile } from "./ui";
 import { useT } from "@/lib/i18n/client";
 
@@ -33,14 +33,17 @@ export function DeepFeedback(props: {
   exampleLabel?: string;
   extra?: { label: string; text?: string }[];
   practiseNext?: string;
+  /** Shown first: e.g. a score line. */
+  headline?: ReactNode;
+  /** Extra detail shown only when the person opens "full feedback". */
+  details?: ReactNode;
 }) {
   const t = useT();
+  const [open, setOpen] = useState(false);
+  const hasMore = Boolean(props.yourWords || props.concept?.name || props.example || props.extra?.some((e) => e.text) || props.practiseNext || props.details);
   return (
     <div className="space-y-4">
-      {props.yourWords && (
-        <blockquote className="flex gap-2 rounded-xl border-l-4 border-primary bg-surface px-4 py-3 text-sm italic">
-          <MessageSquareQuote className="mt-0.5 size-4 shrink-0 not-italic text-primary" />{t("“")}{t(props.yourWords)}{t("”")}</blockquote>
-      )}
+      {props.headline}
       {props.wentWell && (
         <Row icon={<ThumbsUp className="size-4" />} tone="accent" label={t("What worked")}>
           {t(props.wentWell)}
@@ -51,7 +54,21 @@ export function DeepFeedback(props: {
           {t(props.toImprove)}
         </Row>
       )}
-      {props.concept?.name && (
+      {hasMore && !open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line py-2.5 text-sm font-semibold text-primary hover:bg-surface"
+        >
+          {t("See full feedback")} <ChevronDown className="size-4" />
+        </button>
+      )}
+      {open && props.details}
+      {open && props.yourWords && (
+        <blockquote className="flex gap-2 rounded-xl border-l-4 border-primary bg-surface px-4 py-3 text-sm italic">
+          <MessageSquareQuote className="mt-0.5 size-4 shrink-0 not-italic text-primary" />{t("“")}{t(props.yourWords)}{t("”")}</blockquote>
+      )}
+      {open && props.concept?.name && (
         <div className="rounded-2xl bg-sky-soft p-4">
           <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-sky">
             <Lightbulb className="size-3.5" /> {t(props.conceptLabel ?? "") || t("Psychology behind it")}
@@ -60,17 +77,17 @@ export function DeepFeedback(props: {
           <p className="mt-0.5 text-sm leading-relaxed">{t(props.concept.explanation)}</p>
         </div>
       )}
-      {props.example && (
+      {open && props.example && (
         <Row icon={<Wand2 className="size-4" />} tone="primary" label={t(props.exampleLabel ?? "") || t("How a skilled person might think")}>
           <p className="whitespace-pre-line">{t(props.example)}</p>
         </Row>
       )}
-      {props.extra?.filter((e) => e.text).map((e) => (
+      {open && props.extra?.filter((e) => e.text).map((e) => (
         <Row key={e.label} icon={<Sparkles className="size-4" />} tone="sky" label={t(e.label)}>
           {e.text}
         </Row>
       ))}
-      {props.practiseNext && (
+      {open && props.practiseNext && (
         <div className="rounded-2xl bg-sun-soft p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-warning">{t("Practise this week")}</p>
           <p className="mt-0.5 text-sm leading-relaxed">{t(props.practiseNext)}</p>

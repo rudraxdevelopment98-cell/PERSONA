@@ -19,7 +19,7 @@ export default async function ProgressPage() {
   const header = (
     <PageHeader
       title={t("Progress Analytics")}
-      description={t("Every number here comes from activity you have actually recorded. Nothing is estimated or back-filled - empty areas fill in as you practise.")}
+      description={t("Only from what you actually did. Nothing is guessed.")}
     />
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="Progress tracking" /></>);
@@ -41,6 +41,8 @@ export default async function ProgressPage() {
   const completedSessions = (sessions ?? []).filter((s) => s.completed_at).length;
   const challenges = (sessions ?? []).filter((s) => s.challenge_status === "completed").length;
   const consistency = state.skills[0]?.consistency ?? null;
+  const gain = overall - baselineOverall;
+  const fmtGain = Math.abs(Math.round(gain * 10) / 10);
 
   return (
     <>
@@ -53,50 +55,51 @@ export default async function ProgressPage() {
           <Stat label={t("Consistency")} value={consistency == null ? "–" : `${Math.round(consistency)}%`} hint={t("completion since day 1")} />
         </Card>
 
-        <Card>
-          <CardHeader title={t("Overall score over time")} description={t("Average of all ten skills, on each day a score changed.")} />
-          <OverallTrend history={history} baseline={baselineOverall} />
+        <Card className="space-y-3 p-5">
+          <p className="text-lg font-extrabold leading-snug">
+            {gain > 0.4 ? t("You are {0} points above where you started. 🎉", fmtGain) : gain < -0.4 ? t("A small dip of {0} points. Normal - keep going.", fmtGain) : t("You are right at your starting point. The climb starts now.")}
+          </p>
+          <div className="flex flex-wrap gap-2 text-sm">
+            {strengths.slice(0, 2).map((s) => (
+              <span key={s.dimension} className="rounded-full bg-accent-soft px-3 py-1 font-semibold text-accent">💪 {t(DIMENSION_META[s.dimension].label)} {s.current}</span>
+            ))}
+            {growth.slice(0, 2).map((s) => (
+              <span key={s.dimension} className="rounded-full bg-sun-soft px-3 py-1 font-semibold text-warning">🌱 {t(DIMENSION_META[s.dimension].label)} {s.current}</span>
+            ))}
+          </div>
+          <p className="text-xs text-muted">{t("💪 strongest · 🌱 getting extra practice")}</p>
         </Card>
+
+        {history.length >= 2 && (
+          <Card>
+            <CardHeader title={t("Overall score over time")} />
+            <OverallTrend history={history} baseline={baselineOverall} />
+          </Card>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
-            <CardHeader title={t("Baseline vs current")} description={t("Bar = current; tick = baseline.")} />
+            <CardHeader title={t("Your 10 skills")} description={t("Bar = now · line = where you started")} />
             <div className="px-5 py-5">
               <ScoreBars rows={state.skills} />
             </div>
           </Card>
-          <Card>
-            <SkillTrend history={history} baselines={baselines} />
-          </Card>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader title={t("Current strengths")} />
-            <ul className="divide-y divide-line">
-              {strengths.map((s) => (
-                <li key={s.dimension} className="flex items-center justify-between px-5 py-3 text-sm">
-                  {t(DIMENSION_META[s.dimension].label)}
-                  <span className="font-medium tabular-nums">{s.current}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-          <Card>
-            <CardHeader title={t("Growth areas")} description={t("Your programme gives these extra practice.")} />
-            <ul className="divide-y divide-line">
-              {growth.map((s) => (
-                <li key={s.dimension} className="flex items-center justify-between px-5 py-3 text-sm">
-                  {t(DIMENSION_META[s.dimension].label)}
-                  <span className="font-medium tabular-nums">{s.current}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
+          {history.length >= 2 && (
+            <Card>
+              <SkillTrend history={history} baselines={baselines} />
+            </Card>
+          )}
         </div>
 
         <Card>
-          <CardHeader title={t("Score breakdown")} description={t("How each current score is built, and why it changed.")} />
+          <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
+            <span>
+              <span className="block font-semibold">{t("Score breakdown")}</span>
+              <span className="block text-sm text-muted">{t("How each current score is built, and why it changed.")}</span>
+            </span>
+            <span className="text-muted group-open:rotate-90">›</span>
+          </summary>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
@@ -132,6 +135,7 @@ export default async function ProgressPage() {
               <span className="font-medium text-ink">{t("Self-reported behaviour")}</span> ({WEIGHTS.self * 100}{t("%): your baseline blended with your daily check-in ratings.")}{" "}
               <span className="font-medium text-ink">{t("Demonstrated performance")}</span> ({WEIGHTS.demonstrated * 100}{t("%): rubric scores for your reasoning in scenarios and labs, reaching full weight after")}{" "}{DEMONSTRATED_FULL_WEIGHT_AT}{" "}{t("pieces of evidence.")}{" "}
               <span className="font-medium text-ink">{t("Consistency")}</span>{t(": completion of sessions, check-ins and challenges since day 1. It measures follow-through, so it counts towards self-discipline only (")}{DISCIPLINE_CONSISTENCY_WEIGHT * 100}{t("% weight, from day")}{" "}{CONSISTENCY_MIN_DAYS}{t("). Weights are shared out among the components that have data. These are development indicators, not clinical measurements.")}</p>
+          </details>
           </details>
         </Card>
 

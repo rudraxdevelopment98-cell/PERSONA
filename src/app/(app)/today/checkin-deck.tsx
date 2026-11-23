@@ -204,7 +204,13 @@ export function CheckinDeck({
   const pick = (o: string) => {
     set(o);
     if (advance.current) clearTimeout(advance.current);
-    advance.current = setTimeout(() => setI((n) => Math.min(n + 1, total - 1)), 380);
+    const from = i;
+    // Only move on if the person is still on this card (a fast tap on Next already moved them).
+    advance.current = setTimeout(() => setI((n) => (n === from ? Math.min(from + 1, total - 1) : n)), 380);
+  };
+  const goNext = () => {
+    if (advance.current) clearTimeout(advance.current);
+    setI(Math.min(i + 1, total - 1));
   };
   const firstOpen = questions.findIndex((x) => !answered(x));
 
@@ -262,7 +268,10 @@ export function CheckinDeck({
         </p>
       )}
       <div className="flex items-center justify-between gap-3">
-        <Button type="button" variant="ghost" onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0} aria-label={t("Previous card")}>
+        <Button type="button" variant="ghost" onClick={() => {
+          if (advance.current) clearTimeout(advance.current);
+          setI(Math.max(0, i - 1));
+        }} disabled={i === 0} aria-label={t("Previous card")}>
           <ArrowLeft className="size-4" />
         </Button>
         {onMoment ? (
@@ -273,7 +282,7 @@ export function CheckinDeck({
             </Button>
           </div>
         ) : (
-          <Button type="button" variant={answered(q) ? "primary" : "secondary"} onClick={() => setI((n) => n + 1)} disabled={!answered(q)}>{t("Next")}{" "}<ArrowRight className="size-4" />
+          <Button type="button" variant={answered(q) ? "primary" : "secondary"} onClick={goNext} disabled={!answered(q)}>{t("Next")}{" "}<ArrowRight className="size-4" />
           </Button>
         )}
       </div>

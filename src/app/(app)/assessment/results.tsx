@@ -55,6 +55,8 @@ export async function ProfileView({ profile }: { profile: DevelopmentProfile }) 
 
       <Card>
         <CardHeader title={t("Your 90-day roadmap")} description={t("First week: {0}", profile.first_week_focus)} />
+        <details className="group border-t border-line">
+        <summary className="cursor-pointer list-none px-5 py-3 text-sm font-semibold text-primary">{t("See all 3 phases")} ›</summary>
         <div className="grid divide-y divide-line md:grid-cols-3 md:divide-x md:divide-y-0">
           {PHASES.map((phase) => {
             const r = profile.roadmap.find((x) => x.phase === phase.number);
@@ -80,6 +82,7 @@ export async function ProfileView({ profile }: { profile: DevelopmentProfile }) 
             );
           })}
         </div>
+        </details>
       </Card>
     </div>
   );
@@ -103,12 +106,16 @@ export async function AssessmentResults({ scores, profile, depth = "deep" }: { s
           </div>
         </Card>
         <Card className="md:col-span-2">
-          <CardHeader title={t("How these scores work")} />
-          <div className="space-y-3 px-5 py-4 text-sm leading-relaxed text-muted">
-            <p>{t(HOW[depth])}</p>
-            <p className="rounded-md bg-bg px-3 py-2 font-mono text-xs text-ink">{t("score = (average item score − 1) ÷ 4 × 100")}</p>
-            <p>{t("Development indicators, not clinical measurements.")}</p>
-          </div>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-semibold">
+              {t("How these scores work")} <span className="text-muted group-open:rotate-90">›</span>
+            </summary>
+            <div className="space-y-3 px-5 pb-4 text-sm leading-relaxed text-muted">
+              <p>{t(HOW[depth])}</p>
+              <p className="rounded-md bg-bg px-3 py-2 font-mono text-xs text-ink">{t("score = (average item score − 1) ÷ 4 × 100")}</p>
+              <p>{t("Development indicators, not clinical measurements.")}</p>
+            </div>
+          </details>
         </Card>
       </div>
       {profile ? <ProfileView profile={profile} /> : <RegenerateProfile />}

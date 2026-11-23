@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { enablePush, pushState } from "@/lib/client/push";
 import { Flame, Sparkles, Trophy, X, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
-import { ShareProgress } from "@/components/share-progress";
 import { ShareMomentButton } from "@/components/moments";
 import { Button, ProgressBar } from "@/components/ui";
 import { useT } from "@/lib/i18n/client";
@@ -116,7 +115,6 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
             preferred={data.badges.length ? "badge" : data.levelUp ? "level" : "day"}
             className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent text-sm font-bold text-white shadow-sm active:scale-[0.98]"
           >{t("✨ Post as a moment for friends")}</ShareMomentButton>
-          <ShareProgress label={t("Share today's win")} />
           <Button className="w-full" onClick={onClose}>{t("Done for today")}</Button>
         </div>
       </div>

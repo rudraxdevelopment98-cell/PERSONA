@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, BookOpen, Check, Target } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronDown, Target } from "lucide-react";
 import { AIThinking } from "@/components/ai-thinking";
 import { DeepFeedback } from "@/components/feedback";
 import { ListenButton, type AIVoice } from "@/components/listen-button";
@@ -107,7 +107,7 @@ function StepHeader({ steps, view, current, onPick }: { steps: Step[]; view: num
   );
 }
 
-function NextStep({ to, minutes, onClick, label }: { to: string; minutes: string; onClick: () => void; label?: string }) {
+function NextStep({ to, minutes, onClick, label, cta }: { to: string; minutes: string; onClick: () => void; label?: string; cta?: string }) {
   const t = useT();
   return (
     <div className="animate-pop flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
@@ -117,7 +117,7 @@ function NextStep({ to, minutes, onClick, label }: { to: string; minutes: string
           {t(to)} <span className="font-normal text-muted">· {t(minutes)}</span>
         </p>
       </div>
-      <Button onClick={onClick}>{t("Continue")}{" "}<ArrowRight className="size-4" />
+      <Button onClick={onClick}>{cta ?? t("Continue")}{" "}<ArrowRight className="size-4" />
       </Button>
     </div>
   );
@@ -172,6 +172,19 @@ function Feedback({ title, items }: { title?: string; items: { label: string; te
             <p className="mt-0.5 text-sm leading-relaxed">{i.text}</p>
           </div>
         ))}
+    </div>
+  );
+}
+
+/** One friendly line instead of four score boxes; the breakdown sits under "full feedback". */
+function ScoreLine({ rubric }: { rubric: Record<string, number> }) {
+  const t = useT();
+  const total = Math.round(Object.values(rubric).reduce((a, b) => a + b, 0));
+  const word = total >= 75 ? t("Strong answer") : total >= 55 ? t("Good answer") : t("Good start");
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-base font-extrabold">{word}</p>
+      <span className="rounded-full bg-primary-soft px-3 py-1 text-sm font-bold tabular-nums text-primary">{total}/100</span>
     </div>
   );
 }
@@ -285,12 +298,14 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
       {completed ? (
         <div className="border-t border-line px-5 py-5 sm:px-10">
           <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("Psychological insights")}</p>
-          <div className="mt-3 grid gap-4 md:grid-cols-3">
-            {story.insights.map((ins) => (
-              <div key={ins.title} className="rounded-xl bg-bg p-4">
-                <p className="text-sm font-medium">{t(ins.title)}</p>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{t(ins.explanation)}</p>
-              </div>
+          <div className="mt-3 space-y-2">
+            {story.insights.map((ins, n) => (
+              <details key={ins.title} open={n === 0} className="group rounded-xl bg-bg p-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
+                  {t(ins.title)} <ChevronDown className="size-4 shrink-0 text-muted transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{t(ins.explanation)}</p>
+              </details>
             ))}
           </div>
         </div>
@@ -389,8 +404,9 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
         ) : (
           r.evaluation && (
             <div className="animate-pop space-y-4 rounded-2xl bg-bg p-4">
-              <RubricTable rubric={r.evaluation.rubric} labels={RUBRIC_LABELS} />
               <DeepFeedback
+                headline={<ScoreLine rubric={r.evaluation.rubric} />}
+                details={<RubricTable rubric={r.evaluation.rubric} labels={RUBRIC_LABELS} />}
                 yourWords={r.evaluation.your_words}
                 wentWell={r.evaluation.what_went_well}
                 toImprove={r.evaluation.to_improve}
@@ -433,7 +449,7 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
     <Card>
       <CardHeader
         title={t(c.title)}
-        description={t("Difficulty: {0}", c.difficulty)}
+        description={t("Difficulty: {0}", t(c.difficulty))}
         action={
           session.challenge_status === "completed" ? (
             <Badge tone="success">{t("Completed")}</Badge>
@@ -466,10 +482,14 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
               <VoiceTextarea id="challenge-notes" rows={3} maxLength={4000} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             {error && <Alert tone="danger">{t(error)}</Alert>}
-            <div className="flex flex-wrap justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <Button variant="ghost" onClick={() => save("skipped")} disabled={busy}>{t("Skip this challenge")}</Button>
-              <Button onClick={() => save("completed")} disabled={busy || notes.trim().length < 10}>
-                {busy && <Spinner />}{" "}{t("Mark as done")}</Button>
+              {notes.trim().length >= 10 ? (
+                <Button onClick={() => save("completed")} disabled={busy}>
+                  {busy && <Spinner />}{" "}{t("Mark as done")}</Button>
+              ) : (
+                <span className="text-xs text-muted">{t("Did it already? Write 1 line above to mark it done.")}</span>
+              )}
             </div>
           </>
         ) : (
@@ -576,10 +596,10 @@ export function SessionFlow({
   const scenariosDone = scenarios.every((s) => s.response);
   const [challengeSeen, setChallengeSeen] = useState(session.challenge_status !== "pending" || Boolean(session.reflection_answers));
   const steps: Step[] = [
-    { key: "intro", title: "Introduction", minutes: "3 min", done: started },
+    { key: "intro", title: "Idea", minutes: "1 min", done: started },
     { key: "story", title: "Story", minutes: "10 min", done: session.story_completed },
     { key: "scenarios", title: "Scenarios", minutes: "7 min", done: scenariosDone },
-    { key: "challenge", title: "Challenge", minutes: "2 min to plan", done: session.challenge_status !== "pending" || challengeSeen },
+    { key: "challenge", title: "Challenge", minutes: "2 min", done: session.challenge_status !== "pending" || challengeSeen },
     { key: "reflection", title: "Reflection", minutes: "3 min", done: session.completed },
   ];
   const current = !started ? 0 : !session.story_completed ? 1 : !scenariosDone ? 2 : !challengeSeen ? 3 : 4;
@@ -610,19 +630,22 @@ export function SessionFlow({
         {view === 0 && (
           <Card className="p-5 sm:p-6">
             <h2 className="text-lg font-semibold">{t(intro.title)}</h2>
-            <p className="mt-3 text-sm leading-relaxed">{t(intro.why_it_matters)}</p>
-            <div className="mt-4 rounded-xl border-l-2 border-primary bg-bg px-4 py-3">
+            <div className="mt-3 rounded-xl border-l-2 border-primary bg-bg px-4 py-3">
               <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("Key idea")}</p>
-              <p className="mt-1 text-sm leading-relaxed">{t(intro.key_idea)}</p>
+              <p className="mt-1 text-[15px] leading-relaxed">{t(intro.key_idea)}</p>
             </div>
-            <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted">{t("Today you will practise")}</p>
-            <ul className="mt-1.5 space-y-1 text-sm">
-              {intro.what_you_will_practise.map((p, i) => (
-                <li key={i}>· {t(p)}</li>
-              ))}
-            </ul>
+            <details className="group mt-3 text-sm">
+              <summary className="cursor-pointer list-none font-semibold text-primary">{t("Why it matters")} ›</summary>
+              <p className="mt-2 leading-relaxed">{t(intro.why_it_matters)}</p>
+              <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted">{t("Today you will practise")}</p>
+              <ul className="mt-1.5 space-y-1">
+                {intro.what_you_will_practise.map((p, i) => (
+                  <li key={i}>· {t(p)}</li>
+                ))}
+              </ul>
+            </details>
             <Button
-              className="mt-5"
+              className="mt-5 w-full sm:w-auto"
               onClick={() => {
                 setStarted(true);
                 go(1);
@@ -678,6 +701,7 @@ export function SessionFlow({
                 to="Reflection"
                 minutes={t("3 min")}
                 label={session.challenge_status === "pending" ? t("Try it later today and come back to record it.") : t("Saved.")}
+                cta={session.challenge_status === "pending" ? t("Later, continue") : undefined}
                 onClick={() => {
                   setChallengeSeen(true);
                   go(4);
