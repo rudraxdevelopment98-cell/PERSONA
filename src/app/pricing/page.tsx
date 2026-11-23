@@ -7,11 +7,13 @@ import { DISPLAY_PRICES, DISPLAY_PRICES_INR, FEATURES, FREE_LIMITS, TRIAL_DAYS }
 import { getPlan } from "@/lib/server/plan";
 import { publicConfig } from "@/lib/server/payments";
 import { PricingClient } from "./pricing-client";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Pricing", description: "PERSONA 90 is free. Pro adds unlimited practice." };
 
 export default async function PricingPage({ searchParams }: { searchParams: Promise<{ checkout?: string }> }) {
+  const t = await getT();
   const [user, config, sp] = await Promise.all([getSessionUser(), publicConfig(), searchParams]);
   const plan = user ? await getPlan(user.id) : null;
   // Visitors in India see rupee prices until Paddle's own localised price loads.
@@ -24,17 +26,14 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           <Logo />
         </Link>
         <Link href={user ? "/dashboard" : "/login"} className="text-sm font-semibold text-primary">
-          {user ? "Back to app" : "Sign in"}
+          {user ? t("Back to app") : t("Sign in")}
         </Link>
       </header>
       <main className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
         <div className="mx-auto max-w-2xl py-6 text-center">
-          <p className="text-xs font-bold uppercase tracking-wider text-accent">Pricing</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Start free. Go Pro when you want more practice.</h1>
-          <p className="mt-3 text-muted">
-            Your daily check-in and streak are always free, with a full episode every day in week 1 and {FREE_LIMITS.episodesPerWeek} a week after that. Pro gives you a new
-            episode every day and removes every limit. Try it free for {TRIAL_DAYS} days - no card needed.
-          </p>
+          <p className="text-xs font-bold uppercase tracking-wider text-accent">{t("Pricing")}</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{t("Start free. Go Pro when you want more practice.")}</h1>
+          <p className="mt-3 text-muted">{t("Your daily check-in and streak are always free, with a full episode every day in week 1 and {0} a week after that. Pro gives you a new episode every day and removes every limit. Try it free for {1} days - no card needed.", FREE_LIMITS.episodesPerWeek, TRIAL_DAYS)}</p>
         </div>
         <PricingClient
           signedIn={Boolean(user)}
@@ -48,12 +47,9 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           features={FEATURES}
           justPaid={sp.checkout === "success"}
         />
-        <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-muted">
-          Have a book, podcast or course that helps people grow? <Link href="/advertise" className="font-semibold text-primary hover:underline">Advertise with us</Link>
+        <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-muted">{t("Have a book, podcast or course that helps people grow?")}{" "}<Link href="/advertise" className="font-semibold text-primary hover:underline">{t("Advertise with us")}</Link>
         </p>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">
-          Payments are processed by Paddle, our reseller and Merchant of Record, in your local currency with taxes included where they apply. Cancel any time - Pro stays active until the end of the period you paid for.
-        </p>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">{t("Payments are processed by Paddle, our reseller and Merchant of Record, in your local currency with taxes included where they apply. Cancel any time - Pro stays active until the end of the period you paid for.")}</p>
       </main>
     </div>
   );

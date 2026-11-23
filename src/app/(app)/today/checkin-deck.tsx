@@ -6,6 +6,7 @@ import { Alert, Button, Spinner, cx } from "@/components/ui";
 import type { CheckinQuestion } from "@/lib/ai/schemas";
 import { MOMENT_TAGS } from "@/lib/domain/moment";
 import { VoiceTextarea } from "@/components/voice-input";
+import { useT } from "@/lib/i18n/client";
 
 type Answers = Record<string, string | number>;
 
@@ -26,12 +27,13 @@ function styleOf(q: CheckinQuestion) {
 }
 
 function EmojiScale({ q, value, onChange }: { q: CheckinQuestion; value?: number; onChange: (v: number) => void }) {
+  const t = useT();
   const v = value ?? 0;
   return (
     <div className="space-y-4">
       <div className="flex h-24 items-center justify-center" aria-hidden>
         <span key={v} className="animate-pop text-7xl leading-none">
-          {v ? FACES[v - 1] : "🫥"}
+          {v ? t(FACES[v - 1]) : "🫥"}
         </span>
       </div>
       <div className="grid grid-cols-10 gap-1">
@@ -52,14 +54,15 @@ function EmojiScale({ q, value, onChange }: { q: CheckinQuestion; value?: number
         ))}
       </div>
       <div className="flex justify-between text-xs font-medium text-muted">
-        <span>{q.scale_low_label}</span>
-        <span>{q.scale_high_label}</span>
+        <span>{t(q.scale_low_label ?? "")}</span>
+        <span>{t(q.scale_high_label ?? "")}</span>
       </div>
     </div>
   );
 }
 
 function Options({ q, style, value, onPick }: { q: CheckinQuestion; style: string; value?: string; onPick: (o: string) => void }) {
+  const t = useT();
   const opts = q.options ?? [];
   if (style === "this_or_that" && opts.length === 2) {
     return (
@@ -75,12 +78,10 @@ function Options({ q, style, value, onPick }: { q: CheckinQuestion; style: strin
               value === o ? "border-primary bg-primary text-white" : "border-line bg-surface hover:border-primary/40",
             )}
           >
-            {o}
+            {t(o)}
           </button>
         ))}
-        <span className="pointer-events-none absolute left-1/2 top-1/2 flex size-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink text-xs font-black text-surface">
-          VS
-        </span>
+        <span className="pointer-events-none absolute left-1/2 top-1/2 flex size-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink text-xs font-black text-surface">{t("VS")}</span>
       </div>
     );
   }
@@ -98,7 +99,7 @@ function Options({ q, style, value, onPick }: { q: CheckinQuestion; style: strin
             value === o ? "border-primary bg-primary-soft text-ink" : "border-line bg-surface text-ink hover:border-primary/40",
           )}
         >
-          {o}
+          {t(o)}
         </button>
       ))}
     </div>
@@ -121,30 +122,31 @@ function Fuse() {
 export type TodayMoment = { note?: string; tags?: string[]; skipped?: boolean };
 
 /** The last, optional card: what happened today. Shapes today's session only. */
-function MomentCard({ note, tags, onNote, onTags }: { note: string; tags: string[]; onNote: (v: string) => void; onTags: (t: string[]) => void }) {
+function MomentCard({ note, tags, onNote, onTags }: { note: string; tags: string[]; onNote: (v: string) => void; onTags: (it: string[]) => void }) {
+  const t = useT();
   const toggle = (id: string) => {
     if (id === "nothing") return onTags(tags.includes("nothing") ? [] : ["nothing"]);
-    const next = tags.filter((t) => t !== "nothing");
-    onTags(next.includes(id) ? next.filter((t) => t !== id) : [...next, id]);
+    const next = tags.filter((it) => it !== "nothing");
+    onTags(next.includes(id) ? next.filter((it) => it !== id) : [...next, id]);
   };
   return (
     <div key="moment" data-checkin-card className="animate-page rounded-[28px] border-2 border-dashed border-primary/30 bg-surface p-5 shadow-card sm:p-7">
-      <p className="text-xs font-bold uppercase tracking-wider text-accent">🌟 Aaj ka moment · optional</p>
-      <h2 className="mt-2 text-xl font-extrabold leading-snug text-balance sm:text-2xl">Aaj kuch hua jo share karna chahoge?</h2>
-      <p className="mt-1 text-sm text-muted">Aaj ka session isi ke hisaab se banega. Sirf aaj ke liye. Mann na ho to skip karo.</p>
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Aaj kis baare mein">
-        {MOMENT_TAGS.map((t) => (
+      <p className="text-xs font-bold uppercase tracking-wider text-accent">{t("🌟 Aaj ka moment · optional")}</p>
+      <h2 className="mt-2 text-xl font-extrabold leading-snug text-balance sm:text-2xl">{t("Aaj kuch hua jo share karna chahoge?")}</h2>
+      <p className="mt-1 text-sm text-muted">{t("Aaj ka session isi ke hisaab se banega. Sirf aaj ke liye. Mann na ho to skip karo.")}</p>
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={t("Aaj kis baare mein")}>
+        {MOMENT_TAGS.map((it) => (
           <button
-            key={t.id}
+            key={it.id}
             type="button"
-            onClick={() => toggle(t.id)}
-            aria-pressed={tags.includes(t.id)}
+            onClick={() => toggle(it.id)}
+            aria-pressed={tags.includes(it.id)}
             className={cx(
               "rounded-full border px-3 py-1.5 text-sm font-semibold transition active:scale-95",
-              tags.includes(t.id) ? "border-primary bg-primary text-white" : "border-line bg-surface text-ink hover:border-primary/40",
+              tags.includes(it.id) ? "border-primary bg-primary text-white" : "border-line bg-surface text-ink hover:border-primary/40",
             )}
           >
-            {t.label}
+            {t(it.label)}
           </button>
         ))}
       </div>
@@ -153,7 +155,7 @@ function MomentCard({ note, tags, onNote, onTags }: { note: string; tags: string
         rows={4}
         maxLength={2000}
         className="mt-4"
-        placeholder="Jaise: ghar par sabke saamne tok diya gaya, aur main kuch bol nahi paaya…"
+        placeholder={t("Jaise: ghar par sabke saamne tok diya gaya, aur main kuch bol nahi paaya…")}
         value={note}
         onChange={(e) => onNote(e.target.value)}
       />
@@ -181,6 +183,7 @@ export function CheckinDeck({
   error: string | null;
   onSubmit: (answers: Answers, today: TodayMoment) => void;
 }) {
+  const t = useT();
   const [answers, setAnswers] = useState<Answers>({});
   const [note, setNote] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -206,20 +209,19 @@ export function CheckinDeck({
   const firstOpen = questions.findIndex((x) => !answered(x));
 
   return (
-    <section aria-label={`Check-in, day ${dayNumber}`} className="space-y-4">
+    <section aria-label={t("Check-in, day {0}", dayNumber)} className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-bold">
-          Check-in <span className="text-muted">· Day {dayNumber}</span>
+        <p className="text-sm font-bold">{t("Check-in")}{" "}<span className="text-muted">{t("· Day {0}", dayNumber)}</span>
         </p>
-        {lensLabel && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{lensLabel}</span>}
+        {lensLabel && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{t(lensLabel)}</span>}
       </div>
-      <div className="flex gap-1.5" aria-label={`Card ${i + 1} of ${total}`}>
+      <div className="flex gap-1.5" aria-label={t("Card {0} of {1}", i + 1, total)}>
         {[...questions.map((x) => ({ id: x.id, done: answered(x) })), { id: "moment", done: Boolean(note.trim() || tags.length) }].map((x, n) => (
           <button
             key={x.id}
             type="button"
             onClick={() => setI(n)}
-            aria-label={`Go to card ${n + 1}`}
+            aria-label={t("Go to card {0}", n + 1)}
             className={cx("h-1.5 flex-1 rounded-full transition-colors", n === i ? "bg-primary" : x.done ? "bg-primary/40" : "bg-line")}
           />
         ))}
@@ -229,7 +231,7 @@ export function CheckinDeck({
         <MomentCard note={note} tags={tags} onNote={setNote} onTags={setTags} />
       ) : (
         <div key={q.id} data-checkin-card className="animate-page rounded-[28px] border border-line/70 bg-surface p-5 shadow-card sm:p-7">
-          <p className="text-xs font-bold uppercase tracking-wider text-accent">{STYLE_TAG[style] ?? STYLE_TAG.normal}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-accent">{t(STYLE_TAG[style]) ?? t(STYLE_TAG.normal)}</p>
           <h2 className="mt-2 text-xl font-extrabold leading-snug text-balance sm:text-2xl">{q.text}</h2>
           {style === "quick_fire" && (
             <div className="mt-3">
@@ -244,7 +246,7 @@ export function CheckinDeck({
                 rows={4}
                 maxLength={2000}
                 autoFocus
-                placeholder="Ek-do line kaafi hai…"
+                placeholder={t("Ek-do line kaafi hai…")}
                 value={(answers[q.id] as string) ?? ""}
                 onChange={(e) => set(e.target.value)}
               />
@@ -253,37 +255,30 @@ export function CheckinDeck({
         </div>
       )}
 
-      {error && <Alert tone="danger">{error}</Alert>}
+      {error && <Alert tone="danger">{t(error)}</Alert>}
       {onMoment && !allDone && (
-        <p className="text-center text-sm text-warning">
-          Ek card baaki hai.{" "}
-          <button type="button" className="font-bold underline" onClick={() => setI(firstOpen)}>
-            Wahan chalo
-          </button>
+        <p className="text-center text-sm text-warning">{t("Ek card baaki hai.")}{" "}
+          <button type="button" className="font-bold underline" onClick={() => setI(firstOpen)}>{t("Wahan chalo")}</button>
         </p>
       )}
       <div className="flex items-center justify-between gap-3">
-        <Button type="button" variant="ghost" onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0} aria-label="Previous card">
+        <Button type="button" variant="ghost" onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0} aria-label={t("Previous card")}>
           <ArrowLeft className="size-4" />
         </Button>
         {onMoment ? (
           <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" onClick={() => onSubmit(answers, { skipped: true })} disabled={!allDone || busy}>
-              Skip, aaj nahi
-            </Button>
+            <Button type="button" variant="ghost" onClick={() => onSubmit(answers, { skipped: true })} disabled={!allDone || busy}>{t("Skip, aaj nahi")}</Button>
             <Button onClick={() => onSubmit(answers, { note: note.trim() || undefined, tags })} disabled={!allDone || busy}>
-              {busy && <Spinner />} {busy ? "Saving…" : "Submit check-in"}
+              {busy && <Spinner />} {busy ? t("Saving…") : t("Submit check-in")}
             </Button>
           </div>
         ) : (
-          <Button type="button" variant={answered(q) ? "primary" : "secondary"} onClick={() => setI((n) => n + 1)} disabled={!answered(q)}>
-            Next <ArrowRight className="size-4" />
+          <Button type="button" variant={answered(q) ? "primary" : "secondary"} onClick={() => setI((n) => n + 1)} disabled={!answered(q)}>{t("Next")}{" "}<ArrowRight className="size-4" />
           </Button>
         )}
       </div>
       <p className="flex items-center justify-center gap-1 text-xs text-muted">
-        <Lock className="size-3" /> Private
-      </p>
+        <Lock className="size-3" />{" "}{t("Private")}</p>
     </section>
   );
 }

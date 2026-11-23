@@ -7,6 +7,7 @@ import { setLanguage } from "@/app/(app)/settings/actions";
 import type { Language } from "@/lib/ai/prompts";
 import { LANGUAGES, SAVED_TEXT } from "@/lib/domain/languages";
 import { Spinner, cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 const OPTIONS = LANGUAGES;
 
@@ -26,6 +27,7 @@ const SAVED = SAVED_TEXT;
 
 /** Compact header menu to switch the AI content language at any time. */
 export function LanguageMenu({ value, align = "right", up = false }: { value: Language; align?: "left" | "right"; up?: boolean }) {
+  const t = useT();
   const router = useRouter();
   const [lang, setLang] = useState<Language>(value);
   const [open, setOpen] = useState(false);
@@ -81,11 +83,11 @@ export function LanguageMenu({ value, align = "right", up = false }: { value: La
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Language: ${current.label}. Change language`}
+        aria-label={t("Language: {0}. Change language", current.label)}
         className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-primary-soft px-2 text-xs font-bold text-ink transition hover:brightness-95 sm:gap-1.5 sm:px-2.5"
       >
         {pending ? <Spinner className="size-3.5" /> : <Languages className="size-3.5 text-primary" />}
-        {current.short}
+        {t(current.short)}
         <ChevronDown className={cx("hidden size-3.5 text-muted transition-transform sm:block", open && "rotate-180")} />
       </button>
 
@@ -108,13 +110,13 @@ export function LanguageMenu({ value, align = "right", up = false }: { value: La
               className={cx("flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-bg", lang === o.id && "bg-primary-soft")}
             >
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-ink">{o.label}</span>
-                <span className="block text-xs text-muted">{o.hint}</span>
+                <span className="block text-sm font-semibold text-ink">{t(o.label)}</span>
+                <span className="block text-xs text-muted">{t(o.hint)}</span>
               </span>
               {lang === o.id && <Check className="size-4 shrink-0 text-primary" />}
             </button>
           ))}
-          <p className="border-t border-line px-3 pb-1.5 pt-2 text-[11px] leading-relaxed text-muted">{NOTE[lang]}</p>
+          <p className="border-t border-line px-3 pb-1.5 pt-2 text-[11px] leading-relaxed text-muted">{t(NOTE[lang])}</p>
         </div>
       )}
 
@@ -127,7 +129,7 @@ export function LanguageMenu({ value, align = "right", up = false }: { value: La
             error ? "bg-danger-soft text-danger" : "bg-primary text-white",
           )}
         >
-          {error ?? toast}
+          {t(error ?? "") ?? t(toast ?? "")}
         </div>
       )}
     </div>

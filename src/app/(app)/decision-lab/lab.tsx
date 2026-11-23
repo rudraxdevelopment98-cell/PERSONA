@@ -11,6 +11,7 @@ import { DECISION_CATEGORIES, DECISION_DIFFICULTIES } from "@/lib/domain/labs";
 import { DeepFeedback } from "@/components/feedback";
 import { RubricTable } from "@/components/rubric";
 import { VoiceTextarea } from "@/components/voice-input";
+import { useT } from "@/lib/i18n/client";
 
 type Pending = { id: string; scenario: DecisionScenario; category: string; difficulty: string };
 
@@ -22,6 +23,7 @@ const LABELS: Record<string, string> = {
 };
 
 export function DecisionLab({ pending }: { pending: Pending | null }) {
+  const t = useT();
   const router = useRouter();
   const [category, setCategory] = useState<string>(DECISION_CATEGORIES[0].id);
   const [difficulty, setDifficulty] = useState<string>("moderate");
@@ -100,39 +102,39 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
       <Card className="p-5">
         <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <div>
-            <Label htmlFor="cat">Category</Label>
+            <Label htmlFor="cat">{t("Category")}</Label>
             <Select id="cat" value={category} onChange={(e) => setCategory(e.target.value)}>
               {DECISION_CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
+                <option key={c.id} value={c.id}>{t(c.label)}</option>
               ))}
             </Select>
           </div>
           <div>
-            <Label htmlFor="diff">Difficulty</Label>
+            <Label htmlFor="diff">{t("Difficulty")}</Label>
             <Select id="diff" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
               {DECISION_DIFFICULTIES.map((d) => (
-                <option key={d.id} value={d.id}>{d.label}</option>
+                <option key={d.id} value={d.id}>{t(d.label)}</option>
               ))}
             </Select>
           </div>
           <Button onClick={generate} disabled={busy !== null || Boolean(current && !result && choice)}>
-            {busy === "new" && <Spinner />} {busy === "new" ? "Creating…" : current ? "New scenario" : "Generate scenario"}
+            {busy === "new" && <Spinner />} {busy === "new" ? t("Creating…") : current ? t("New scenario") : t("Generate scenario")}
           </Button>
         </div>
         {busy === "new" && <AIThinking className="mt-4" steps={["Imagining a situation that fits you…", "Adding the people and the pressure…", "Writing your options…"]} />}
-        {error && !s && <div className="mt-4"><Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert><UpgradeHint show={upgrade} /></div>}
+        {error && !s && <div className="mt-4"><Alert tone={upgrade ? "warning" : "danger"}>{t(error)}</Alert><UpgradeHint show={upgrade} /></div>}
       </Card>
 
       {s && (
         <Card>
-          <CardHeader title={s.title} action={result ? <Badge tone="primary">{result.score}/100</Badge> : undefined} />
+          <CardHeader title={t(s.title)} action={result ? <Badge tone="primary">{result.score}/100</Badge> : undefined} />
           <div className="space-y-4 px-5 py-4">
             <p className="text-sm leading-relaxed">{s.context}</p>
-            <p className="text-sm"><span className="font-medium">What&apos;s at stake:</span> {s.stakes}</p>
+            <p className="text-sm"><span className="font-medium">{t("What's at stake:")}</span> {t(s.stakes)}</p>
             {s.constraints.length > 0 && (
               <ul className="space-y-1 text-sm text-muted">
                 {s.constraints.map((c, i) => (
-                  <li key={i}>· {c}</li>
+                  <li key={i}>· {t(c)}</li>
                 ))}
               </ul>
             )}
@@ -154,7 +156,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                       <span className="font-medium uppercase text-muted">{o.id}</span>
                       <span>{o.text}</span>
                     </button>
-                    {consequence && <p className="mt-1 pl-9 text-xs leading-relaxed text-muted">{consequence}</p>}
+                    {consequence && <p className="mt-1 pl-9 text-xs leading-relaxed text-muted">{t(consequence)}</p>}
                   </div>
                 );
               })}
@@ -163,18 +165,17 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
             {!result ? (
               <>
                 <div>
-                  <Label htmlFor="reasoning">Your reasoning: what matters most here, what did you weigh up, and what could go wrong?</Label>
+                  <Label htmlFor="reasoning">{t("Your reasoning: what matters most here, what did you weigh up, and what could go wrong?")}</Label>
                   <VoiceTextarea id="reasoning" rows={4} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="confidence">
-                    How confident are you in this decision? <span className="tabular-nums text-muted">{confidence}/10</span>
+                  <Label htmlFor="confidence">{t("How confident are you in this decision?")}{" "}<span className="tabular-nums text-muted">{confidence}/10</span>
                   </Label>
                   <input id="confidence" type="range" min={1} max={10} value={confidence} onChange={(e) => setConfidence(Number(e.target.value))} className="w-full" />
                 </div>
                 {error && (
                   <div>
-                    <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>
+                    <Alert tone={upgrade ? "warning" : "danger"}>{t(error)}</Alert>
                     <UpgradeHint show={upgrade} />
                   </div>
                 )}
@@ -182,9 +183,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                   <AIThinking steps={["Reading your reasoning…", "Playing out what happens next…", "Scoring your decision…"]} />
                 ) : (
                   <div className="flex justify-end">
-                    <Button onClick={submit} disabled={!choice || reasoning.trim().length < 20 || busy !== null}>
-                      Commit to decision
-                    </Button>
+                    <Button onClick={submit} disabled={!choice || reasoning.trim().length < 20 || busy !== null}>{t("Commit to decision")}</Button>
                   </div>
                 )}
               </>
@@ -193,9 +192,9 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                 <RubricTable rubric={result.evaluation.rubric} labels={LABELS} />
                 {result.evaluation.biases_noticed.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-muted">Biases noticed:</span>
+                    <span className="text-xs font-semibold text-muted">{t("Biases noticed:")}</span>
                     {result.evaluation.biases_noticed.map((b) => (
-                      <Badge key={b} tone="warning">{b}</Badge>
+                      <Badge key={b} tone="warning">{t(b)}</Badge>
                     ))}
                   </div>
                 )}
@@ -204,9 +203,9 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
                   wentWell={result.evaluation.what_went_well}
                   toImprove={result.evaluation.to_improve}
                   concept={result.evaluation.concept}
-                  conceptLabel="Decision science"
+                  conceptLabel={t("Decision science")}
                   example={result.evaluation.better_approach}
-                  exampleLabel="A better way to decide"
+                  exampleLabel={t("A better way to decide")}
                   extra={[{ label: "About your hesitation", text: result.evaluation.hesitation_insight }]}
                   practiseNext={result.evaluation.practise_next}
                 />

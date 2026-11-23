@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { ServiceWorker } from "@/components/service-worker";
+import { I18nProvider } from "@/lib/i18n/client";
+import { getLang } from "@/lib/i18n/server";
+import { dictFor } from "@/lib/i18n/dicts";
+import { languageInfo } from "@/lib/domain/languages";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
@@ -37,16 +41,19 @@ export const viewport: Viewport = {
 
 const THEME_SCRIPT = `try{var t=localStorage.getItem("p90-theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const lang = await getLang();
   return (
-    <html lang="en-GB" className={jakarta.variable} suppressHydrationWarning>
+    <html lang={lang === "en" || lang === "hinglish" ? "en-IN" : languageInfo(lang).speech} className={jakarta.variable} suppressHydrationWarning>
       <head>
         {/* Apply the saved theme before paint so there is no flash. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-screen">
-        {children}
-        <ServiceWorker />
+        <I18nProvider lang={lang} dict={dictFor(lang)}>
+          {children}
+          <ServiceWorker />
+        </I18nProvider>
       </body>
     </html>
   );

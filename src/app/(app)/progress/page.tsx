@@ -7,17 +7,19 @@ import { CONSISTENCY_MIN_DAYS, DEMONSTRATED_FULL_WEIGHT_AT, WEIGHTS, DISCIPLINE_
 import { getUserState } from "@/lib/server/state";
 import type { ScoreHistoryRow } from "@/lib/server/types";
 import { OverallTrend, SkillTrend } from "./charts";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Progress Analytics" };
 
 const fmt = (n: number | null) => (n == null ? "–" : Math.round(n));
 
 export default async function ProgressPage() {
+  const t = await getT();
   const { db, user, state } = await getUserState();
   const header = (
     <PageHeader
-      title="Progress Analytics"
-      description="Every number here comes from activity you have actually recorded. Nothing is estimated or back-filled - empty areas fill in as you practise."
+      title={t("Progress Analytics")}
+      description={t("Every number here comes from activity you have actually recorded. Nothing is estimated or back-filled - empty areas fill in as you practise.")}
     />
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="Progress tracking" /></>);
@@ -45,20 +47,20 @@ export default async function ProgressPage() {
       {header}
       <div className="space-y-6">
         <Card className="grid grid-cols-2 gap-6 p-5 sm:grid-cols-4">
-          <Stat label="Overall score" value={overall} hint={<>Baseline {baselineOverall} · <Delta value={overall - baselineOverall} /></>} />
-          <Stat label="Sessions completed" value={completedSessions} hint={`${state.day} day${state.day === 1 ? "" : "s"} into the programme`} />
-          <Stat label="Challenges done" value={challenges} hint="real-world" />
-          <Stat label="Consistency" value={consistency == null ? "–" : `${Math.round(consistency)}%`} hint="completion since day 1" />
+          <Stat label={t("Overall score")} value={overall} hint={<>{t("Baseline")}{" "}{baselineOverall} · <Delta value={overall - baselineOverall} /></>} />
+          <Stat label={t("Sessions completed")} value={completedSessions} hint={t("{0} day{1} into the programme", state.day, state.day === 1 ? "" : "s")} />
+          <Stat label={t("Challenges done")} value={challenges} hint={t("real-world")} />
+          <Stat label={t("Consistency")} value={consistency == null ? "–" : `${Math.round(consistency)}%`} hint={t("completion since day 1")} />
         </Card>
 
         <Card>
-          <CardHeader title="Overall score over time" description="Average of all ten skills, on each day a score changed." />
+          <CardHeader title={t("Overall score over time")} description={t("Average of all ten skills, on each day a score changed.")} />
           <OverallTrend history={history} baseline={baselineOverall} />
         </Card>
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
-            <CardHeader title="Baseline vs current" description="Bar = current; tick = baseline." />
+            <CardHeader title={t("Baseline vs current")} description={t("Bar = current; tick = baseline.")} />
             <div className="px-5 py-5">
               <ScoreBars rows={state.skills} />
             </div>
@@ -70,22 +72,22 @@ export default async function ProgressPage() {
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
-            <CardHeader title="Current strengths" />
+            <CardHeader title={t("Current strengths")} />
             <ul className="divide-y divide-line">
               {strengths.map((s) => (
                 <li key={s.dimension} className="flex items-center justify-between px-5 py-3 text-sm">
-                  {DIMENSION_META[s.dimension].label}
+                  {t(DIMENSION_META[s.dimension].label)}
                   <span className="font-medium tabular-nums">{s.current}</span>
                 </li>
               ))}
             </ul>
           </Card>
           <Card>
-            <CardHeader title="Growth areas" description="Your programme gives these extra practice." />
+            <CardHeader title={t("Growth areas")} description={t("Your programme gives these extra practice.")} />
             <ul className="divide-y divide-line">
               {growth.map((s) => (
                 <li key={s.dimension} className="flex items-center justify-between px-5 py-3 text-sm">
-                  {DIMENSION_META[s.dimension].label}
+                  {t(DIMENSION_META[s.dimension].label)}
                   <span className="font-medium tabular-nums">{s.current}</span>
                 </li>
               ))}
@@ -94,30 +96,30 @@ export default async function ProgressPage() {
         </div>
 
         <Card>
-          <CardHeader title="Score breakdown" description="How each current score is built, and why it changed." />
+          <CardHeader title={t("Score breakdown")} description={t("How each current score is built, and why it changed.")} />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                  <th className="px-5 py-2.5 font-medium">Skill</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Baseline</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Self-report</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Demonstrated</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Consistency</th>
-                  <th className="px-5 py-2.5 text-right font-medium">Current</th>
+                  <th className="px-5 py-2.5 font-medium">{t("Skill")}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t("Baseline")}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t("Self-report")}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t("Demonstrated")}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t("Consistency")}</th>
+                  <th className="px-5 py-2.5 text-right font-medium">{t("Current")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {state.skills.map((s) => (
                   <tr key={s.dimension} className="align-top">
                     <td className="px-5 py-3">
-                      <p className="font-medium">{DIMENSION_META[s.dimension].label}</p>
-                      <p className="mt-0.5 max-w-md text-xs leading-relaxed text-muted">{s.explanation}</p>
+                      <p className="font-medium">{t(DIMENSION_META[s.dimension].label)}</p>
+                      <p className="mt-0.5 max-w-md text-xs leading-relaxed text-muted">{t(s.explanation ?? "")}</p>
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">{fmt(s.baseline)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{fmt(s.self_reported)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{fmt(s.demonstrated)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{s.dimension === "self_discipline" ? fmt(s.consistency) : <span className="text-muted">n/a</span>}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{s.dimension === "self_discipline" ? fmt(s.consistency) : <span className="text-muted">{t("n/a")}</span>}</td>
                     <td className="px-5 py-3 text-right font-semibold tabular-nums">{fmt(s.current)}</td>
                   </tr>
                 ))}
@@ -125,25 +127,23 @@ export default async function ProgressPage() {
             </table>
           </div>
           <details className="group border-t border-line px-5 py-3 text-xs leading-relaxed text-muted">
-            <summary className="cursor-pointer list-none font-semibold text-ink marker:hidden">How scores work <span className="text-muted group-open:hidden">›</span></summary>
+            <summary className="cursor-pointer list-none font-semibold text-ink marker:hidden">{t("How scores work")}{" "}<span className="text-muted group-open:hidden">›</span></summary>
             <p className="mt-2">
-              <span className="font-medium text-ink">Self-reported behaviour</span> ({WEIGHTS.self * 100}%): your baseline blended with your daily check-in ratings.{" "}
-              <span className="font-medium text-ink">Demonstrated performance</span> ({WEIGHTS.demonstrated * 100}%): rubric scores for your reasoning in scenarios and labs, reaching full weight after {DEMONSTRATED_FULL_WEIGHT_AT} pieces of evidence.{" "}
-              <span className="font-medium text-ink">Consistency</span>: completion of sessions, check-ins and challenges since day 1. It measures follow-through, so it counts towards self-discipline only ({DISCIPLINE_CONSISTENCY_WEIGHT * 100}% weight, from day {CONSISTENCY_MIN_DAYS}). Weights are shared out among the components that have data.
-              These are development indicators, not clinical measurements.
-            </p>
+              <span className="font-medium text-ink">{t("Self-reported behaviour")}</span> ({WEIGHTS.self * 100}{t("%): your baseline blended with your daily check-in ratings.")}{" "}
+              <span className="font-medium text-ink">{t("Demonstrated performance")}</span> ({WEIGHTS.demonstrated * 100}{t("%): rubric scores for your reasoning in scenarios and labs, reaching full weight after")}{" "}{DEMONSTRATED_FULL_WEIGHT_AT}{" "}{t("pieces of evidence.")}{" "}
+              <span className="font-medium text-ink">{t("Consistency")}</span>{t(": completion of sessions, check-ins and challenges since day 1. It measures follow-through, so it counts towards self-discipline only (")}{DISCIPLINE_CONSISTENCY_WEIGHT * 100}{t("% weight, from day")}{" "}{CONSISTENCY_MIN_DAYS}{t("). Weights are shared out among the components that have data. These are development indicators, not clinical measurements.")}</p>
           </details>
         </Card>
 
         <Card>
           <CardHeader
-            title="Daily activity"
-            description="Each square is one programme day."
+            title={t("Daily activity")}
+            description={t("Each square is one programme day.")}
             action={
               <div className="hidden items-center gap-3 text-xs text-muted sm:flex">
-                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary" /> Session</span>
-                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary/35" /> Check-in only</span>
-                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border border-line bg-bg" /> Missed</span>
+                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary" />{" "}{t("Session")}</span>
+                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary/35" />{" "}{t("Check-in only")}</span>
+                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border border-line bg-bg" />{" "}{t("Missed")}</span>
               </div>
             }
           />
@@ -154,7 +154,7 @@ export default async function ProgressPage() {
               return (
                 <div
                   key={d}
-                  title={`Day ${d}: ${status === "session" ? `session completed${s?.challenge_status === "completed" ? ", challenge done" : ""}` : status === "checkin" ? "check-in only" : status}`}
+                  title={t("Day {0}: {1}", d, status === "session" ? `session completed${s?.challenge_status === "completed" ? ", challenge done" : ""}` : status === "checkin" ? "check-in only" : status)}
                   className={cx(
                     "flex aspect-square items-center justify-center rounded-sm text-[10px] tabular-nums",
                     status === "session" && "bg-primary text-white",
@@ -170,9 +170,7 @@ export default async function ProgressPage() {
             })}
           </div>
           {state.day > 0 && completedSessions === 0 && (
-            <p className="px-5 pb-5 text-sm text-muted">
-              No sessions yet.
-            </p>
+            <p className="px-5 pb-5 text-sm text-muted">{t("No sessions yet.")}</p>
           )}
         </Card>
       </div>

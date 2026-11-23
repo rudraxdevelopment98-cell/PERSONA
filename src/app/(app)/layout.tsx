@@ -9,6 +9,7 @@ import { InviteBanner } from "./invite-banner";
 import { ConsentBanner } from "./consent-banner";
 import { VoiceLangProvider } from "@/components/voice-input";
 import { hasAcceptedLegal } from "@/lib/server/legal";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ async function pendingInvite() {
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const t = await getT();
   const [{ state, user }, { stats, level }] = await Promise.all([getUserState(), getGamification()]);
   const [unread, invite, admin] = await Promise.all([unreadCount(user.id).catch(() => 0), pendingInvite(), isAdmin(user.id).catch(() => false)]);
   const adminReports = admin ? await openReportCount().catch(() => 0) : null;
@@ -46,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {invite && (
             <InviteBanner
               token={invite.token}
-              text={invite.info.kind === "circle" ? `${invite.info.inviterName} invited you to join ${invite.info.circleName}` : `${invite.info.inviterName} invited you to be friends`}
+              text={invite.info.kind === "circle" ? t("{0} invited you to join {1}", invite.info.inviterName ?? "", invite.info.circleName ?? "") : t("{0} invited you to be friends", invite.info.inviterName ?? "")}
             />
           )}
           {children}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, GitBranch, Layers, Leaf, MessagesSquare, Mic, Sparkles } from "lucide-react";
 import { Card, IconTile, PageHeader } from "@/components/ui";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Practice" };
 
@@ -12,10 +13,11 @@ const ITEMS = [
   { href: "/calm", title: "Calm Corner", text: "Breathe, vent, relax · 2 min", icon: Leaf, tone: "sun" as const },
 ];
 
-export default function PracticePage() {
+export default async function PracticePage() {
+  const t = await getT();
   return (
     <>
-      <PageHeader eyebrow="Practice" title="Train your skills" description="Short, focused exercises you can do any time. Each one earns XP and improves your scores." />
+      <PageHeader eyebrow={t("Practice")} title={t("Train your skills")} description={t("Short, focused exercises you can do any time. Each one earns XP and improves your scores.")} />
       <div className="space-y-3">
         {ITEMS.map((i) => (
           <Link key={i.href} href={i.href} className="block">
@@ -25,14 +27,14 @@ export default function PracticePage() {
               </IconTile>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 font-bold">
-                  {i.title}
+                  {t(i.title)}
                   {i.extra && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-coral-soft px-2 py-0.5 text-[11px] font-bold text-coral">
-                      <Mic className="size-3" /> {i.extra}
+                      <Mic className="size-3" /> {t(i.extra)}
                     </span>
                   )}
                 </p>
-                <p className="mt-0.5 text-sm text-muted">{i.text}</p>
+                <p className="mt-0.5 text-sm text-muted">{t(i.text)}</p>
               </div>
               <ChevronRight className="size-5 text-muted" />
             </Card>

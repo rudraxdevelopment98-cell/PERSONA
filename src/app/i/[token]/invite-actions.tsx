@@ -3,8 +3,10 @@
 import { useEffect, useState, useTransition } from "react";
 import { acceptInviteAction } from "@/app/(app)/friends/actions";
 import { Alert, Button, ButtonLink } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 export function InviteActions({ token, signedIn }: { token: string; signedIn: boolean }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -16,10 +18,8 @@ export function InviteActions({ token, signedIn }: { token: string; signedIn: bo
   if (!signedIn)
     return (
       <div className="space-y-2">
-        <ButtonLink href="/signup" className="w-full">Create a free account</ButtonLink>
-        <ButtonLink href={`/login?next=${encodeURIComponent(`/i/${token}`)}`} variant="secondary" className="w-full">
-          I already have an account
-        </ButtonLink>
+        <ButtonLink href="/signup" className="w-full">{t("Create a free account")}</ButtonLink>
+        <ButtonLink href={`/login?next=${encodeURIComponent(`/i/${token}`)}`} variant="secondary" className="w-full">{t("I already have an account")}</ButtonLink>
       </div>
     );
 
@@ -35,10 +35,10 @@ export function InviteActions({ token, signedIn }: { token: string; signedIn: bo
           })
         }
       >
-        {pending ? "Connecting..." : "Accept invite"}
+        {pending ? t("Connecting...") : t("Accept invite")}
       </Button>
-      <ButtonLink href="/dashboard" variant="ghost" className="w-full">Not now</ButtonLink>
-      {error && <Alert tone="danger">{error}</Alert>}
+      <ButtonLink href="/dashboard" variant="ghost" className="w-full">{t("Not now")}</ButtonLink>
+      {error && <Alert tone="danger">{t(error)}</Alert>}
     </div>
   );
 }

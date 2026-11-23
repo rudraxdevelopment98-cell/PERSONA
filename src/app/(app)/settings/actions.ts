@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { LANGUAGE_IDS } from "@/lib/domain/languages";
+import { cookies } from "next/headers";
+
+async function rememberLang(lang: string) {
+  (await cookies()).set("p90_lang", lang, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+}
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { deleteUserAccount, requireUser } from "@/lib/db/server";
@@ -28,6 +33,7 @@ export async function updateSettings(input: z.infer<typeof schema>): Promise<{ e
   const { db, user } = await requireUser();
   const { error } = await db.from("profiles").update(parsed.data).eq("id", user.id);
   if (error) return { error: "Could not save settings." };
+  await rememberLang(parsed.data.language);
   revalidatePath("/", "layout");
   return {};
 }
@@ -38,6 +44,7 @@ export async function setLanguage(language: string): Promise<{ error?: string }>
   const { db, user } = await requireUser();
   const { error } = await db.from("profiles").update({ language: parsed.data }).eq("id", user.id);
   if (error) return { error: "Could not save the language." };
+  await rememberLang(parsed.data);
   revalidatePath("/", "layout");
   return {};
 }

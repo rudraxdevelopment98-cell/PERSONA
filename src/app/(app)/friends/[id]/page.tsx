@@ -14,10 +14,12 @@ import { listFriends, refreshSnapshot } from "@/lib/server/social";
 import { getPool } from "@/lib/db/pool";
 import { RaceStarter } from "../../races/race-starter";
 import type { Snapshot } from "@/lib/domain/social";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function FriendProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const { id } = await params;
   const { user } = await requireUser();
   const friends = await listFriends(user.id);
@@ -59,8 +61,7 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <ButtonLink href="/friends" variant="ghost" className="-ml-2 h-8 px-2">
-          <ArrowLeft className="size-4" /> Friends
-        </ButtonLink>
+          <ArrowLeft className="size-4" />{" "}{t("Friends")}</ButtonLink>
         <FriendMenu userId={id} name={name} />
       </div>
 
@@ -71,34 +72,32 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
           <div className="rounded-full bg-surface p-1">{person ? <WatchMoments person={person}>{face}</WatchMoments> : face}</div>
           <h1 className="mt-2 text-2xl font-extrabold">{name}</h1>
           {them?.level && (
-            <p className="text-sm text-muted">
-              Level {them.level} · {them.level_name}
-            </p>
+            <p className="text-sm text-muted">{t("Level {0} · {1}", them.level, t(them.level_name ?? ""))}</p>
           )}
           {them?.bio && <p className="mt-2 max-w-sm text-sm">{them.bio}</p>}
-          {!them && <p className="mt-2 text-sm text-muted">{name} has paused sharing.</p>}
+          {!them && <p className="mt-2 text-sm text-muted">{t("{0} has paused sharing.", name)}</p>}
 
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {duo && (
               <span className="rounded-full bg-sun-soft px-3 py-1.5 text-sm font-bold text-warning">
-                🔥 {duo.streak} day friend streak {streakMark(duo.streak) !== "🔥" && streakMark(duo.streak)}
+                🔥 {duo.streak}{" "}{t("day friend streak")}{" "}{streakMark(duo.streak) !== "🔥" && streakMark(duo.streak)}
               </span>
             )}
             {person && (
               <WatchMoments person={person} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-bold text-white">
-                <Play className="size-3.5 fill-current" /> {person.moments.length} moment{person.moments.length > 1 ? "s" : ""}
+                <Play className="size-3.5 fill-current" /> {person.moments.length}{" "}{t("moment")}{person.moments.length > 1 ? "s" : ""}
               </WatchMoments>
             )}
           </div>
           {duo && (
             <p className="mt-2 text-xs text-muted">
               {duo.todayMe && duo.todayThem
-                ? "You both showed up today. Streak safe ✓"
+                ? t("You both showed up today. Streak safe ✓")
                 : duo.todayMe
-                  ? `You're done today - nudge ${first} to keep it alive ⏳`
+                  ? t("You're done today - nudge {0} to keep it alive ⏳", first)
                   : duo.todayThem
-                    ? `${first} showed up today - your turn ⏳`
-                    : "Neither of you has checked in today yet."}
+                    ? t("{0} showed up today - your turn ⏳", first)
+                    : t("Neither of you has checked in today yet.")}
             </p>
           )}
           {duo && duo.todayMe && !duo.todayThem && (
@@ -109,9 +108,9 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
         </div>
         {activity && (
           <div className="grid grid-cols-3 gap-2 border-t border-line p-4 text-center">
-            <Tile value={them!.programme_day ? `${them!.programme_day}/90` : "-"} label="Day" />
-            <Tile value={`🔥 ${them!.streak ?? 0}`} label="Streak" />
-            <Tile value={`${them!.sessions_completed ?? 0}`} label="Sessions" />
+            <Tile value={them!.programme_day ? `${them!.programme_day}/90` : "-"} label={t("Day")} />
+            <Tile value={`🔥 ${them!.streak ?? 0}`} label={t("Streak")} />
+            <Tile value={`${them!.sessions_completed ?? 0}`} label={t("Sessions")} />
           </div>
         )}
       </section>
@@ -119,35 +118,35 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
       {/* Trophy shelf */}
       {shelf.length > 0 && (
         <Card>
-          <CardHeader title="Trophy shelf" description={them?.pinned?.length ? `Badges ${first} pinned` : `${first}'s latest badges`} />
+          <CardHeader title={t("Trophy shelf")} description={them?.pinned?.length ? t("Badges {0} pinned", first) : t("{0}'s latest badges", first)} />
           <div className="grid grid-cols-3 gap-2 px-4 pb-4">
             {shelf.map((b) => (
               <div key={b.code} className="flex flex-col items-center gap-2 rounded-2xl bg-bg p-3 text-center">
                 <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
                   <BadgeIcon name={badgeIcon(b.code)} className="size-6" />
                 </span>
-                <span className="text-xs font-semibold leading-tight">{b.title}</span>
+                <span className="text-xs font-semibold leading-tight">{t(b.title)}</span>
               </div>
             ))}
           </div>
-          {(them?.badges?.length ?? 0) > shelf.length && <p className="px-5 pb-4 text-xs text-muted">+{them!.badges!.length - shelf.length} more badges</p>}
+          {(them?.badges?.length ?? 0) > shelf.length && <p className="px-5 pb-4 text-xs text-muted">+{them!.badges!.length - shelf.length}{" "}{t("more badges")}</p>}
         </Card>
       )}
 
       <Card className="p-4">
-        <p className="mb-2 text-sm font-semibold">Send {first} some energy</p>
+        <p className="mb-2 text-sm font-semibold">{t("Send {0} some energy", first)}</p>
         <CheerBar to={id} />
       </Card>
 
       {rows.length > 0 && (
         <Card>
-          <CardHeader title={`You vs ${first}`} description="Only what they share. Everyone starts from a different place." />
+          <CardHeader title={t("You vs {0}", first)} description={t("Only what they share. Everyone starts from a different place.")} />
           <div className="space-y-3 px-5 pb-5">
             {rows.map((r) => {
               const max = Math.max(1, r.me, r.them);
               return (
                 <div key={r.label}>
-                  <p className="mb-1 text-xs text-muted">{r.label}</p>
+                  <p className="mb-1 text-xs text-muted">{t(r.label)}</p>
                   <div className="flex items-center gap-2">
                     <span className={`w-10 text-right text-sm font-bold tabular-nums ${r.me > r.them ? "text-success" : ""}`}>{r.me}</span>
                     <span className="flex h-2 flex-1 overflow-hidden rounded-full bg-bg">
@@ -164,8 +163,8 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
               );
             })}
             <div className="flex justify-between text-[11px] font-semibold uppercase text-muted">
-              <span>You</span>
-              <span>{first}</span>
+              <span>{t("You")}</span>
+              <span>{t(first)}</span>
             </div>
           </div>
         </Card>
@@ -173,7 +172,7 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
 
       {skillKey && them && (
         <Card>
-          <CardHeader title={skillKey === "growth" ? "Growth since day 1" : "Skill scores"} description={skillKey === "growth" ? "Change from each person's own start - fairer than raw scores." : "Current 0-100 scores."} />
+          <CardHeader title={skillKey === "growth" ? t("Growth since day 1") : t("Skill scores")} description={skillKey === "growth" ? t("Change from each person's own start - fairer than raw scores.") : t("Current 0-100 scores.")} />
           <div className="space-y-2 px-5 pb-5">
             {DIMENSIONS.filter((d) => them[skillKey]?.[d] != null).map((d) => {
               const a = me[skillKey]?.[d] ?? 0;
@@ -181,7 +180,7 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
               const fmt = (v: number) => (skillKey === "growth" ? `${v > 0 ? "+" : ""}${v}` : String(v));
               return (
                 <div key={d} className="flex items-center gap-3 text-sm">
-                  <span className="flex-1 truncate text-muted">{DIMENSION_META[d].short}</span>
+                  <span className="flex-1 truncate text-muted">{t(DIMENSION_META[d].short)}</span>
                   <span className="w-12 text-right font-bold">{fmt(a)}</span>
                   <span className="w-12 text-right font-bold text-accent">{fmt(b)}</span>
                 </div>
@@ -196,11 +195,12 @@ export default async function FriendProfilePage({ params }: { params: Promise<{ 
   );
 }
 
-function Tile({ value, label }: { value: string; label: string }) {
+async function Tile({ value, label }: { value: string; label: string }) {
+  const t = await getT();
   return (
     <div className="rounded-2xl bg-bg py-2.5">
       <p className="text-lg font-extrabold tabular-nums">{value}</p>
-      <p className="text-[11px] text-muted">{label}</p>
+      <p className="text-[11px] text-muted">{t(label)}</p>
     </div>
   );
 }

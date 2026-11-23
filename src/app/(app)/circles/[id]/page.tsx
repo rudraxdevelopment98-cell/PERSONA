@@ -11,10 +11,12 @@ import { circleWeek } from "@/lib/server/streaks";
 import { FaceAvatar, MomentRings } from "@/components/moments";
 import { RaceStarter } from "../../races/race-starter";
 import { CircleAdmin, MemberActions } from "./circle-admin";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function CirclePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sort?: string }> }) {
+  const t = await getT();
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { user } = await requireUser();
@@ -45,8 +47,8 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
 
   return (
     <>
-      <ButtonLink href="/circles" variant="ghost" className="mb-3 -ml-2 h-8 px-2"><ArrowLeft className="size-4" /> Circles</ButtonLink>
-      <PageHeader eyebrow={`${members.length} member${members.length === 1 ? "" : "s"}`} title={`${circle.emoji ?? "👥"} ${circle.name}`} />
+      <ButtonLink href="/circles" variant="ghost" className="mb-3 -ml-2 h-8 px-2"><ArrowLeft className="size-4" />{" "}{t("Circles")}</ButtonLink>
+      <PageHeader eyebrow={t("{0} member{1}", members.length, members.length === 1 ? "" : "s")} title={`${circle.emoji ?? "👥"} ${circle.name}`} />
       <div className="mb-4 space-y-4">
         <MomentRings feed={feed} me={{ name: myName, emoji: card.avatar_emoji, cover: card.cover }} emptyHint={false} />
         {tracked.length > 0 && (
@@ -54,9 +56,9 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold">
-                  {doneCount === tracked.length ? "Everyone showed up today! 🎉" : `${doneCount} of ${tracked.length} showed up today`}
+                  {doneCount === tracked.length ? t("Everyone showed up today! 🎉") : t("{0} of {1} showed up today", doneCount, tracked.length)}
                 </p>
-                <p className="text-xs text-muted">Check in to light up your face for the group.</p>
+                <p className="text-xs text-muted">{t("Check in to light up your face for the group.")}</p>
               </div>
               <div className="flex -space-x-2">
                 {tracked.slice(0, 8).map((m) => (
@@ -73,8 +75,8 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
         )}
         {week.sharing > 0 && week.checkins + week.sessions > 0 && (
           <Card className="p-4">
-            <p className="text-sm font-bold">📊 This week in {circle.name}</p>
-            <div className="mt-3 flex items-end justify-between gap-1.5" aria-label="Members who showed up on each of the last 7 days">
+            <p className="text-sm font-bold">{t("📊 This week in {0}", circle.name)}</p>
+            <div className="mt-3 flex items-end justify-between gap-1.5" aria-label={t("Members who showed up on each of the last 7 days")}>
               {week.days.map((d) => {
                 const pct = week.sharing ? d.done / week.sharing : 0;
                 const label = new Date(`${d.date}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "narrow", timeZone: "UTC" });
@@ -83,7 +85,7 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
                     <div className="flex h-14 w-full items-end overflow-hidden rounded-lg bg-bg">
                       <div className={`w-full rounded-lg ${pct === 1 ? "bg-accent" : "bg-primary/60"}`} style={{ height: `${Math.max(pct * 100, d.done ? 12 : 0)}%` }} />
                     </div>
-                    <span className="text-[10px] text-muted">{label}</span>
+                    <span className="text-[10px] text-muted">{t(label)}</span>
                   </div>
                 );
               })}
@@ -95,17 +97,17 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
               </div>
               <div className="rounded-xl bg-bg py-2">
                 <p className="font-extrabold tabular-nums">{week.sessions}</p>
-                <p className="text-[11px] text-muted">episodes</p>
+                <p className="text-[11px] text-muted">{t("episodes")}</p>
               </div>
               <div className="rounded-xl bg-bg py-2">
                 <p className="font-extrabold tabular-nums">{week.fullHouse}/7</p>
-                <p className="text-[11px] text-muted">full-house days</p>
+                <p className="text-[11px] text-muted">{t("full-house days")}</p>
               </div>
             </div>
             {(week.topStreak || week.hype) && (
               <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
-                {week.topStreak && <span className="rounded-full bg-sun-soft px-3 py-1 text-warning">👑 Streak leader: {week.topStreak.name} · 🔥{week.topStreak.streak}</span>}
-                {week.hype && <span className="rounded-full bg-coral-soft px-3 py-1 text-coral">📣 Hype person: {week.hype.name} · {week.hype.cheers} cheers</span>}
+                {week.topStreak && <span className="rounded-full bg-sun-soft px-3 py-1 text-warning">{t("👑 Streak leader: {0} · 🔥{1}", week.topStreak.name, week.topStreak.streak)}</span>}
+                {week.hype && <span className="rounded-full bg-coral-soft px-3 py-1 text-coral">{t("📣 Hype person: {0} · {1} cheers", week.hype.name, week.hype.cheers)}</span>}
               </div>
             )}
           </Card>
@@ -115,12 +117,12 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
         <div className="space-y-4">
           <Card>
             <CardHeader
-              title="Board"
-              description="Only what each member chooses to share."
+              title={t("Board")}
+              description={t("Only what each member chooses to share.")}
               action={
                 <div className="flex rounded-xl border border-line p-0.5 text-xs font-semibold">
-                  <Link href={`/circles/${id}`} className={`rounded-lg px-2.5 py-1 ${sort === "week" ? "bg-primary-soft text-primary" : "text-muted"}`}>This week</Link>
-                  <Link href={`/circles/${id}?sort=xp`} className={`rounded-lg px-2.5 py-1 ${sort === "xp" ? "bg-primary-soft text-primary" : "text-muted"}`}>All-time XP</Link>
+                  <Link href={`/circles/${id}`} className={`rounded-lg px-2.5 py-1 ${sort === "week" ? "bg-primary-soft text-primary" : "text-muted"}`}>{t("This week")}</Link>
+                  <Link href={`/circles/${id}?sort=xp`} className={`rounded-lg px-2.5 py-1 ${sort === "xp" ? "bg-primary-soft text-primary" : "text-muted"}`}>{t("All-time XP")}</Link>
                 </div>
               }
             />
@@ -131,11 +133,11 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
                   <Avatar name={m.name} id={m.id} emoji={m.view?.avatar_emoji} cover={m.view?.cover} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="truncate font-bold">{m.isMe ? "You" : m.name}</span>
-                      {m.role !== "member" && <Badge tone={m.role === "owner" ? "accent" : "sky"}>{m.role}</Badge>}
+                      <span className="truncate font-bold">{m.isMe ? t("You") : m.name}</span>
+                      {m.role !== "member" && <Badge tone={m.role === "owner" ? "accent" : "sky"}>{t(m.role)}</Badge>}
                       {!m.isMe && isAdmin && <MemberActions circleId={id} member={{ id: m.id, name: m.name, role: m.role }} myRole={myRole} />}
                     </div>
-                    {m.view ? <ProgressTile view={m.view} week={m.week} compact /> : <p className="text-xs text-muted">Not sharing right now.</p>}
+                    {m.view ? <ProgressTile view={m.view} week={m.week} compact /> : <p className="text-xs text-muted">{t("Not sharing right now.")}</p>}
                     {!m.isMe && <CheerBar to={m.id} circleId={id} />}
                   </div>
                 </div>
@@ -148,18 +150,18 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
 
         <div className="space-y-4">
           <Card>
-            <CardHeader title="Races" icon={<Flag className="mt-0.5 size-5 text-warning" />} />
+            <CardHeader title={t("Races")} icon={<Flag className="mt-0.5 size-5 text-warning" />} />
             <div className="space-y-1 p-3">
-              {races.length === 0 && <p className="px-2 pb-2 text-sm text-muted">No races yet.</p>}
+              {races.length === 0 && <p className="px-2 pb-2 text-sm text-muted">{t("No races yet.")}</p>}
               {[...live, ...past.slice(0, 5)].map((r) => {
                 const ended = Date.parse(r.ends_at) <= Date.now();
                 return (
                   <Link key={r.id} href={`/races/${r.id}`} className="block rounded-xl px-2 py-2 hover:bg-bg">
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold">{r.title}</span>
-                      <Badge tone={ended ? "neutral" : "success"}>{ended ? "Finished" : "Live"}</Badge>
+                      <span className="truncate text-sm font-semibold">{t(r.title)}</span>
+                      <Badge tone={ended ? "neutral" : "success"}>{ended ? t("Finished") : t("Live")}</Badge>
                     </span>
-                    <span className="text-xs text-muted">{RACE_KINDS.find((k) => k.id === r.kind)?.label} · {r.participants} racing</span>
+                    <span className="text-xs text-muted">{t("{0} · {1} racing", RACE_KINDS.find((k) => k.id === r.kind)?.label ?? "", r.participants)}</span>
                   </Link>
                 );
               })}
@@ -167,9 +169,9 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
           </Card>
 
           <Card>
-            <CardHeader title="Cheers" icon={<Flame className="mt-0.5 size-5 text-coral" />} />
+            <CardHeader title={t("Cheers")} icon={<Flame className="mt-0.5 size-5 text-coral" />} />
             <div className="space-y-2 p-4 pt-2">
-              {cheers.length === 0 && <p className="text-sm text-muted">Be the first to cheer someone on.</p>}
+              {cheers.length === 0 && <p className="text-sm text-muted">{t("Be the first to cheer someone on.")}</p>}
               {cheers.map((c, i) => (
                 <p key={i} className="text-sm">
                   <span className="mr-1">{CHEERS[c.kind]?.emoji}</span>
@@ -180,7 +182,7 @@ export default async function CirclePage({ params, searchParams }: { params: Pro
             </div>
           </Card>
 
-          {isAdmin && <InviteBox kind="circle" circleId={id} title="Invite to this circle" text="Anyone with the link joins the circle and becomes your friend." />}
+          {isAdmin && <InviteBox kind="circle" circleId={id} title={t("Invite to this circle")} text={t("Anyone with the link joins the circle and becomes your friend.")} />}
           <CircleAdmin circleId={id} name={circle.name} emoji={circle.emoji} myRole={myRole} />
         </div>
       </div>

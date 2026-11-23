@@ -6,12 +6,14 @@ import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { Alert, Button, Input, Label, Spinner } from "@/components/ui";
 import { authClient } from "@/lib/auth-client";
+import { useT } from "@/lib/i18n/client";
 
 function safeNext(next: string | null) {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 }
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
+  const t = useT();
   const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState("");
@@ -54,29 +56,27 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <Link href="/" className="mb-8 inline-block">
           <Logo />
         </Link>
-        <h1 className="text-xl font-semibold tracking-tight">{mode === "login" ? "Sign in" : "Create your account"}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{mode === "login" ? t("Sign in") : t("Create your account")}</h1>
         <p className="mt-1 text-sm text-muted">
-          {mode === "login" ? "Continue your programme." : "Your data is private to you and can be exported or deleted at any time."}
+          {mode === "login" ? t("Continue your programme.") : t("Your data is private to you and can be exported or deleted at any time.")}
         </p>
 
         <form onSubmit={submit} method="post" className="mt-6 space-y-4">
           {mode === "signup" && (
             <div>
-              <Label htmlFor="name">First name</Label>
+              <Label htmlFor="name">{t("First name")}</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="given-name" />
             </div>
           )}
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("Email")}</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           </div>
           <div>
             <div className="flex items-baseline justify-between">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("Password")}</Label>
               {mode === "login" && (
-                <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:underline">
-                  Forgot password?
-                </Link>
+                <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:underline">{t("Forgot password?")}</Link>
               )}
             </div>
             <Input
@@ -99,24 +99,23 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                 onChange={(e) => setAgree(e.target.checked)}
                 className="mt-0.5 size-4 accent-[var(--color-accent)]"
               />
-              <span className="text-muted">
-                I am 18 or older and I agree to the{" "}
-                <Link href="/terms" target="_blank" className="font-semibold text-ink underline underline-offset-2">Terms</Link> and{" "}
-                <Link href="/privacy" target="_blank" className="font-semibold text-ink underline underline-offset-2">Privacy Policy</Link>.
+              <span className="text-muted">{t("I am 18 or older and I agree to the")}{" "}
+                <Link href="/terms" target="_blank" className="font-semibold text-ink underline underline-offset-2">{t("Terms")}</Link>{" "}{t("and")}{" "}
+                <Link href="/privacy" target="_blank" className="font-semibold text-ink underline underline-offset-2">{t("Privacy Policy")}</Link>.
               </span>
             </label>
           )}
-          {error && <Alert tone="danger">{error}</Alert>}
+          {error && <Alert tone="danger">{t(error)}</Alert>}
           <Button type="submit" disabled={busy || (mode === "signup" && !agree)} className="w-full">
-            {busy && <Spinner />} {mode === "login" ? "Sign in" : "Create account"}
+            {busy && <Spinner />} {mode === "login" ? t("Sign in") : t("Create account")}
           </Button>
         </form>
 
         <p className="mt-6 text-sm text-muted">
           {mode === "login" ? (
-            <>New here? <Link href="/signup" className="font-medium text-primary underline-offset-2 hover:underline">Create an account</Link></>
+            <>{t("New here?")}{" "}<Link href="/signup" className="font-medium text-primary underline-offset-2 hover:underline">{t("Create an account")}</Link></>
           ) : (
-            <>Already registered? <Link href="/login" className="font-medium text-primary underline-offset-2 hover:underline">Sign in</Link></>
+            <>{t("Already registered?")}{" "}<Link href="/login" className="font-medium text-primary underline-offset-2 hover:underline">{t("Sign in")}</Link></>
           )}
         </p>
       </div>

@@ -4,10 +4,12 @@ import { useState, useTransition } from "react";
 import { createCircleAction } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card, CardHeader, Input, Label } from "@/components/ui";
 import { UpgradeHint } from "@/components/upgrade";
+import { useT } from "@/lib/i18n/client";
 
 const EMOJI = ["👥", "🚀", "📚", "💼", "🔥", "🎯", "🌱", "🏆", "💡", "🧠"];
 
 export function NewCircleForm() {
+  const t = useT();
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("👥");
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +17,7 @@ export function NewCircleForm() {
   const [pending, start] = useTransition();
   return (
     <Card>
-      <CardHeader title="Start a circle" description="You'll be the owner. You can own up to 5 circles." />
+      <CardHeader title={t("Start a circle")} description={t("You'll be the owner. You can own up to 5 circles.")} />
       <form
         className="space-y-3 p-5 pt-3"
         onSubmit={(e) => {
@@ -31,10 +33,10 @@ export function NewCircleForm() {
         }}
       >
         <div>
-          <Label htmlFor="circle-name">Name</Label>
-          <Input id="circle-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="e.g. MSc Cyber squad" required />
+          <Label htmlFor="circle-name">{t("Name")}</Label>
+          <Input id="circle-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder={t("e.g. MSc Cyber squad")} required />
         </div>
-        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Icon">
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t("Icon")}>
           {EMOJI.map((e) => (
             <button
               key={e}
@@ -44,13 +46,13 @@ export function NewCircleForm() {
               onClick={() => setEmoji(e)}
               className={`flex size-10 items-center justify-center rounded-xl border text-xl ${emoji === e ? "border-primary bg-primary-soft" : "border-line"}`}
             >
-              {e}
+              {t(e)}
             </button>
           ))}
         </div>
-        {error && <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>}
+        {error && <Alert tone={upgrade ? "warning" : "danger"}>{t(error)}</Alert>}
         <UpgradeHint show={upgrade} />
-        <Button disabled={pending || name.trim().length < 2}>{pending ? "Creating..." : "Create circle"}</Button>
+        <Button disabled={pending || name.trim().length < 2}>{pending ? t("Creating...") : t("Create circle")}</Button>
       </form>
     </Card>
   );

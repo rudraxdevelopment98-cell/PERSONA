@@ -6,23 +6,23 @@ import { BaselineGate } from "@/components/baseline-gate";
 import { PageHeader } from "@/components/ui";
 import { getUserState } from "@/lib/server/state";
 import { CoachChat } from "./chat";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "AI Coach" };
 
 export default async function CoachPage() {
+  const t = await getT();
   const { db, user, state } = await getUserState();
   const [plan, used] = await Promise.all([getPlan(user.id), usage(user.id)]);
   const chip = plan.unlimitedAI ? null : <UsageChip used={used.coachToday} limit={FREE_LIMITS.coachPerDay} period="day" />;
   const header = (
     <PageHeader
       action={chip}
-      title="AI Coach"
+      title={t("AI Coach")}
       description={
-        <>
-          Practical guidance based on your assessment, check-ins and practice results.{" "}
-          {state.profile.coach_journal_access ? "Your coach can read your five most recent journal entries." : "Your journal stays private from the coach"}
-          {" "}(<Link href="/settings" className="underline underline-offset-2">change</Link>). The coach is not a therapist and does not diagnose.
-        </>
+        <>{t("Practical guidance based on your assessment, check-ins and practice results.")}{" "}
+          {state.profile.coach_journal_access ? t("Your coach can read your five most recent journal entries.") : t("Your journal stays private from the coach")}
+          {" "}(<Link href="/settings" className="underline underline-offset-2">{t("change")}</Link>{t("). The coach is not a therapist and does not diagnose.")}</>
       }
     />
   );

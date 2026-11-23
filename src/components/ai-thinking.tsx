@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cx } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Shown while the AI is working: an orbiting "mind", a status line that changes
@@ -17,6 +18,7 @@ export function AIThinking({
   compact?: boolean;
   className?: string;
 }) {
+  const t = useT();
   const [i, setI] = useState(0);
   useEffect(() => {
     if (steps.length < 2) return;
@@ -37,7 +39,7 @@ export function AIThinking({
         <div className="absolute inset-0 rounded-full border border-dashed border-line-strong" />
       </div>
       <div className="min-w-0 flex-1">
-        <p key={i} className="animate-rise text-sm font-medium">{steps[i]}</p>
+        <p key={i} className="animate-rise text-sm font-medium">{t(steps[i])}</p>
         <div className="think-shimmer mt-2 h-1.5 w-full rounded-full bg-line" />
       </div>
     </div>

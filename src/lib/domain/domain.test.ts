@@ -347,3 +347,28 @@ describeLang("languages", () => {
     expectLang(langOf("Aaj ki kahani")).toBe("en");
   });
 });
+
+import { makeT } from "@/lib/i18n/core";
+describeLang("translation", () => {
+  const t = makeT({ "Hello": "નમસ્તે", "Level {0}": "લેવલ {0}", "Baseline from your initial assessment: {0}.": "શરૂઆતનો સ્કોર: {0}." });
+  itLang("translates, fills and falls back", () => {
+    expectLang(t("Hello")).toBe("નમસ્તે");
+    expectLang(t("Level {0}", 3)).toBe("લેવલ 3");
+    expectLang(t("Not in dict")).toBe("Not in dict");
+    expectLang(makeT(null)("Day {0}", 2)).toBe("Day 2");
+  });
+  itLang("matches stored text with numbers against patterns", () => {
+    expectLang(t("Baseline from your initial assessment: 50.")).toBe("શરૂઆતનો સ્કોર: 50.");
+  });
+});
+
+import { POLLS as ALL_POLLS, pollText as pollTextFor } from "./poll";
+describeLang("Gujarati content", () => {
+  itLang("every poll has Gujarati text with three options", () => {
+    for (const p of ALL_POLLS) {
+      const g = pollTextFor(p, "gu");
+      expectLang(g.o).toHaveLength(3);
+      expectLang(/[઀-૿]/.test(g.q)).toBe(true);
+    }
+  });
+});

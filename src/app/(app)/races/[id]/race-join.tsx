@@ -4,8 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { joinRaceAction, leaveRaceAction } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 export function RaceJoin({ raceId, joined }: { raceId: string; joined: boolean }) {
+  const t = useT();
   const router = useRouter();
   const [privately, setPrivately] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,23 +23,17 @@ export function RaceJoin({ raceId, joined }: { raceId: string; joined: boolean }
     <Card className="space-y-3 p-5">
       {joined ? (
         <>
-          <p className="text-sm text-muted">You&apos;re in. Keep doing your daily sessions - they count automatically.</p>
-          <Button variant="ghost" disabled={pending} onClick={() => confirm("Leave this race?") && run(() => leaveRaceAction(raceId))}>
-            Leave race
-          </Button>
+          <p className="text-sm text-muted">{t("You're in. Keep doing your daily sessions - they count automatically.")}</p>
+          <Button variant="ghost" disabled={pending} onClick={() => confirm("Leave this race?") && run(() => leaveRaceAction(raceId))}>{t("Leave race")}</Button>
         </>
       ) : (
         <>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={privately} onChange={(e) => setPrivately(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
-            Race privately - others see &ldquo;A member&rdquo; instead of your name
-          </label>
-          <Button disabled={pending} onClick={() => run(() => joinRaceAction(raceId, privately))}>
-            Join race
-          </Button>
+            <input type="checkbox" checked={privately} onChange={(e) => setPrivately(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />{t("Race privately - others see “A member” instead of your name")}</label>
+          <Button disabled={pending} onClick={() => run(() => joinRaceAction(raceId, privately))}>{t("Join race")}</Button>
         </>
       )}
-      {error && <Alert tone="danger">{error}</Alert>}
+      {error && <Alert tone="danger">{t(error)}</Alert>}
     </Card>
   );
 }

@@ -2,9 +2,11 @@
 
 import { Info } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useT } from "@/lib/i18n/client";
 
 /** A small ⓘ that reveals extra help on tap or hover, instead of a paragraph on the page. */
 export function InfoTip({ children, label = "More info" }: { children: ReactNode; label?: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const id = useId();
@@ -27,7 +29,7 @@ export function InfoTip({ children, label = "More info" }: { children: ReactNode
     <span ref={ref} className="relative inline-flex align-middle" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
       <button
         type="button"
-        aria-label={label}
+        aria-label={t(label)}
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
         onClick={() => setOpen((o) => !o)}

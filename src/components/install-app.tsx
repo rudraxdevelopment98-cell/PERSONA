@@ -4,6 +4,7 @@ import { Download, PlusSquare, Share, Smartphone, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { isStandalone, platform, readStore, type Platform } from "@/lib/client/app-context";
 import { Button, cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 const DISMISS = "p90-install-dismissed";
@@ -18,6 +19,7 @@ function deferred(): InstallEvent | null {
  * Hidden inside the installed app, the Play Store app, or for a week after "not now".
  */
 export function InstallApp({ variant = "card" }: { variant?: "card" | "row" }) {
+  const t = useT();
   const [show, setShow] = useState(false);
   const [os, setOs] = useState<Platform>("desktop");
   const [iosSteps, setIosSteps] = useState(false);
@@ -63,15 +65,13 @@ export function InstallApp({ variant = "card" }: { variant?: "card" | "row" }) {
       {os === "ios" ? (
         <>
           <li className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">1</span> Safari mein neeche <Share className="size-4 text-primary" /> Share dabao
-          </li>
+            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">1</span>{" "}{t("Safari mein neeche")}{" "}<Share className="size-4 text-primary" />{" "}{t("Share dabao")}</li>
           <li className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">2</span> <PlusSquare className="size-4 text-primary" /> &ldquo;Add to Home Screen&rdquo; chuno
-          </li>
-          <li className="text-xs text-muted">Chrome mein ho to pehle ye page Safari mein kholo.</li>
+            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">2</span> <PlusSquare className="size-4 text-primary" />{" "}{t("“Add to Home Screen” chuno")}</li>
+          <li className="text-xs text-muted">{t("Chrome mein ho to pehle ye page Safari mein kholo.")}</li>
         </>
       ) : (
-        <li className="text-sm text-muted">Browser menu (⋮) mein &ldquo;Install app&rdquo; ya &ldquo;Add to Home screen&rdquo; chuno.</li>
+        <li className="text-sm text-muted">{t("Browser menu (⋮) mein “Install app” ya “Add to Home screen” chuno.")}</li>
       )}
     </ol>
   );
@@ -83,7 +83,7 @@ export function InstallApp({ variant = "card" }: { variant?: "card" | "row" }) {
           <span className="flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent">
             <Smartphone className="size-4" />
           </span>
-          <span className="flex-1 text-sm font-semibold">App install karo</span>
+          <span className="flex-1 text-sm font-semibold">{t("App install karo")}</span>
           <Download className="size-4 text-muted" />
         </button>
         {iosSteps && steps}
@@ -92,8 +92,8 @@ export function InstallApp({ variant = "card" }: { variant?: "card" | "row" }) {
   }
 
   return (
-    <section className={cx("relative overflow-hidden rounded-3xl border border-primary/20 bg-primary-soft p-4")} aria-label="Install the app">
-      <button type="button" onClick={dismiss} aria-label="Not now" className="absolute right-2 top-2 rounded-full p-1.5 text-muted hover:bg-surface">
+    <section className={cx("relative overflow-hidden rounded-3xl border border-primary/20 bg-primary-soft p-4")} aria-label={t("Install the app")}>
+      <button type="button" onClick={dismiss} aria-label={t("Not now")} className="absolute right-2 top-2 rounded-full p-1.5 text-muted hover:bg-surface">
         <X className="size-4" />
       </button>
       <div className="flex items-center gap-3 pr-6">
@@ -101,13 +101,12 @@ export function InstallApp({ variant = "card" }: { variant?: "card" | "row" }) {
           <Smartphone className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-bold">PERSONA 90 app install karo</p>
-          <p className="text-xs text-muted">Home screen se seedha khule, full screen, reminders ke saath · 1 MB se kam</p>
+          <p className="font-bold">{t("PERSONA 90 app install karo")}</p>
+          <p className="text-xs text-muted">{t("Home screen se seedha khule, full screen, reminders ke saath · 1 MB se kam")}</p>
         </div>
         {!iosSteps && (
           <Button onClick={install} className="h-9 shrink-0 px-3 text-xs">
-            <Download className="size-4" /> Install
-          </Button>
+            <Download className="size-4" />{" "}{t("Install")}</Button>
         )}
       </div>
       {iosSteps && steps}

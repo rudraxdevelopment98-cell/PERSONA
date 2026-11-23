@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Flame, Pause, Play, Wind } from "lucide-react";
 import { Button, Card, cx } from "@/components/ui";
 import { VoiceTextarea } from "@/components/voice-input";
+import { useT } from "@/lib/i18n/client";
 
 const buzz = (ms: number) => {
   try {
@@ -21,6 +22,7 @@ const PATTERNS: Record<"box" | "calm", { label: string; steps: readonly Step[] }
 type PatternId = keyof typeof PATTERNS;
 
 export function Breathe() {
+  const t = useT();
   const [pattern, setPattern] = useState<PatternId>("box");
   const [running, setRunning] = useState(false);
   const [step, setStep] = useState(0);
@@ -63,9 +65,8 @@ export function Breathe() {
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-5 pt-5">
         <h2 className="flex items-center gap-2 text-[15px] font-bold">
-          <Wind className="size-4 text-accent" /> Breathe
-        </h2>
-        <div className="flex gap-1 rounded-full bg-bg p-1" role="radiogroup" aria-label="Breathing pattern">
+          <Wind className="size-4 text-accent" />{" "}{t("Breathe")}</h2>
+        <div className="flex gap-1 rounded-full bg-bg p-1" role="radiogroup" aria-label={t("Breathing pattern")}>
           {(Object.keys(PATTERNS) as PatternId[]).map((id) => (
             <button
               key={id}
@@ -76,7 +77,7 @@ export function Breathe() {
               onClick={() => setPattern(id)}
               className={cx("rounded-full px-3 py-1 text-xs font-semibold", pattern === id ? "bg-surface text-ink shadow-card" : "text-muted")}
             >
-              {PATTERNS[id].label}
+              {t(PATTERNS[id].label)}
             </button>
           ))}
         </div>
@@ -92,13 +93,13 @@ export function Breathe() {
             style={{ transform: `scale(${running ? scale : 0.6})`, transition: `transform ${running ? steps[step][1] : 0.6}s ease-in-out` }}
           />
           <div className="relative text-center" aria-live="polite">
-            <p className="text-lg font-bold">{running ? label : "Tayyar?"}</p>
+            <p className="text-lg font-bold">{running ? t(label) : t("Tayyar?")}</p>
             <p className="text-4xl font-extrabold tabular-nums">{running ? left : "·"}</p>
           </div>
         </div>
-        <p className="text-sm text-muted">{running ? `${rounds} round${rounds === 1 ? "" : "s"} · 4 rounds ≈ 1 minute` : "Aankhein band karna ho to kar lo. Phone halka vibrate karega."}</p>
+        <p className="text-sm text-muted">{running ? t("{0} round{1} · 4 rounds ≈ 1 minute", rounds, rounds === 1 ? "" : "s") : t("Aankhein band karna ho to kar lo. Phone halka vibrate karega.")}</p>
         <Button onClick={running ? stop : start} variant={running ? "secondary" : "accent"}>
-          {running ? <Pause className="size-4" /> : <Play className="size-4" />} {running ? "Ruko" : "Shuru karo"}
+          {running ? <Pause className="size-4" /> : <Play className="size-4" />} {running ? t("Ruko") : t("Shuru karo")}
         </Button>
       </div>
     </Card>
@@ -108,6 +109,7 @@ export function Breathe() {
 /* ---------------------------------------------------------- Vent & burn */
 
 export function VentAndBurn() {
+  const t = useT();
   const [text, setText] = useState("");
   const [burning, setBurning] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -128,17 +130,16 @@ export function VentAndBurn() {
     <Card className="overflow-hidden">
       <div className="px-5 pt-5">
         <h2 className="flex items-center gap-2 text-[15px] font-bold">
-          <Flame className="size-4 text-coral" /> Vent &amp; Burn
-        </h2>
-        <p className="mt-0.5 text-xs text-muted">Jo dil mein hai likh do. Jalate hi gayab. Kahin save nahi hota, kisi ko nahi dikhta.</p>
+          <Flame className="size-4 text-coral" />{" "}{t("Vent & Burn")}</h2>
+        <p className="mt-0.5 text-xs text-muted">{t("Jo dil mein hai likh do. Jalate hi gayab. Kahin save nahi hota, kisi ko nahi dikhta.")}</p>
       </div>
       <div className="p-5">
         {burning ? (
-          <div className="relative min-h-40 overflow-hidden rounded-2xl bg-ink p-4 text-sm leading-relaxed text-surface" aria-live="polite" aria-label="Burning">
+          <div className="relative min-h-40 overflow-hidden rounded-2xl bg-ink p-4 text-sm leading-relaxed text-surface" aria-live="polite" aria-label={t("Burning")}>
             <p className="burn-text">
               {burning.split("").map((ch, i) => (
                 <span key={i} style={{ animationDelay: `${Math.min(1.6, (i / Math.max(1, burning.length)) * 1.6)}s` }}>
-                  {ch}
+                  {t(ch)}
                 </span>
               ))}
             </p>
@@ -152,15 +153,14 @@ export function VentAndBurn() {
               maxLength={2000}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Aaj kis baat ne pareshan kiya? Jo mann mein aaye, bina filter…"
+              placeholder={t("Aaj kis baat ne pareshan kiya? Jo mann mein aaye, bina filter…")}
             />
             <div className="mt-3 flex items-center justify-between gap-3">
               <p className="text-sm text-muted" role="status">
-                {done ? "🌬️ Raakh ho gaya. Ek gehri saans lo." : ""}
+                {done ? t("🌬️ Raakh ho gaya. Ek gehri saans lo.") : ""}
               </p>
               <Button onClick={burn} disabled={!text.trim()} className="bg-coral text-white hover:brightness-95">
-                <Flame className="size-4" /> Jalao
-              </Button>
+                <Flame className="size-4" />{" "}{t("Jalao")}</Button>
             </div>
           </>
         )}
@@ -223,6 +223,7 @@ function startSound(ctx: AudioContext, id: SoundId, volume: GainNode) {
 }
 
 export function Sounds() {
+  const t = useT();
   const [playing, setPlaying] = useState<SoundId | null>(null);
   const [vol, setVol] = useState(0.5);
   const [minutes, setMinutes] = useState(10);
@@ -278,7 +279,7 @@ export function Sounds() {
 
   return (
     <Card className="p-5">
-      <h2 className="text-[15px] font-bold">🎧 Sukoon ki awaaz</h2>
+      <h2 className="text-[15px] font-bold">{t("🎧 Sukoon ki awaaz")}</h2>
       <div className="mt-4 grid grid-cols-3 gap-2">
         {SOUNDS.map((s) => (
           <button
@@ -292,18 +293,14 @@ export function Sounds() {
             )}
           >
             <span className={cx("text-3xl", playing === s.id && "motion-safe:animate-pulse")}>{s.emoji}</span>
-            <span className="text-xs font-semibold">{s.label}</span>
+            <span className="text-xs font-semibold">{t(s.label)}</span>
           </button>
         ))}
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-semibold text-muted" htmlFor="calm-vol">
-          Awaaz
-          <input id="calm-vol" type="range" min={0} max={1} step={0.05} value={vol} onChange={(e) => setVol(Number(e.target.value))} className="mt-1 w-full" />
+        <label className="text-xs font-semibold text-muted" htmlFor="calm-vol">{t("Awaaz")}<input id="calm-vol" type="range" min={0} max={1} step={0.05} value={vol} onChange={(e) => setVol(Number(e.target.value))} className="mt-1 w-full" />
         </label>
-        <div className="text-xs font-semibold text-muted">
-          Timer
-          <div className="mt-1 flex gap-1">
+        <div className="text-xs font-semibold text-muted">{t("Timer")}<div className="mt-1 flex gap-1">
             {[5, 10, 20].map((m) => (
               <button
                 key={m}
@@ -314,14 +311,12 @@ export function Sounds() {
                 }}
                 aria-pressed={minutes === m}
                 className={cx("flex-1 rounded-full py-1.5 text-xs font-bold", minutes === m ? "bg-primary text-white" : "bg-bg text-muted")}
-              >
-                {m} min
-              </button>
+              >{t("{0} min", m)}</button>
             ))}
           </div>
         </div>
       </div>
-      {remaining != null && <p className="mt-3 text-xs text-muted" role="status">{`${remaining} min mein apne aap band ho jaayega`}</p>}
+      {remaining != null && <p className="mt-3 text-xs text-muted" role="status">{t("{0} min mein apne aap band ho jaayega", remaining)}</p>}
     </Card>
   );
 }
@@ -337,35 +332,32 @@ const GROUND = [
 ];
 
 export function Grounding() {
+  const t = useT();
   const [i, setI] = useState(-1);
   const g = GROUND[i];
   return (
     <Card className="p-5">
-      <h2 className="text-[15px] font-bold">🌱 5-4-3-2-1 · ghabrahat mein</h2>
+      <h2 className="text-[15px] font-bold">{t("🌱 5-4-3-2-1 · ghabrahat mein")}</h2>
       {i < 0 ? (
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-sm text-muted">Jab dimaag bhaag raha ho, ye 60 second tumhe abhi mein le aate hain.</p>
-          <Button variant="secondary" onClick={() => setI(0)}>
-            Shuru
-          </Button>
+          <p className="text-sm text-muted">{t("Jab dimaag bhaag raha ho, ye 60 second tumhe abhi mein le aate hain.")}</p>
+          <Button variant="secondary" onClick={() => setI(0)}>{t("Shuru")}</Button>
         </div>
       ) : i < GROUND.length ? (
         <div key={i} className="animate-page mt-4 text-center">
           <p className="text-5xl">{g.emoji}</p>
           <p className="mt-2 text-4xl font-extrabold tabular-nums">{g.n}</p>
           <p className="mt-1 font-semibold">{g.text}</p>
-          <p className="mt-1 text-xs text-muted">Dheere se, ek-ek karke, mann mein naam lo.</p>
+          <p className="mt-1 text-xs text-muted">{t("Dheere se, ek-ek karke, mann mein naam lo.")}</p>
           <Button className="mt-4" onClick={() => setI((n) => n + 1)}>
-            {i === GROUND.length - 1 ? "Ho gaya" : "Agla"}
+            {i === GROUND.length - 1 ? t("Ho gaya") : t("Agla")}
           </Button>
         </div>
       ) : (
         <div className="animate-page mt-4 text-center">
           <p className="text-4xl">🌿</p>
-          <p className="mt-2 font-semibold">Wapas yahin, abhi mein. Shabash.</p>
-          <Button variant="ghost" className="mt-2" onClick={() => setI(-1)}>
-            Dobara
-          </Button>
+          <p className="mt-2 font-semibold">{t("Wapas yahin, abhi mein. Shabash.")}</p>
+          <Button variant="ghost" className="mt-2" onClick={() => setI(-1)}>{t("Dobara")}</Button>
         </div>
       )}
     </Card>

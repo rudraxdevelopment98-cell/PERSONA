@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Sparkles } from "lucide-react";
 import { cx } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 const STAGES = [
   "Reading your check-in",
@@ -27,6 +28,7 @@ const FACTS = [
 
 /** Engaging progress while the AI writes today's session (usually 1-2 minutes). */
 export function WritingEpisode({ startedAt }: { startedAt: number }) {
+  const t = useT();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 500);
@@ -54,13 +56,13 @@ export function WritingEpisode({ startedAt }: { startedAt: number }) {
             >
               {i < stage ? <Check className="size-3" strokeWidth={3} /> : i === stage ? <Sparkles className="size-3" /> : null}
             </span>
-            {s}
+            {t(s)}
           </li>
         ))}
       </ol>
       <p key={fact} className="rounded-xl bg-bg px-4 py-3 text-sm leading-relaxed motion-safe:animate-rise">
-        <span className="font-bold text-accent">Did you know? </span>
-        {fact}
+        <span className="font-bold text-accent">{t("Did you know?")}{" "}</span>
+        {t(fact)}
       </p>
     </div>
   );

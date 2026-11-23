@@ -5,6 +5,7 @@ import { Alert, ButtonLink, Card } from "@/components/ui";
 import { getSessionUser } from "@/lib/db/server";
 import { inviteInfo, type InviteInfo } from "@/lib/server/social";
 import { InviteActions } from "./invite-actions";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 // Invite links must not leak into search results or referrers.
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
+  const t = await getT();
   const { token } = await params;
   const valid = /^[A-Za-z0-9_-]{10,64}$/.test(token);
   const [info, user] = await Promise.all([valid ? inviteInfo(token) : Promise.resolve<InviteInfo>({ valid: false, reason: "This invite link isn't valid." }), getSessionUser()]);
@@ -34,23 +36,21 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           {info.valid ? (
             <>
               <h1 className="mt-4 text-xl font-extrabold">
-                {info.kind === "circle" ? `${info.inviterName} invited you to join ${info.circleName}` : `${info.inviterName} invited you to grow together`}
+                {info.kind === "circle" ? t("{0} invited you to join {1}", info.inviterName ?? "", info.circleName ?? "") : t("{0} invited you to grow together", info.inviterName ?? "")}
               </h1>
-              <p className="mt-2 text-sm text-muted">
-                PERSONA 90 is a free 90-day programme for confidence, communication and decision-making. Friends cheer each other on and race - and only see what you choose to share.
-              </p>
+              <p className="mt-2 text-sm text-muted">{t("PERSONA 90 is a free 90-day programme for confidence, communication and decision-making. Friends cheer each other on and race - and only see what you choose to share.")}</p>
               <div className="mt-6">
                 <InviteActions token={token} signedIn={Boolean(user)} />
               </div>
             </>
           ) : (
             <>
-              <h1 className="mt-4 text-xl font-extrabold">Invite unavailable</h1>
+              <h1 className="mt-4 text-xl font-extrabold">{t("Invite unavailable")}</h1>
               <div className="mt-3">
-                <Alert tone="warning">{info.reason}</Alert>
+                <Alert tone="warning">{t(info.reason ?? "")}</Alert>
               </div>
               <ButtonLink href={user ? "/friends" : "/signup"} className="mt-5">
-                {user ? "Go to Friends" : "Create a free account"}
+                {user ? t("Go to Friends") : t("Create a free account")}
               </ButtonLink>
             </>
           )}

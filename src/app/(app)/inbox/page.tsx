@@ -6,6 +6,7 @@ import { getUserState } from "@/lib/server/state";
 import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/db/server";
 import { listNotifications, markAllRead } from "@/lib/server/social";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Inbox" };
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ function ago(iso: string) {
 }
 
 export default async function InboxPage() {
+  const t = await getT();
   const { user } = await requireUser();
   const { state } = await getUserState();
   const items = await listNotifications(user.id);
@@ -27,18 +29,18 @@ export default async function InboxPage() {
   if (items.some((i) => !i.read_at)) await markAllRead(user.id);
   return (
     <>
-      <PageHeader eyebrow="Together" title="Inbox" description="Cheers, invites and race updates from your friends." />
+      <PageHeader eyebrow={t("Together")} title={t("Inbox")} description={t("Cheers, invites and race updates from your friends.")} />
       <div className="space-y-4">
         <Card>
           {items.length === 0 ? (
-            <EmptyState icon={<Bell className="size-6" />} title="Nothing yet" description="When friends cheer you or start a race, it shows up here." />
+            <EmptyState icon={<Bell className="size-6" />} title={t("Nothing yet")} description={t("When friends cheer you or start a race, it shows up here.")} />
           ) : (
             <div className="divide-y divide-line">
               {items.map((n) => (
                 <Link key={n.id} href={n.payload.url || "/friends"} className="flex items-start gap-3 px-5 py-4 hover:bg-bg">
                   <span className={`mt-1.5 size-2 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-coral"}`} />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold">{n.payload.title}</span>
+                    <span className="block text-sm font-bold">{t(n.payload.title)}</span>
                     <span className="block text-sm text-muted">{n.payload.body}</span>
                   </span>
                   <span className="shrink-0 text-xs text-muted">{ago(n.created_at)}</span>
@@ -48,7 +50,7 @@ export default async function InboxPage() {
           )}
         </Card>
         <Card>
-          <CardHeader title="Phone notifications" description="Get these on your phone or computer, even when the app is closed." />
+          <CardHeader title={t("Phone notifications")} description={t("Get these on your phone or computer, even when the app is closed.")} />
           <div className="space-y-4 px-5 pb-5">
             <PushToggle />
             <ReminderToggle initial={state.profile.reminders_enabled !== false} />

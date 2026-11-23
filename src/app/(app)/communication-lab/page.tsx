@@ -9,10 +9,12 @@ import { COMMUNICATION_EXERCISES, EXERCISE_BY_ID } from "@/lib/domain/labs";
 import { getUserState } from "@/lib/server/state";
 import type { ExerciseRow } from "@/lib/server/types";
 import { CommunicationLab } from "./lab";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Communication Lab" };
 
 export default async function CommunicationLabPage() {
+  const t = await getT();
   const { db, user, state } = await getUserState();
   const [plan, used] = await Promise.all([getPlan(user.id), usage(user.id)]);
   const sponsor = await pickSponsor(user.id, "labs", { language: state.profile.language, day: state.today });
@@ -20,9 +22,9 @@ export default async function CommunicationLabPage() {
   const header = (
     <PageHeader
       action={chip}
-      title="Communication Lab"
-      eyebrow="Practice"
-      description="Say no, disagree, take criticism - out loud or in writing. Each reply is scored on clarity, assertiveness, empathy and composure, and you get a stronger version in your own voice."
+      title={t("Communication Lab")}
+      eyebrow={t("Practice")}
+      description={t("Say no, disagree, take criticism - out loud or in writing. Each reply is scored on clarity, assertiveness, empathy and composure, and you get a stronger version in your own voice.")}
     />
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="The Communication Lab" /></>);
@@ -51,27 +53,27 @@ export default async function CommunicationLabPage() {
 
         {completed.length > 0 && (
           <Card>
-            <CardHeader title="Previous exercises" />
+            <CardHeader title={t("Previous exercises")} />
             <ul className="divide-y divide-line">
               {completed.map((c) => (
                 <li key={c.id} className="px-5 py-3.5">
                   <details>
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">{c.prompt.title}</span>
+                        <span className="block truncate text-sm font-medium">{t(c.prompt.title)}</span>
                         <span className="text-xs text-muted">
-                          {EXERCISE_BY_ID.get(c.exercise_type)?.label} · {new Date(c.created_at).toLocaleDateString("en-GB")}
+                          {t(EXERCISE_BY_ID.get(c.exercise_type)?.label ?? "")} · {new Date(c.created_at).toLocaleDateString("en-GB")}
                         </span>
                       </span>
                       <span className="flex items-center gap-2">
-                        {c.input_mode === "voice" && <Badge tone="coral">Voice</Badge>}
+                        {c.input_mode === "voice" && <Badge tone="coral">{t("Voice")}</Badge>}
                         <Badge tone="accent">{c.score}/100</Badge>
                       </span>
                     </summary>
                     <div className="mt-3 space-y-2 text-sm leading-relaxed">
-                      <p><span className="text-muted">They said:</span> &ldquo;{c.prompt.they_say}&rdquo;</p>
-                      <p><span className="text-muted">You said:</span> {c.response}</p>
-                      {c.evaluation && <p><span className="text-muted">Stronger version:</span> {c.evaluation.stronger_version}</p>}
+                      <p><span className="text-muted">{t("They said:")}</span>{" "}{t("“")}{t(c.prompt.they_say)}{t("”")}</p>
+                      <p><span className="text-muted">{t("You said:")}</span> {t(c.response ?? "")}</p>
+                      {c.evaluation && <p><span className="text-muted">{t("Stronger version:")}</span> {t(c.evaluation.stronger_version)}</p>}
                     </div>
                   </details>
                 </li>

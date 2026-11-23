@@ -6,17 +6,19 @@ import { ArrowUp, Trash2 } from "lucide-react";
 import { Alert, Button, Card, Spinner, cx } from "@/components/ui";
 import { clearCoachHistory } from "./actions";
 import { VoiceTextarea } from "@/components/voice-input";
+import { useT } from "@/lib/i18n/client";
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
 const STARTERS = [
   "What pattern do you see in my recent check-ins?",
-  "I froze in a meeting today. Help me understand why.",
-  "How do I disagree with my manager without damaging the relationship?",
+  "I froze today when I wanted to speak up. Help me understand why.",
+  "How do I disagree with someone close to me without hurting the relationship?",
   "Which skill should I focus on this week, and how?",
 ];
 
 function Bubble({ m }: { m: Msg }) {
+  const t = useT();
   return (
     <div className={cx("flex", m.role === "user" ? "justify-end" : "justify-start")}>
       <div
@@ -26,7 +28,7 @@ function Bubble({ m }: { m: Msg }) {
         )}
       >
         {m.content || (
-          <span className="flex items-center gap-1 py-1" aria-label="Coach is thinking">
+          <span className="flex items-center gap-1 py-1" aria-label={t("Coach is thinking")}>
             {[0, 1, 2].map((d) => (
               <span key={d} className="size-1.5 animate-bounce rounded-full bg-muted" style={{ animationDelay: `${d * 0.15}s` }} />
             ))}
@@ -38,6 +40,7 @@ function Bubble({ m }: { m: Msg }) {
 }
 
 export function CoachChat({ initial }: { initial: Msg[] }) {
+  const t = useT();
   const [messages, setMessages] = useState<Msg[]>(initial);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -87,11 +90,11 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
         {messages.length === 0 ? (
           <div className="mx-auto max-w-md py-10 text-center">
-            <p className="text-sm font-medium">What would you like to work on?</p>
+            <p className="text-sm font-medium">{t("What would you like to work on?")}</p>
             <div className="mt-4 grid gap-2">
               {STARTERS.map((s) => (
-                <button key={s} onClick={() => send(s)} className="rounded-md border border-line px-3 py-2 text-left text-sm text-muted hover:border-line-strong hover:text-ink">
-                  {s}
+                <button key={s} onClick={() => send(t(s))} className="rounded-md border border-line px-3 py-2 text-left text-sm text-muted hover:border-line-strong hover:text-ink">
+                  {t(s)}
                 </button>
               ))}
             </div>
@@ -103,7 +106,7 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
       </div>
       {error && (
         <div className="px-4 pb-2 sm:px-6">
-          <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>
+          <Alert tone={upgrade ? "warning" : "danger"}>{t(error)}</Alert>
           <UpgradeHint show={upgrade} />
         </div>
       )}
@@ -125,19 +128,19 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
           }}
           rows={1}
           maxLength={4000}
-          placeholder="Ask your coach…"
+          placeholder={t("Ask your coach…")}
           className="min-h-9 resize-none"
-          aria-label="Message"
+          aria-label={t("Message")}
         />
-        <Button type="submit" disabled={streaming || !input.trim()} aria-label="Send">
+        <Button type="submit" disabled={streaming || !input.trim()} aria-label={t("Send")}>
           {streaming ? <Spinner /> : <ArrowUp className="size-4" />}
         </Button>
         {messages.length > 0 && (
           <Button
             type="button"
             variant="ghost"
-            aria-label="Clear conversation"
-            title="Clear conversation"
+            aria-label={t("Clear conversation")}
+            title={t("Clear conversation")}
             disabled={streaming || clearing}
             onClick={() => {
               if (!confirm("Delete this conversation? This cannot be undone.")) return;

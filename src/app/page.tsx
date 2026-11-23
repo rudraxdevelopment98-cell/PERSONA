@@ -5,10 +5,12 @@ import { Logo } from "@/components/logo";
 import { ButtonLink, IconTile, ProgressRing, cx } from "@/components/ui";
 import { PHASES } from "@/lib/domain/programme";
 import { getSessionUser } from "@/lib/db/server";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
-function PhonePreview() {
+async function PhonePreview() {
+  const t = await getT();
   const steps = [
     { label: "Check-in", icon: ClipboardCheck, done: true },
     { label: "Story", icon: BookOpen, done: true },
@@ -19,10 +21,9 @@ function PhonePreview() {
   return (
     <div className="mx-auto w-full max-w-[320px] rounded-[2.5rem] border-[10px] border-ink bg-bg p-3 shadow-raised">
       <div className="bg-brand rounded-2xl p-4 text-white">
-        <p className="text-xs text-white/70">Good evening, Aarav</p>
+        <p className="text-xs text-white/70">{t("Good evening, Aarav")}</p>
         <div className="mt-1 flex items-center justify-between">
-          <p className="text-xl font-extrabold">
-            Day 12 <span className="text-white/50">/ 90</span>
+          <p className="text-xl font-extrabold">{t("Day 12")}{" "}<span className="text-white/50">/ 90</span>
           </p>
           <ProgressRing value={40} size={56} stroke={6} color="#ffffff" track="rgba(255,255,255,0.2)">
             <span className="text-sm font-extrabold">2/5</span>
@@ -30,15 +31,13 @@ function PhonePreview() {
         </div>
         <div className="mt-2 flex gap-2 text-[11px] font-bold">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-teal-200">
-            <Flame className="size-3" /> 11 days
-          </span>
+            <Flame className="size-3" />{" "}{t("11 days")}</span>
           <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-white">
-            <Zap className="size-3" /> 640 XP
-          </span>
+            <Zap className="size-3" />{" "}{t("640 XP")}</span>
         </div>
       </div>
       <div className="mt-3 rounded-2xl bg-surface p-3">
-        <p className="text-xs font-bold">Today&apos;s path</p>
+        <p className="text-xs font-bold">{t("Today's path")}</p>
         <div className="mt-2 grid grid-cols-5 gap-1">
           {steps.map((s) => (
             <div key={s.label} className="flex flex-col items-center">
@@ -50,7 +49,7 @@ function PhonePreview() {
               >
                 {s.done ? <Check className="size-4" strokeWidth={3} /> : <s.icon className="size-4" />}
               </span>
-              <span className="mt-1 text-[9px] font-semibold text-muted">{s.label}</span>
+              <span className="mt-1 text-[9px] font-semibold text-muted">{t(s.label)}</span>
             </div>
           ))}
         </div>
@@ -60,8 +59,8 @@ function PhonePreview() {
           <Mic className="size-5" />
         </span>
         <div>
-          <p className="text-xs font-bold">Voice practice</p>
-          <p className="text-[11px] text-muted">142 wpm · 1 filler word · 82/100</p>
+          <p className="text-xs font-bold">{t("Voice practice")}</p>
+          <p className="text-[11px] text-muted">{t("142 wpm · 1 filler word · 82/100")}</p>
         </div>
       </div>
     </div>
@@ -69,6 +68,7 @@ function PhonePreview() {
 }
 
 export default async function Landing() {
+  const t = await getT();
   if (process.env.DATABASE_URL && (await getSessionUser().catch(() => null))) redirect("/dashboard");
 
   const features = [
@@ -100,10 +100,8 @@ export default async function Landing() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
         <Logo />
         <nav className="flex items-center gap-2">
-          <ButtonLink href="/login" variant="ghost">
-            Sign in
-          </ButtonLink>
-          <ButtonLink href="/signup">Get started</ButtonLink>
+          <ButtonLink href="/login" variant="ghost">{t("Sign in")}</ButtonLink>
+          <ButtonLink href="/signup">{t("Get started")}</ButtonLink>
         </nav>
       </header>
 
@@ -111,25 +109,16 @@ export default async function Landing() {
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div className="animate-rise">
             <span className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
-              <LineChart className="size-3.5" /> 90 din · 30 minute roz · free
-            </span>
-            <h1 className="mt-4 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-              Roz ek kahani.
-              <br />
-              <span className="text-accent">Faisla</span> tumhara.
-            </h1>
-            <p className="mt-5 max-w-md text-lg text-muted">
-              Confidence, baat-cheet aur faisle lene ki skill: ghar, dost, padhai, kaam aur rishton mein. Interactive kahaniyon aur roz ki chhoti practice se. English, Hinglish ya हिन्दी.
-            </p>
+              <LineChart className="size-3.5" />{" "}{t("90 din · 30 minute roz · free")}</span>
+            <h1 className="mt-4 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">{t("Roz ek kahani.")}<br />
+              <span className="text-accent">{t("Faisla")}</span>{" "}{t("tumhara.")}</h1>
+            <p className="mt-5 max-w-md text-lg text-muted">{t("Confidence, baat-cheet aur faisle lene ki skill: ghar, dost, padhai, kaam aur rishton mein. Interactive kahaniyon aur roz ki chhoti practice se. English, Hinglish ya हिन्दी.")}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="/signup" className="h-12 px-6 text-base">
-                Free shuru karo <ArrowRight className="size-4" />
+              <ButtonLink href="/signup" className="h-12 px-6 text-base">{t("Free shuru karo")}{" "}<ArrowRight className="size-4" />
               </ButtonLink>
-              <ButtonLink href="/login" variant="secondary" className="h-12 px-6 text-base">
-                Mera account hai
-              </ButtonLink>
+              <ButtonLink href="/login" variant="secondary" className="h-12 px-6 text-base">{t("Mera account hai")}</ButtonLink>
             </div>
-            <p className="mt-3 text-xs text-muted">2 minute mein shuru · card nahi chahiye · kabhi bhi data delete</p>
+            <p className="mt-3 text-xs text-muted">{t("2 minute mein shuru · card nahi chahiye · kabhi bhi data delete")}</p>
           </div>
           <div className="animate-pop">
             <PhonePreview />
@@ -137,7 +126,7 @@ export default async function Landing() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-labelledby="loop-title">
-          <h2 id="loop-title" className="text-2xl font-extrabold tracking-tight">Roz ke 30 minute, aise</h2>
+          <h2 id="loop-title" className="text-2xl font-extrabold tracking-tight">{t("Roz ke 30 minute, aise")}</h2>
           <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {loop.map((l, i) => (
               <li key={l.title} className="rounded-3xl border border-line/70 bg-surface p-5">
@@ -146,16 +135,15 @@ export default async function Landing() {
                     <l.icon className="size-5" />
                   </span>
                   <span className="text-xs font-bold text-muted">
-                    {i + 1} · {l.time}
+                    {i + 1} · {t(l.time)}
                   </span>
                 </div>
-                <h3 className="mt-3 font-bold">{l.title}</h3>
+                <h3 className="mt-3 font-bold">{t(l.title)}</h3>
                 <p className="mt-1 text-sm text-muted">{l.text}</p>
               </li>
             ))}
           </ol>
-          <p className="mt-3 text-sm text-muted">
-            Din mein kabhi bhi: <b className="text-ink">Aaj ka sawaal</b> (10 sec), <b className="text-ink">Quick cards</b> (1 min), dosto ke <b className="text-ink">moments</b>.
+          <p className="mt-3 text-sm text-muted">{t("Din mein kabhi bhi:")}{" "}<b className="text-ink">{t("Aaj ka sawaal")}</b>{" "}{t("(10 sec),")}{" "}<b className="text-ink">{t("Quick cards")}</b>{" "}{t("(1 min), dosto ke")}{" "}<b className="text-ink">{t("moments")}</b>.
           </p>
         </section>
 
@@ -166,7 +154,7 @@ export default async function Landing() {
                 <IconTile tone={f.tone} size="lg">
                   <f.icon className="size-6" />
                 </IconTile>
-                <h2 className="mt-4 font-bold">{f.title}</h2>
+                <h2 className="mt-4 font-bold">{t(f.title)}</h2>
                 <p className="mt-1 text-sm text-muted">{f.text}</p>
               </div>
             ))}
@@ -174,13 +162,11 @@ export default async function Landing() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-          <h2 className="text-2xl font-extrabold tracking-tight">Teen phase, 90 din</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight">{t("Teen phase, 90 din")}</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {PHASES.map((p, i) => (
               <div key={p.number} className="bg-brand relative rounded-3xl p-6 text-white" style={{ opacity: 1 - i * 0.08 }}>
-                <p className="text-xs font-bold uppercase tracking-wider text-white/70">
-                  Days {p.days[0]}–{p.days[1]}
-                </p>
+                <p className="text-xs font-bold uppercase tracking-wider text-white/70">{t("Days {0}–{1}", p.days[0], p.days[1])}</p>
                 <h3 className="mt-1 text-lg font-extrabold">{p.name}</h3>
               </div>
             ))}
@@ -193,11 +179,11 @@ export default async function Landing() {
               <Lock className="size-6" />
             </span>
             <div>
-              <h2 className="text-xl font-extrabold tracking-tight">Tumhari baatein, sirf tumhari</h2>
+              <h2 className="text-xl font-extrabold tracking-tight">{t("Tumhari baatein, sirf tumhari")}</h2>
               <ul className="mt-3 grid gap-2 text-sm text-muted sm:grid-cols-2">
-                {["Journal aur jawab kisi ko nahi dikhte", "Dost sirf wahi dekhte jo tum share karo", "Hum data bechte nahi, ads ke liye use nahi", "Kabhi bhi poora data download ya delete"].map((t) => (
-                  <li key={t} className="flex items-start gap-2">
-                    <Check className="mt-0.5 size-4 shrink-0 text-accent" strokeWidth={3} /> {t}
+                {["Journal aur jawab kisi ko nahi dikhte", "Dost sirf wahi dekhte jo tum share karo", "Hum data bechte nahi, ads ke liye use nahi", "Kabhi bhi poora data download ya delete"].map((it) => (
+                  <li key={it} className="flex items-start gap-2">
+                    <Check className="mt-0.5 size-4 shrink-0 text-accent" strokeWidth={3} /> {t(it)}
                   </li>
                 ))}
               </ul>
@@ -206,17 +192,17 @@ export default async function Landing() {
         </section>
 
         <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6" aria-labelledby="faq-title">
-          <h2 id="faq-title" className="text-2xl font-extrabold tracking-tight">Aksar puche jaane wale sawaal</h2>
+          <h2 id="faq-title" className="text-2xl font-extrabold tracking-tight">{t("Aksar puche jaane wale sawaal")}</h2>
           <div className="mt-5 divide-y divide-line rounded-3xl border border-line/70 bg-surface">
             {faqs.map((f) => (
               <details key={f.q} className="group px-5 py-4">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold">
-                  {f.q}
+                  {t(f.q)}
                   <span className="text-muted transition group-open:rotate-45" aria-hidden>
                     +
                   </span>
                 </summary>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{t(f.a)}</p>
               </details>
             ))}
           </div>
@@ -224,25 +210,21 @@ export default async function Landing() {
 
         <section className="mx-auto max-w-6xl px-4 pb-14 pt-4 sm:px-6">
           <div className="bg-brand rounded-[32px] p-8 text-center text-white sm:p-12">
-            <h2 className="text-3xl font-extrabold tracking-tight">Aaj se shuru karo. Day 1 sirf 10 minute ka.</h2>
-            <p className="mx-auto mt-3 max-w-md text-white/75">Quick check, pehli kahani, aur tumhara pehla faisla.</p>
-            <ButtonLink href="/signup" variant="secondary" className="mt-6 h-12 px-6 text-base">
-              Free shuru karo <ArrowRight className="size-4" />
+            <h2 className="text-3xl font-extrabold tracking-tight">{t("Aaj se shuru karo. Day 1 sirf 10 minute ka.")}</h2>
+            <p className="mx-auto mt-3 max-w-md text-white/75">{t("Quick check, pehli kahani, aur tumhara pehla faisla.")}</p>
+            <ButtonLink href="/signup" variant="secondary" className="mt-6 h-12 px-6 text-base">{t("Free shuru karo")}{" "}<ArrowRight className="size-4" />
             </ButtonLink>
           </div>
         </section>
 
-        <footer className="mx-auto max-w-6xl border-t border-line px-4 py-8 text-xs leading-relaxed text-muted sm:px-6">
-          A self-development tool, not a diagnosis. If you are struggling, please speak to a professional.{" "}
-          <Link href="/about" className="underline underline-offset-2">
-            How scoring and privacy work
-          </Link>
+        <footer className="mx-auto max-w-6xl border-t border-line px-4 py-8 text-xs leading-relaxed text-muted sm:px-6">{t("A self-development tool, not a diagnosis. If you are struggling, please speak to a professional.")}{" "}
+          <Link href="/about" className="underline underline-offset-2">{t("How scoring and privacy work")}</Link>
           {" · "}
-          <Link href="/terms" className="underline underline-offset-2">Terms</Link>
+          <Link href="/terms" className="underline underline-offset-2">{t("Terms")}</Link>
           {" · "}
-          <Link href="/privacy" className="underline underline-offset-2">Privacy</Link>
+          <Link href="/privacy" className="underline underline-offset-2">{t("Privacy")}</Link>
           {" · "}
-          <Link href="/refund" className="underline underline-offset-2">Refunds</Link>
+          <Link href="/refund" className="underline underline-offset-2">{t("Refunds")}</Link>
         </footer>
       </main>
     </div>

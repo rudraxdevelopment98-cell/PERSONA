@@ -7,6 +7,7 @@ import { Logo } from "./logo";
 import { LanguageMenu } from "./language-menu";
 import type { Language } from "@/lib/ai/prompts";
 import { ProgressRing, cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 export type NavStats = { level: number; levelName: string; progress: number; toNext: number; xp: number; streak: number };
 
@@ -41,8 +42,9 @@ function Bubble({ n }: { n: number }) {
 }
 
 function BellLink({ unread }: { unread: number }) {
+  const t = useT();
   return (
-    <Link href="/inbox" aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"} title="Inbox" className="relative rounded-full p-2 text-muted transition-colors hover:bg-primary-soft hover:text-ink">
+    <Link href="/inbox" aria-label={unread > 0 ? t("Inbox, {0} unread", unread) : t("Inbox")} title={t("Inbox")} className="relative rounded-full p-2 text-muted transition-colors hover:bg-primary-soft hover:text-ink">
       <Bell className="size-5" />
       <Bubble n={unread} />
     </Link>
@@ -70,6 +72,7 @@ export function AppNav({
   /** Inside the Play Store app web checkout is not allowed, so "Go Pro" is hidden. */
   storeApp?: boolean;
 }) {
+  const t = useT();
   const path = usePathname();
   const extra = [
     ...(pro || storeApp ? [] : [{ href: "/pricing", label: "Go Pro", icon: Gem }]),
@@ -83,27 +86,27 @@ export function AppNav({
         <Link href="/dashboard" className="mb-7 px-3">
           <Logo />
         </Link>
-        <nav className="flex-1 space-y-1" aria-label="Main">
-          {TABS.map((t) => {
-            const active = t.match.some((m) => isActive(path, m));
+        <nav className="flex-1 space-y-1" aria-label={t("Main")}>
+          {TABS.map((it) => {
+            const active = it.match.some((m) => isActive(path, m));
             return (
               <Link
-                key={t.href}
-                href={t.href}
+                key={it.href}
+                href={it.href}
                 aria-current={active ? "page" : undefined}
                 className={cx(
                   "group flex items-center gap-3.5 rounded-2xl px-3 py-2.5 text-[15px] transition-colors",
                   active ? "bg-primary-soft font-bold text-ink" : "font-medium text-muted hover:bg-bg hover:text-ink",
                 )}
               >
-                {t.icon ? (
-                  <span className={cx("flex size-7 items-center justify-center rounded-full", "hero" in t && t.hero && "bg-brand text-white")}>
-                    <t.icon className={cx("size-[19px] transition-transform group-hover:scale-110", "hero" in t && t.hero && "size-3.5 fill-current")} strokeWidth={active ? 2.4 : 1.8} />
+                {it.icon ? (
+                  <span className={cx("flex size-7 items-center justify-center rounded-full", "hero" in it && it.hero && "bg-brand text-white")}>
+                    <it.icon className={cx("size-[19px] transition-transform group-hover:scale-110", "hero" in it && it.hero && "size-3.5 fill-current")} strokeWidth={active ? 2.4 : 1.8} />
                   </span>
                 ) : (
                   <Avatar name={name} active={active} />
                 )}
-                {t.label}
+                {t(it.label)}
               </Link>
             );
           })}
@@ -118,48 +121,46 @@ export function AppNav({
             <span className="relative flex size-7 items-center justify-center">
               <Bell className="size-[19px]" strokeWidth={1.8} />
               <Bubble n={unread} />
-            </span>
-            Inbox
-          </Link>
-          {extra.map((t) => (
+            </span>{t("Inbox")}</Link>
+          {extra.map((it) => (
             <Link
-              key={t.href}
-              href={t.href}
+              key={it.href}
+              href={it.href}
               className={cx(
                 "flex items-center gap-3.5 rounded-2xl px-3 py-2.5 text-[15px] transition-colors",
-                isActive(path, t.href) ? "bg-primary-soft font-bold text-ink" : "font-medium text-muted hover:bg-bg hover:text-ink",
+                isActive(path, it.href) ? "bg-primary-soft font-bold text-ink" : "font-medium text-muted hover:bg-bg hover:text-ink",
               )}
             >
               <span className="flex size-7 items-center justify-center">
-                <t.icon className="size-[19px]" strokeWidth={1.8} />
+                <it.icon className="size-[19px]" strokeWidth={1.8} />
               </span>
-              {t.label}
-              {t.href === "/admin" && (adminReports ?? 0) > 0 && <span className="ml-auto rounded-full bg-danger px-1.5 text-[11px] font-bold text-white">{adminReports}</span>}
+              {t(it.label)}
+              {it.href === "/admin" && (adminReports ?? 0) > 0 && <span className="ml-auto rounded-full bg-danger px-1.5 text-[11px] font-bold text-white">{adminReports}</span>}
             </Link>
           ))}
         </nav>
 
         <Link href="/achievements" className="flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-bg">
-          <ProgressRing value={stats.progress} size={40} stroke={4} label={`Level ${stats.level}`}>
+          <ProgressRing value={stats.progress} size={40} stroke={4} label={t("Level {0}", stats.level)}>
             <span className="text-xs font-extrabold">{stats.level}</span>
           </ProgressRing>
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 truncate text-sm font-bold text-ink">
               {name}
-              {pro && <span className="bg-brand rounded-full px-1.5 text-[9px] font-extrabold text-white">PRO</span>}
+              {pro && <span className="bg-brand rounded-full px-1.5 text-[9px] font-extrabold text-white">{t("PRO")}</span>}
             </span>
             <span className="flex items-center gap-2 text-xs text-muted">
               <span className="inline-flex items-center gap-0.5 font-semibold text-sun">
                 <Flame className="size-3.5" />
                 {stats.streak}
               </span>
-              {day > 0 ? `Day ${day}/90` : ""}
+              {day > 0 ? t("Day {0}/90", day) : ""}
             </span>
           </span>
         </Link>
         <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
           <form action="/auth/signout" method="post">
-            <button aria-label="Sign out" title="Sign out" className="rounded-full p-2 text-muted hover:bg-bg hover:text-ink">
+            <button aria-label={t("Sign out")} title={t("Sign out")} className="rounded-full p-2 text-muted hover:bg-bg hover:text-ink">
               <LogOut className="size-5" strokeWidth={1.75} />
             </button>
           </form>
@@ -174,11 +175,11 @@ export function AppNav({
         className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 bg-bg/80 px-3 backdrop-blur-xl min-[380px]:px-4 lg:hidden"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <Link href="/dashboard" aria-label="Home">
+        <Link href="/dashboard" aria-label={t("Home")}>
           <Logo />
         </Link>
         <div className="flex items-center gap-0.5">
-          <Link href="/achievements" aria-label={`${stats.streak}-day streak`} className="mr-1 inline-flex items-center gap-1 rounded-full bg-sun-soft px-2.5 py-1 text-xs font-bold text-warning">
+          <Link href="/achievements" aria-label={t("{0}-day streak", stats.streak)} className="mr-1 inline-flex items-center gap-1 rounded-full bg-sun-soft px-2.5 py-1 text-xs font-bold text-warning">
             <Flame className="size-3.5" /> {stats.streak}
           </Link>
           <LanguageMenu value={language} />
@@ -190,17 +191,17 @@ export function AppNav({
       <nav
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line/60 bg-surface/95 backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        aria-label="Main"
+        aria-label={t("Main")}
       >
         <div className="mx-auto grid h-14 max-w-md grid-cols-5 items-center">
-          {TABS.map((t) => {
-            const active = t.match.some((m) => isActive(path, m));
-            const hero = "hero" in t && t.hero;
+          {TABS.map((it) => {
+            const active = it.match.some((m) => isActive(path, m));
+            const hero = "hero" in it && it.hero;
             return (
               <Link
-                key={t.href}
-                href={t.href}
-                aria-label={t.label}
+                key={it.href}
+                href={it.href}
+                aria-label={t(it.label)}
                 aria-current={active ? "page" : undefined}
                 className="flex h-full items-center justify-center"
               >
@@ -208,8 +209,8 @@ export function AppNav({
                   <span className={cx("bg-brand flex size-11 items-center justify-center rounded-2xl text-white shadow-raised transition-transform active:scale-90", active && "ring-2 ring-primary/30 ring-offset-2 ring-offset-surface")}>
                     <Play className="ml-0.5 size-5 fill-current" />
                   </span>
-                ) : t.icon ? (
-                  <t.icon className={cx("size-6 transition-all active:scale-90", active ? "text-ink" : "text-muted")} strokeWidth={active ? 2.5 : 1.75} />
+                ) : it.icon ? (
+                  <it.icon className={cx("size-6 transition-all active:scale-90", active ? "text-ink" : "text-muted")} strokeWidth={active ? 2.5 : 1.75} />
                 ) : (
                   <Avatar name={name} active={active} />
                 )}

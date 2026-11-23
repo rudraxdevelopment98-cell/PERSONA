@@ -9,6 +9,7 @@ import { YourAI } from "./your-ai";
 import { ThemeSetting } from "@/components/theme-toggle";
 import { HelpContact } from "./help-contact";
 import { LifePicker } from "@/components/life-picker";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Settings" };
 
@@ -19,15 +20,16 @@ const APP_PROVIDER_NAMES: Record<string, string> = {
 };
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ ai?: string; ai_error?: string }> }) {
+  const t = await getT();
   const [{ db, user, state }, params] = await Promise.all([getUserState(), searchParams]);
   const [connection, recovery, questions] = await Promise.all([getConnectionSummary(db, user.id), recoveryStatus(db, user.id), securityQuestionsSet(db, user.id)]);
   const app = appProvider();
   return (
     <>
-      <PageHeader title="Settings" description="Your profile, AI, privacy and data." />
+      <PageHeader title={t("Settings")} description={t("Your profile, AI, privacy and data.")} />
       <ThemeSetting />
       <Card className="mb-6">
-        <CardHeader title="Tumhari life" description="Kahaniyan, scenarios aur labs inhi areas se aate hain." />
+        <CardHeader title={t("Tumhari life")} description={t("Kahaniyan, scenarios aur labs inhi areas se aate hain.")} />
         <div className="px-5 pb-5">
           <LifePicker variant="plain" initialStage={state.profile.life_stage ?? null} initialAreas={state.profile.life_areas ?? []} />
         </div>
@@ -37,7 +39,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         appProviderName={APP_PROVIDER_NAMES[app.kind] ?? app.kind}
         appModel={app.model}
         appIsFreeGemini={app.kind === "gemini"}
-        notice={params.ai === "connected" ? "OpenRouter connected. Your sessions now use your own AI." : null}
+        notice={params.ai === "connected" ? t("OpenRouter connected. Your sessions now use your own AI.") : null}
         error={params.ai_error ?? null}
       />
       <div className="mb-6">

@@ -1,3 +1,4 @@
+import { POLLS_GU } from "./poll-gu";
 /**
  * "Aaj ka sawaal": one everyday situation a day, the same for everyone. Ten seconds to vote,
  * then you see how others answered and one practical tip. Built-in bank, so no AI cost.
@@ -223,4 +224,5 @@ export function pollFor(date: string): Poll {
   return POLLS[((day % POLLS.length) + POLLS.length) % POLLS.length];
 }
 
-export const pollText = (p: Poll, language: string | null | undefined) => (language === "hinglish" || language === "hi" || language === "gu" || language === "mr" ? p.hi : p.en);
+export const pollText = (p: Poll, language: string | null | undefined) =>
+  language === "gu" && POLLS_GU[p.id] ? POLLS_GU[p.id] : language === "hinglish" || language === "hi" || language === "gu" || language === "mr" ? p.hi : p.en;

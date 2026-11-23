@@ -6,9 +6,11 @@ import { ButtonLink, Card } from "@/components/ui";
 import type { EpisodeAllowance } from "@/lib/server/plan";
 import { readStore } from "@/lib/client/app-context";
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 /** Free plan, no episode today: the check-in kept the streak; offer the trial and free things to do. */
 export function LiteDay({ allowance }: { allowance: EpisodeAllowance }) {
+  const t = useT();
   const [storeApp, setStoreApp] = useState(false);
   useEffect(() => setStoreApp(Boolean(readStore())), []);
   const next = allowance.nextAt
@@ -17,29 +19,28 @@ export function LiteDay({ allowance }: { allowance: EpisodeAllowance }) {
   return (
     <Card className="overflow-hidden">
       <div className="bg-primary px-5 py-5 text-white sm:px-6">
-        <p className="text-xs font-bold uppercase tracking-wider text-white/70">🌙 Aaj Lite day</p>
-        <h2 className="mt-1 text-xl font-extrabold">Check-in ho gaya · streak safe ✓</h2>
-        <p className="mt-1 text-sm text-white/80">
-          Free plan mein hafte ke {allowance.limit} poore episode milte hain{next ? `. Agla free episode: ${next}` : ""}.
+        <p className="text-xs font-bold uppercase tracking-wider text-white/70">{t("🌙 Aaj Lite day")}</p>
+        <h2 className="mt-1 text-xl font-extrabold">{t("Check-in ho gaya · streak safe ✓")}</h2>
+        <p className="mt-1 text-sm text-white/80">{t("Free plan mein hafte ke")}{" "}{allowance.limit}{" "}{t("poore episode milte hain")}{next ? t(". Agla free episode: {0}", next) : ""}.
         </p>
       </div>
       <div className="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
         {(allowance.trialAvailable || !storeApp) && (
           <ButtonLink href="/pricing" className="sm:col-span-3">
-            <Gem className="size-4" /> {allowance.trialAvailable ? "7 din Pro free try karo · aaj ka episode abhi" : "Pro lo · roz naya episode"}
+            <Gem className="size-4" /> {allowance.trialAvailable ? t("7 din Pro free try karo · aaj ka episode abhi") : t("Pro lo · roz naya episode")}
           </ButtonLink>
         )}
         <Link href="/calm" className="flex items-center gap-3 rounded-2xl bg-bg p-3 transition hover:brightness-95">
           <Leaf className="size-5 text-accent" />
-          <span className="text-sm font-semibold">Calm Corner</span>
+          <span className="text-sm font-semibold">{t("Calm Corner")}</span>
         </Link>
         <Link href="/practice" className="flex items-center gap-3 rounded-2xl bg-bg p-3 transition hover:brightness-95">
           <Dumbbell className="size-5 text-coral" />
-          <span className="text-sm font-semibold">Quick practice</span>
+          <span className="text-sm font-semibold">{t("Quick practice")}</span>
         </Link>
         <Link href="/journal" className="flex items-center gap-3 rounded-2xl bg-bg p-3 transition hover:brightness-95">
           <span className="text-lg">✍️</span>
-          <span className="text-sm font-semibold">Journal</span>
+          <span className="text-sm font-semibold">{t("Journal")}</span>
         </Link>
       </div>
     </Card>

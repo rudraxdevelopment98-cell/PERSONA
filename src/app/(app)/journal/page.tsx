@@ -3,12 +3,14 @@ import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { getUserState } from "@/lib/server/state";
 import type { JournalRow } from "@/lib/server/types";
 import { JournalEditor, JournalEntryItem, JournalFilters } from "./journal";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Journal" };
 
 const TYPES = ["reflection", "observation", "decision", "emotion", "lesson"] as const;
 
 export default async function JournalPage({ searchParams }: { searchParams: Promise<{ q?: string; type?: string }> }) {
+  const t = await getT();
   const { db, user } = await getUserState();
   const { q = "", type = "" } = await searchParams;
   const query = q.trim().slice(0, 200);
@@ -22,8 +24,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader
-        title="Personal Journal"
-        description="A private space for reflections, observations, decisions, emotional patterns and lessons. Only you can read it - the AI Coach can see it only if you allow that in Settings."
+        title={t("Personal Journal")}
+        description={t("A private space for reflections, observations, decisions, emotional patterns and lessons. Only you can read it - the AI Coach can see it only if you allow that in Settings.")}
       />
       <div className="space-y-6">
         <JournalEditor />
@@ -32,8 +34,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
           <Card>
             <EmptyState
               icon={<NotebookPen className="size-6" strokeWidth={1.5} />}
-              title={query || type ? "No matching entries" : "No entries yet"}
-              description={query || type ? "Try a different search or filter." : "Write your first entry above. Short, honest notes are more useful than long, polished ones."}
+              title={query || type ? t("No matching entries") : t("No entries yet")}
+              description={query || type ? t("Try a different search or filter.") : t("Write your first entry above. Short, honest notes are more useful than long, polished ones.")}
             />
           </Card>
         ) : (

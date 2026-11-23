@@ -6,10 +6,12 @@ import { EyeOff, Lock } from "lucide-react";
 import { setPausedAction, setSharingAction, unblockAction } from "../actions";
 import { Alert, Button, Card, CardHeader, cx } from "@/components/ui";
 import type { ShareItem } from "@/lib/domain/social";
+import { useT } from "@/lib/i18n/client";
 
 type Item = { id: ShareItem; label: string; description: string };
 
 function ItemPicker({ items, value, onChange, disabled }: { items: Item[]; value: ShareItem[]; onChange: (v: ShareItem[]) => void; disabled?: boolean }) {
+  const t = useT();
   return (
     <div className="divide-y divide-line">
       {items.map((i) => {
@@ -24,8 +26,8 @@ function ItemPicker({ items, value, onChange, disabled }: { items: Item[]; value
               onChange={() => onChange(on ? value.filter((v) => v !== i.id) : [...value, i.id])}
             />
             <span>
-              <span className="block text-sm font-semibold">{i.label}</span>
-              <span className="block text-xs text-muted">{i.description}</span>
+              <span className="block text-sm font-semibold">{t(i.label)}</span>
+              <span className="block text-xs text-muted">{t(i.description)}</span>
             </span>
           </label>
         );
@@ -47,6 +49,7 @@ export function SharingForm({
   blocked: { id: string; name: string }[];
   push: ReactNode;
 }) {
+  const t = useT();
   const router = useRouter();
   const [friends, setFriends] = useState<ShareItem[]>(sharing.friends);
   const [overrides, setOverrides] = useState<Record<string, ShareItem[] | null>>(sharing.circles);
@@ -78,27 +81,27 @@ export function SharingForm({
           <div className="flex items-start gap-3">
             <EyeOff className="mt-0.5 size-5 text-muted" />
             <div>
-              <p className="font-bold">{sharing.paused ? "Sharing is paused" : "Pause all sharing"}</p>
-              <p className="text-sm text-muted">{sharing.paused ? "Nobody can see your progress until you resume." : "Hide everything from friends and circles at once - useful for a break."}</p>
+              <p className="font-bold">{sharing.paused ? t("Sharing is paused") : t("Pause all sharing")}</p>
+              <p className="text-sm text-muted">{sharing.paused ? t("Nobody can see your progress until you resume.") : t("Hide everything from friends and circles at once - useful for a break.")}</p>
             </div>
           </div>
           <Button variant={sharing.paused ? "primary" : "secondary"} onClick={togglePause} disabled={pending}>
-            {sharing.paused ? "Resume sharing" : "Pause"}
+            {sharing.paused ? t("Resume sharing") : t("Pause")}
           </Button>
         </div>
       </Card>
 
       <Card>
-        <CardHeader title="What friends see" description="Applies to all friends, and to circles unless you set something different below." icon={<Lock className="mt-0.5 size-5 text-primary" />} />
+        <CardHeader title={t("What friends see")} description={t("Applies to all friends, and to circles unless you set something different below.")} icon={<Lock className="mt-0.5 size-5 text-primary" />} />
         <div className="px-5 pb-4">
           <ItemPicker items={items} value={friends} onChange={setFriends} disabled={sharing.paused} />
-          <p className="mt-2 rounded-xl bg-bg px-3 py-2 text-xs text-muted">Preview - friends will see: <b className="text-ink">{label(friends)}</b></p>
+          <p className="mt-2 rounded-xl bg-bg px-3 py-2 text-xs text-muted">{t("Preview - friends will see:")}{" "}<b className="text-ink">{label(friends)}</b></p>
         </div>
       </Card>
 
       {circles.length > 0 && (
         <Card>
-          <CardHeader title="Per-circle settings" description="Share more (or less) with a particular circle. A circle uses your friend settings unless you customise it." />
+          <CardHeader title={t("Per-circle settings")} description={t("Share more (or less) with a particular circle. A circle uses your friend settings unless you customise it.")} />
           <div className="space-y-4 px-5 pb-5">
             {circles.map((c) => {
               const custom = overrides[c.id];
@@ -112,14 +115,12 @@ export function SharingForm({
                         className="size-4 accent-[var(--color-primary)]"
                         checked={Boolean(custom)}
                         onChange={() => setOverrides((o) => ({ ...o, [c.id]: custom ? null : [...friends] }))}
-                      />
-                      Customise
-                    </label>
+                      />{t("Customise")}</label>
                   </div>
                   {custom ? (
                     <ItemPicker items={items} value={custom} onChange={(v) => setOverrides((o) => ({ ...o, [c.id]: v }))} disabled={sharing.paused} />
                   ) : (
-                    <p className="mt-1 text-xs text-muted">Same as friends: {label(friends)}</p>
+                    <p className="mt-1 text-xs text-muted">{t("Same as friends: {0}", label(friends))}</p>
                   )}
                 </div>
               );
@@ -129,17 +130,17 @@ export function SharingForm({
       )}
 
       {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
-      <Button onClick={save} disabled={pending}>{pending ? "Saving..." : "Save sharing settings"}</Button>
+      <Button onClick={save} disabled={pending}>{pending ? t("Saving...") : t("Save sharing settings")}</Button>
 
       <Card>
-        <CardHeader title="Notifications" description="Get a ping when friends cheer you, accept invites or start a race." />
+        <CardHeader title={t("Notifications")} description={t("Get a ping when friends cheer you, accept invites or start a race.")} />
         <div className="px-5 pb-5">{push}</div>
       </Card>
 
       <Card>
-        <CardHeader title="Blocked people" description="Blocked people can't see you, cheer you, invite you or race with you." />
+        <CardHeader title={t("Blocked people")} description={t("Blocked people can't see you, cheer you, invite you or race with you.")} />
         <div className="px-5 pb-5">
-          {blocked.length === 0 && <p className="text-sm text-muted">Nobody blocked.</p>}
+          {blocked.length === 0 && <p className="text-sm text-muted">{t("Nobody blocked.")}</p>}
           {blocked.map((b) => (
             <div key={b.id} className="flex items-center justify-between border-t border-line py-2 first:border-0">
               <span className="text-sm font-semibold">{b.name}</span>
@@ -151,9 +152,7 @@ export function SharingForm({
                     router.refresh();
                   })
                 }
-              >
-                Unblock
-              </Button>
+              >{t("Unblock")}</Button>
             </div>
           ))}
         </div>

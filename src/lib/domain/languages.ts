@@ -27,6 +27,9 @@ export function fallbackLang(id: string | null | undefined): "en" | "hinglish" |
   return "en";
 }
 
+/** Assessment language: its own translation where one exists, else the closest fallback. */
+export const assessLang = (id: string | null | undefined): "en" | "hinglish" | "hi" | "gu" => (id === "gu" ? "gu" : fallbackLang(id));
+
 /** Short confirmation shown after switching. */
 export const SAVED_TEXT: Record<Language, string> = {
   en: "Language set to English",

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Compass } from "lucide-react";
 import { LIFE_AREAS, LIFE_STAGES } from "@/lib/domain/life";
 import { Alert, Button, cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * "Tum abhi kya karte ho?" + "Kin areas mein grow karna hai?". Stories, scenarios and
@@ -19,6 +20,7 @@ export function LifePicker({
   initialAreas?: string[];
   variant?: "card" | "plain";
 }) {
+  const t = useT();
   const router = useRouter();
   const [stage, setStage] = useState<string | null>(initialStage);
   const [areas, setAreas] = useState<string[]>(initialAreas);
@@ -40,7 +42,7 @@ export function LifePicker({
   const body = (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-sm font-semibold">Tum abhi kya karte ho?</p>
+        <p className="mb-2 text-sm font-semibold">{t("Tum abhi kya karte ho?")}</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {LIFE_STAGES.map((s) => (
             <button
@@ -51,14 +53,13 @@ export function LifePicker({
               className={cx("flex items-center gap-2 rounded-2xl border px-3 py-2.5 text-left text-sm transition", stage === s.id ? "border-primary bg-primary-soft font-semibold" : "border-line hover:bg-bg")}
             >
               <span aria-hidden>{s.emoji}</span>
-              <span className="min-w-0">{s.hi}</span>
+              <span className="min-w-0">{t(s.hi)}</span>
             </button>
           ))}
         </div>
       </div>
       <div>
-        <p className="mb-2 text-sm font-semibold">
-          Kin areas mein grow karna hai? <span className="font-normal text-muted">(1–4 chuno)</span>
+        <p className="mb-2 text-sm font-semibold">{t("Kin areas mein grow karna hai?")}{" "}<span className="font-normal text-muted">{t("(1–4 chuno)")}</span>
         </p>
         <div className="flex flex-wrap gap-2">
           {LIFE_AREAS.map((a) => (
@@ -69,28 +70,28 @@ export function LifePicker({
               aria-pressed={areas.includes(a.id)}
               className={cx("rounded-full border px-3.5 py-2 text-sm transition", areas.includes(a.id) ? "border-accent bg-accent-soft font-semibold text-ink" : "border-line hover:bg-bg")}
             >
-              <span aria-hidden>{a.emoji}</span> {a.hi}
+              <span aria-hidden>{a.emoji}</span> {t(a.hi)}
             </button>
           ))}
         </div>
       </div>
       {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
       <Button onClick={save} disabled={busy || !stage || areas.length === 0}>
-        {busy ? "Saving…" : "Save"}
+        {busy ? t("Saving…") : t("Save")}
       </Button>
     </div>
   );
 
   if (variant === "plain") return body;
   return (
-    <section aria-label="Tumhari life" className="rounded-3xl border border-line bg-surface p-5">
+    <section aria-label={t("Tumhari life")} className="rounded-3xl border border-line bg-surface p-5">
       <div className="mb-4 flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent">
           <Compass className="size-5" />
         </span>
         <div>
-          <p className="font-bold">Tumhari life, tumhari kahaniyan · 20 sec</p>
-          <p className="text-sm text-muted">Bata do, taaki roz ki kahaniyan aur practice tumhari zindagi se judi ho: ghar, dost, padhai, kaam, rishte…</p>
+          <p className="font-bold">{t("Tumhari life, tumhari kahaniyan · 20 sec")}</p>
+          <p className="text-sm text-muted">{t("Bata do, taaki roz ki kahaniyan aur practice tumhari zindagi se judi ho: ghar, dost, padhai, kaam, rishte…")}</p>
         </div>
       </div>
       {body}

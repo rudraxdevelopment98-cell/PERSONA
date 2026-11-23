@@ -8,6 +8,7 @@ import { BadgeIcon } from "./badge-icon";
 import { Alert, Button, Input, cx } from "./ui";
 import { COVERS, CAPTION_MAX, MOMENT_LABEL, REACTIONS, coverBg, momentFace, reactionEmoji, type MomentData, type MomentKind } from "@/lib/domain/moments";
 import { cheerAction, nudgeAction, deleteMomentAction, momentOptionsAction, momentViewersAction, postMomentAction, viewMomentAction } from "@/app/(app)/friends/actions";
+import { useT } from "@/lib/i18n/client";
 
 const initials = (name: string) =>
   name
@@ -94,6 +95,7 @@ export function MomentCard({
   className?: string;
   footer?: boolean;
 }) {
+  const t = useT();
   const f = momentFace(kind, data);
   // Sizes follow the card's width (container units), so a small preview looks like the full card.
   return (
@@ -110,14 +112,14 @@ export function MomentCard({
               <BadgeIcon name={data.icon} className="size-1/2" />
             </span>
           ) : (
-            f.sticker
+            t(f.sticker)
           )}
         </span>
         <p className="font-black leading-none tracking-tight drop-shadow" style={{ fontSize: f.big.length > 10 ? "10cqw" : "22cqw", marginTop: "5cqw" }}>
-          {f.big}
+          {t(f.big)}
         </p>
         <p className="font-semibold text-white/90" style={{ fontSize: "5cqw", marginTop: "3cqw" }}>
-          {f.line}
+          {t(f.line)}
         </p>
         {caption && (
           <p className="max-w-[90%] rounded-2xl bg-black/25 font-medium backdrop-blur-sm" style={{ fontSize: "4.4cqw", marginTop: "6cqw", padding: "2.4cqw 4cqw" }}>
@@ -127,8 +129,7 @@ export function MomentCard({
       </div>
       {footer && (
         <div className="relative flex items-center justify-center gap-1.5 font-semibold text-white/80" style={{ fontSize: "3.2cqw", paddingBottom: "5cqw" }}>
-          <span>{emoji ?? "✨"}</span> {name} · PERSONA 90
-        </div>
+          <span>{emoji ?? "✨"}</span> {name}{" "}{t("· PERSONA 90")}</div>
       )}
     </div>
   );
@@ -147,6 +148,7 @@ export function MomentRings({
   me: { name: string; emoji: string | null; cover: string | null };
   emptyHint?: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState<number | null>(null);
   const [compose, setCompose] = useState(false);
   const mine = feed.find((p) => p.isMe);
@@ -154,22 +156,22 @@ export function MomentRings({
   const order = mine ? [mine, ...others] : others;
   return (
     <div>
-      <div className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" role="list" aria-label="Moments">
+      <div className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" role="list" aria-label={t("Moments")}>
         <div role="listitem" className="flex w-16 shrink-0 flex-col items-center gap-1.5">
           <div className="relative">
-            <button type="button" onClick={() => (mine ? setOpen(0) : setCompose(true))} aria-label={mine ? "View your moment" : "Share a moment"}>
+            <button type="button" onClick={() => (mine ? setOpen(0) : setCompose(true))} aria-label={mine ? t("View your moment") : t("Share a moment")}>
               <FaceAvatar name={me.name} emoji={me.emoji} cover={me.cover} size="lg" ring={mine ? "seen" : "none"} />
             </button>
             <button
               type="button"
               onClick={() => setCompose(true)}
-              aria-label="Share a moment"
+              aria-label={t("Share a moment")}
               className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border-2 border-bg bg-primary text-white"
             >
               <Plus className="size-3.5" strokeWidth={3} />
             </button>
           </div>
-          <span className="w-full truncate text-center text-[11px] font-medium text-muted">You</span>
+          <span className="w-full truncate text-center text-[11px] font-medium text-muted">{t("You")}</span>
         </div>
         {others.map((p) => (
           <div key={p.id} role="listitem" className="w-16 shrink-0">
@@ -177,18 +179,15 @@ export function MomentRings({
               type="button"
               onClick={() => setOpen(order.indexOf(p))}
               className="flex w-full flex-col items-center gap-1.5"
-              aria-label={`${p.name}'s moments${p.allSeen ? "" : " (new)"}`}
+              aria-label={t("{0}'s moments{1}", p.name, p.allSeen ? "" : " (new)")}
             >
               <FaceAvatar name={p.name} emoji={p.avatar_emoji} cover={p.cover} size="lg" ring={p.allSeen ? "seen" : "new"} />
-              <span className={cx("w-full truncate text-center text-[11px]", p.allSeen ? "text-muted" : "font-semibold")}>{p.name.split(" ")[0]}</span>
+              <span className={cx("w-full truncate text-center text-[11px]", p.allSeen ? "text-muted" : "font-semibold")}>{t(p.name.split(" ")[0])}</span>
             </button>
           </div>
         ))}
         {emptyHint && others.length === 0 && (
-          <p className="self-center text-xs leading-snug text-muted">
-            Friends&apos; moments show up here for 24 hours.
-            <br />
-            Share yours with the <b>+</b>.
+          <p className="self-center text-xs leading-snug text-muted">{t("Friends' moments show up here for 24 hours.")}<br />{t("Share yours with the")}{" "}<b>+</b>.
           </p>
         )}
       </div>
@@ -209,10 +208,11 @@ const ago = (iso: string) => {
 };
 
 export function MomentViewer({ people, start, onClose }: { people: FeedPerson[]; start: number; onClose: () => void }) {
+  const t = useT();
   const router = useRouter();
   const [p, setP] = useState(start);
   const [m, setM] = useState(() => Math.max(0, people[start].moments.findIndex((x) => !x.seen)));
-  const [t, setT] = useState(0);
+  const [pos, setPos] = useState(0);
   const [paused, setPaused] = useState(false);
   const [reacted, setReacted] = useState<Record<string, string>>({});
   const [viewers, setViewers] = useState<{ id: string; name: string; avatar_emoji: string | null; reaction: string | null }[] | null>(null);
@@ -228,7 +228,7 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
   }, [onClose, router]);
 
   const next = useCallback(() => {
-    setT(0);
+    setPos(0);
     if (m < list.length - 1) setM(m + 1);
     else if (p < people.length - 1) {
       setP(p + 1);
@@ -237,7 +237,7 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
   }, [m, p, list.length, people, close]);
 
   const prev = () => {
-    setT(0);
+    setPos(0);
     if (m > 0) setM(m - 1);
     else if (p > 0) {
       setP(p - 1);
@@ -255,12 +255,12 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
   // Progress timer.
   useEffect(() => {
     if (paused || viewers || !moment) return;
-    const began = performance.now() - t * DURATION;
+    const began = performance.now() - pos * DURATION;
     let raf = 0;
     const tick = (now: number) => {
       const v = (now - began) / DURATION;
       if (v >= 1) return next();
-      setT(v);
+      setPos(v);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -295,20 +295,20 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
   const myReaction = reacted[moment.id] ?? moment.myReaction;
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90" role="dialog" aria-modal="true" aria-label={`${person.name}'s moment`}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90" role="dialog" aria-modal="true" aria-label={t("{0}'s moment", person.name)}>
       <div className="relative h-full w-full max-w-[440px] sm:h-[92vh] sm:py-0">
         <div className="absolute inset-x-3 top-3 z-20 flex gap-1">
           {list.map((x, i) => (
             <span key={x.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
-              <span className="block h-full bg-white" style={{ width: `${i < m ? 100 : i === m ? t * 100 : 0}%` }} />
+              <span className="block h-full bg-white" style={{ width: `${i < m ? 100 : i === m ? pos * 100 : 0}%` }} />
             </span>
           ))}
         </div>
         <div className="absolute inset-x-3 top-6 z-20 flex items-center gap-2 text-white">
           <FaceAvatar name={person.name} emoji={person.avatar_emoji} cover={person.cover} size="sm" />
           <span className="text-sm font-semibold">{person.name}</span>
-          <span className="text-xs text-white/70">{ago(moment.created_at)} · {MOMENT_LABEL[moment.kind]}</span>
-          <button type="button" onClick={close} aria-label="Close" className="ml-auto rounded-full p-2 hover:bg-white/10">
+          <span className="text-xs text-white/70">{ago(moment.created_at)} · {t(MOMENT_LABEL[moment.kind])}</span>
+          <button type="button" onClick={close} aria-label={t("Close")} className="ml-auto rounded-full p-2 hover:bg-white/10">
             <X className="size-5" />
           </button>
         </div>
@@ -322,8 +322,8 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
         >
           <MomentCard kind={moment.kind} data={moment.data} cover={moment.cover} caption={moment.caption} name={person.name} emoji={person.avatar_emoji} footer={false} className="h-full rounded-none sm:rounded-3xl" />
         </div>
-        <button type="button" aria-label="Previous" onClick={prev} className="absolute inset-y-20 left-0 z-10 w-1/3" />
-        <button type="button" aria-label="Next" onClick={next} className="absolute inset-y-20 right-0 z-10 w-2/3" />
+        <button type="button" aria-label={t("Previous")} onClick={prev} className="absolute inset-y-20 left-0 z-10 w-1/3" />
+        <button type="button" aria-label={t("Next")} onClick={next} className="absolute inset-y-20 right-0 z-10 w-2/3" />
 
         <div className="absolute inset-x-0 bottom-0 z-20 p-4">
           {person.isMe ? (
@@ -336,11 +336,10 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
                 }}
                 className="flex items-center gap-1.5 rounded-full bg-black/35 px-4 py-2 text-sm font-semibold text-white backdrop-blur"
               >
-                <Eye className="size-4" /> {moment.views ?? 0} saw it
-              </button>
+                <Eye className="size-4" /> {moment.views ?? 0}{" "}{t("saw it")}</button>
               <button
                 type="button"
-                aria-label="Delete this moment"
+                aria-label={t("Delete this moment")}
                 onClick={async () => {
                   await deleteMomentAction(moment.id);
                   setGone((g) => new Set(g).add(moment.id));
@@ -358,7 +357,7 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
                   key={r.id}
                   type="button"
                   onClick={() => react(r.id)}
-                  aria-label={`React ${r.emoji}`}
+                  aria-label={t("React {0}", r.emoji)}
                   aria-pressed={myReaction === r.id}
                   className={cx(
                     "flex size-11 items-center justify-center rounded-full text-2xl backdrop-blur transition active:scale-125",
@@ -375,12 +374,12 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
         {viewers && (
           <div className="absolute inset-x-0 bottom-0 z-30 max-h-[60%] overflow-y-auto rounded-t-3xl bg-surface p-5 text-ink animate-rise">
             <div className="mb-3 flex items-center justify-between">
-              <p className="font-bold">Seen by {viewers.length}</p>
-              <button type="button" onClick={() => setViewers(null)} aria-label="Close viewers" className="rounded-full p-1.5 hover:bg-bg">
+              <p className="font-bold">{t("Seen by {0}", viewers.length)}</p>
+              <button type="button" onClick={() => setViewers(null)} aria-label={t("Close viewers")} className="rounded-full p-1.5 hover:bg-bg">
                 <X className="size-4" />
               </button>
             </div>
-            {viewers.length === 0 && <p className="text-sm text-muted">No one yet. Friends will see it for 24 hours.</p>}
+            {viewers.length === 0 && <p className="text-sm text-muted">{t("No one yet. Friends will see it for 24 hours.")}</p>}
             <ul className="space-y-2">
               {viewers.map((v) => (
                 <li key={v.id} className="flex items-center gap-3">
@@ -405,6 +404,7 @@ export function MomentViewer({ people, start, onClose }: { people: FeedPerson[];
 type Option = { kind: MomentKind; data: MomentData; hiddenFromFriends: boolean };
 
 export function MomentComposer({ me: given, onClose, preferred }: { me?: { name: string; emoji: string | null; cover: string | null }; onClose: () => void; preferred?: MomentKind }) {
+  const t = useT();
   const router = useRouter();
   const [options, setOptions] = useState<Option[] | null>(null);
   const [kind, setKind] = useState<MomentKind | null>(null);
@@ -446,22 +446,22 @@ export function MomentComposer({ me: given, onClose, preferred }: { me?: { name:
     });
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/60 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true" aria-label="Share a moment">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/60 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true" aria-label={t("Share a moment")}>
       <div className="max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-raised animate-rise sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-lg font-extrabold">Share a moment</p>
-            <p className="text-xs text-muted">Friends can see it for 24 hours. Only numbers, never your answers or journal.</p>
+            <p className="text-lg font-extrabold">{t("Share a moment")}</p>
+            <p className="text-xs text-muted">{t("Friends can see it for 24 hours. Only numbers, never your answers or journal.")}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-2 hover:bg-bg">
+          <button type="button" onClick={onClose} aria-label={t("Close")} className="rounded-full p-2 hover:bg-bg">
             <X className="size-5" />
           </button>
         </div>
 
-        {error && <Alert tone="danger">{error}</Alert>}
+        {error && <Alert tone="danger">{t(error)}</Alert>}
         {options === null && !error && <div className="think-shimmer h-40 rounded-2xl bg-bg" />}
         {options && options.length === 0 && (
-          <p className="rounded-2xl bg-bg p-4 text-sm text-muted">Finish today&apos;s check-in or episode and your first moment will be ready to share.</p>
+          <p className="rounded-2xl bg-bg p-4 text-sm text-muted">{t("Finish today's check-in or episode and your first moment will be ready to share.")}</p>
         )}
 
         {options && options.length > 0 && chosen && (
@@ -471,7 +471,7 @@ export function MomentComposer({ me: given, onClose, preferred }: { me?: { name:
             </div>
             <div className="space-y-4">
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">What to share</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t("What to share")}</p>
                 <div className="flex flex-wrap gap-2">
                   {options.map((o) => (
                     <button
@@ -484,23 +484,23 @@ export function MomentComposer({ me: given, onClose, preferred }: { me?: { name:
                         kind === o.kind ? "border-primary bg-primary text-white" : "border-line hover:bg-bg",
                       )}
                     >
-                      {momentFace(o.kind, o.data).sticker} {MOMENT_LABEL[o.kind]}
+                      {t(momentFace(o.kind, o.data).sticker)} {t(MOMENT_LABEL[o.kind])}
                     </button>
                   ))}
                 </div>
                 {chosen.hiddenFromFriends && (
-                  <p className="mt-2 text-xs text-warning">Your privacy settings hide this kind of progress, so only you will see it. Change it in Privacy.</p>
+                  <p className="mt-2 text-xs text-warning">{t("Your privacy settings hide this kind of progress, so only you will see it. Change it in Privacy.")}</p>
                 )}
               </div>
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Cover</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t("Cover")}</p>
                 <div className="flex flex-wrap gap-2">
                   {COVERS.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setCover(c.id)}
-                      aria-label={c.label}
+                      aria-label={t(c.label)}
                       aria-pressed={cover === c.id}
                       className={cx("size-9 rounded-full ring-offset-2 ring-offset-surface transition", cover === c.id && "ring-2 ring-primary")}
                       style={{ background: c.bg }}
@@ -509,13 +509,11 @@ export function MomentComposer({ me: given, onClose, preferred }: { me?: { name:
                 </div>
               </div>
               <div>
-                <label htmlFor="moment-caption" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted">
-                  Caption (optional)
-                </label>
-                <Input id="moment-caption" value={caption} maxLength={CAPTION_MAX} onChange={(e) => setCaption(e.target.value)} placeholder="Aaj thoda darr laga, phir bhi bola 💪" />
+                <label htmlFor="moment-caption" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted">{t("Caption (optional)")}</label>
+                <Input id="moment-caption" value={caption} maxLength={CAPTION_MAX} onChange={(e) => setCaption(e.target.value)} placeholder={t("Aaj thoda darr laga, phir bhi bola 💪")} />
               </div>
               <Button className="w-full" onClick={post} disabled={pending || done}>
-                {done ? "Shared! ✨" : pending ? "Sharing…" : "Share moment"}
+                {done ? t("Shared! ✨") : pending ? t("Sharing…") : t("Share moment")}
               </Button>
             </div>
           </div>
@@ -532,6 +530,7 @@ export function MomentComposer({ me: given, onClose, preferred }: { me?: { name:
 
 /** One-tap cheer from a list row: tap 👋, pick an emoji. */
 export function QuickCheer({ to, name, circleId = null }: { to: string; name: string; circleId?: string | null }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -554,10 +553,10 @@ export function QuickCheer({ to, name, circleId = null }: { to: string; name: st
           setOpen((o) => !o);
         }}
         disabled={pending}
-        aria-label={`Cheer ${name}`}
+        aria-label={t("Cheer {0}", name)}
         className={cx("flex size-10 items-center justify-center rounded-full border border-line text-lg transition active:scale-90", sent ? "bg-accent-soft" : "bg-surface hover:bg-bg")}
       >
-        {sent ?? "👋"}
+        {t(sent ?? "") ?? "👋"}
       </button>
       {open && (
         <div className="animate-pop absolute right-0 top-11 z-20 flex gap-1 rounded-full border border-line bg-surface p-1 shadow-raised">
@@ -567,23 +566,24 @@ export function QuickCheer({ to, name, circleId = null }: { to: string; name: st
             ["proud", "🌟"],
             ["clap", "👏"],
           ].map(([k, e]) => (
-            <button key={k} type="button" onClick={() => send(k, e)} aria-label={`Send ${e}`} className="flex size-9 items-center justify-center rounded-full text-xl hover:bg-bg">
-              {e}
+            <button key={k} type="button" onClick={() => send(k, e)} aria-label={t("Send {0}", e)} className="flex size-9 items-center justify-center rounded-full text-xl hover:bg-bg">
+              {t(e)}
             </button>
           ))}
         </div>
       )}
-      {err && <p className="absolute right-0 top-11 z-20 w-48 rounded-xl bg-surface p-2 text-xs text-danger shadow-raised">{err}</p>}
+      {err && <p className="absolute right-0 top-11 z-20 w-48 rounded-xl bg-surface p-2 text-xs text-danger shadow-raised">{t(err)}</p>}
     </div>
   );
 }
 
 /** Tapping a ringed avatar (or the button) opens that person's moments. */
 export function WatchMoments({ person, children, className }: { person: FeedPerson; children: React.ReactNode; className?: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={className} aria-label={`Watch ${person.name}'s moments`}>
+      <button type="button" onClick={() => setOpen(true)} className={className} aria-label={t("Watch {0}'s moments", person.name)}>
         {children}
       </button>
       {open && <MomentViewer people={[person]} start={0} onClose={() => setOpen(false)} />}
@@ -606,6 +606,7 @@ export function ShareMomentButton({ preferred, className, children }: { preferre
 
 /** "I'm done, your turn": nudge a friend who hasn't shown up today. */
 export function NudgeButton({ to, name, variant = "icon" }: { to: string; name: string; variant?: "icon" | "pill" }) {
+  const t = useT();
   const [state, setState] = useState<"idle" | "sent" | "error">("idle");
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -627,9 +628,9 @@ export function NudgeButton({ to, name, variant = "icon" }: { to: string; name: 
           disabled={pending || state === "sent"}
           className={cx("inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95", state === "sent" ? "bg-accent-soft text-accent" : "bg-ink text-bg")}
         >
-          {state === "sent" ? "Nudged ✓" : `⏳ Nudge ${name.split(" ")[0]}`}
+          {state === "sent" ? t("Nudged ✓") : t("⏳ Nudge {0}", name.split(" ")[0])}
         </button>
-        {msg && <span className="text-xs text-danger">{msg}</span>}
+        {msg && <span className="text-xs text-danger">{t(msg)}</span>}
       </span>
     );
   return (
@@ -638,13 +639,13 @@ export function NudgeButton({ to, name, variant = "icon" }: { to: string; name: 
         type="button"
         onClick={nudge}
         disabled={pending || state === "sent"}
-        aria-label={`Nudge ${name}`}
-        title={`Nudge ${name}`}
+        aria-label={t("Nudge {0}", name)}
+        title={t("Nudge {0}", name)}
         className={cx("flex size-10 items-center justify-center rounded-full border text-lg transition active:scale-90", state === "sent" ? "border-accent bg-accent-soft" : "nudge-pulse border-warning bg-sun-soft")}
       >
         {state === "sent" ? "✓" : "⏳"}
       </button>
-      {msg && <p className="absolute right-0 top-11 z-20 w-52 rounded-xl bg-surface p-2 text-xs text-danger shadow-raised">{msg}</p>}
+      {msg && <p className="absolute right-0 top-11 z-20 w-52 rounded-xl bg-surface p-2 text-xs text-danger shadow-raised">{t(msg)}</p>}
     </div>
   );
 }

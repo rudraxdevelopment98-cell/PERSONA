@@ -7,9 +7,10 @@ import { DepthPicker } from "./depth-picker";
 import { getUserState } from "@/lib/server/state";
 import { Card, PageHeader } from "@/components/ui";
 import { LanguagePicker } from "@/components/language-picker";
-import { fallbackLang } from "@/lib/domain/languages";
+import { assessLang } from "@/lib/domain/languages";
 import { AssessmentWizard } from "./wizard";
 import { AssessmentResults } from "./results";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Initial Assessment" };
 
@@ -22,6 +23,10 @@ const INTRO = {
     title: "Shuruaati assessment",
     description: "10 skills par sawaal, aur ek chhota reflection. Wahi jawab do jo aap asal mein karte ho, na ki jo karna chahte ho. Koi jawab sahi ya galat nahi hai, aur aapka progress har jawab ke saath save hota hai.",
   },
+  gu: {
+    title: "શરૂઆતનું મૂલ્યાંકન",
+    description: "દસ કુશળતાઓ પર પ્રશ્નો અને એક ટૂંકો વિચાર. તમે ખરેખર જે કરો છો તે જવાબ આપો, જે કરવા માંગો છો તે નહીં. કોઈ જવાબ સાચો કે ખોટો નથી, અને દરેક જવાબ સાથે તમારી પ્રગતિ સેવ થાય છે.",
+  },
   hi: {
     title: "प्रारंभिक आकलन",
     description: "दस क्षमताओं पर प्रश्न और एक छोटा विचार। वही जवाब दें जो आप वास्तव में करते हैं, न कि जो करना चाहते हैं। कोई जवाब सही या गलत नहीं है, और हर जवाब के साथ आपकी प्रगति सेव होती है।",
@@ -29,9 +34,10 @@ const INTRO = {
 } as const;
 
 export default async function AssessmentPage({ searchParams }: { searchParams: Promise<{ deepen?: string }> }) {
+  const t = await getT();
   const [{ db, user, state }, sp] = await Promise.all([getUserState(), searchParams]);
-  const lang = fallbackLang(state.profile.language);
-  const t = depthCopy(lang);
+  const lang = assessLang(state.profile.language);
+  const dc = depthCopy(lang);
 
   if (state.baseline) {
     const options = upgradeOptions(state);
@@ -41,7 +47,7 @@ export default async function AssessmentPage({ searchParams }: { searchParams: P
       const initial = Object.fromEntries((responses ?? []).map((r) => [r.question_id, r.value]));
       return (
         <>
-          <PageHeader title={t.deeperTitle} description={t.deeperText(UPGRADE_WINDOW_DAYS)} />
+          <PageHeader title={dc.deeperTitle} description={dc.deeperText(UPGRADE_WINDOW_DAYS)} />
           <div className="mb-5">
             <LanguagePicker value={lang} />
           </div>
@@ -53,8 +59,8 @@ export default async function AssessmentPage({ searchParams }: { searchParams: P
     return (
       <>
         <PageHeader
-          title="Your development profile"
-          description={`Baseline assessment completed on ${new Date(state.baseline.completed_at!).toLocaleDateString("en-GB", { dateStyle: "long" })}. ${t.basedOn(baselineDepth)}`}
+          title={t("Your development profile")}
+          description={t("Baseline assessment completed on {0}. {1}", new Date(state.baseline.completed_at!).toLocaleDateString("en-GB", { dateStyle: "long" }), dc.basedOn(baselineDepth))}
         />
         {options.length > 0 && (
           <Card className="mb-6 flex flex-col gap-4 border-primary/30 p-5 sm:flex-row sm:items-center">
@@ -62,8 +68,8 @@ export default async function AssessmentPage({ searchParams }: { searchParams: P
               <Layers className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-bold">{t.deeperTitle}</p>
-              <p className="text-sm text-muted">{t.deeperText(UPGRADE_WINDOW_DAYS)}</p>
+              <p className="font-bold">{dc.deeperTitle}</p>
+              <p className="text-sm text-muted">{dc.deeperText(UPGRADE_WINDOW_DAYS)}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {options.map((d) => (
@@ -72,7 +78,7 @@ export default async function AssessmentPage({ searchParams }: { searchParams: P
                   href={`/assessment?deepen=${d}`}
                   className="inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-card hover:bg-primary-hover"
                 >
-                  {t.deeperButton(d, itemsForDepth(d).filter((i) => !answeredIds.has(i.id)).length)}
+                  {dc.deeperButton(d, itemsForDepth(d).filter((i) => !answeredIds.has(i.id)).length)}
                 </Link>
               ))}
             </div>
@@ -99,8 +105,8 @@ export default async function AssessmentPage({ searchParams }: { searchParams: P
   return (
     <>
       <PageHeader
-        title={INTRO[lang].title}
-        description={INTRO[lang].description}
+        title={t(INTRO[lang].title)}
+        description={t(INTRO[lang].description)}
       />
       <div className="mb-5">
         <LanguagePicker value={state.profile.language} />

@@ -6,8 +6,10 @@ import { createRaceAction } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card, CardHeader, Input, Label, Select } from "@/components/ui";
 import { RACE_KINDS } from "@/lib/domain/social";
 import { UpgradeHint } from "@/components/upgrade";
+import { useT } from "@/lib/i18n/client";
 
 export function RaceStarter({ friendId = null, circleId = null, name }: { friendId?: string | null; circleId?: string | null; name: string }) {
+  const t = useT();
   const [kind, setKind] = useState<string>("sessions");
   const [days, setDays] = useState(7);
   const [teams, setTeams] = useState(false);
@@ -19,7 +21,7 @@ export function RaceStarter({ friendId = null, circleId = null, name }: { friend
 
   return (
     <Card>
-      <CardHeader title="Start a race" description={circleId ? `Challenge everyone in ${name}.` : `Challenge ${name} to a friendly race.`} icon={<Flag className="mt-0.5 size-5 text-warning" />} />
+      <CardHeader title={t("Start a race")} description={circleId ? t("Challenge everyone in {0}.", name) : t("Challenge {0} to a friendly race.", name)} icon={<Flag className="mt-0.5 size-5 text-warning" />} />
       <form
         className="grid gap-3 p-5 pt-3 sm:grid-cols-2"
         onSubmit={(e) => {
@@ -35,41 +37,39 @@ export function RaceStarter({ friendId = null, circleId = null, name }: { friend
         }}
       >
         <div>
-          <Label htmlFor="race-kind">Race type</Label>
+          <Label htmlFor="race-kind">{t("Race type")}</Label>
           <Select id="race-kind" value={kind} onChange={(e) => setKind(e.target.value)}>
             {RACE_KINDS.map((r) => (
-              <option key={r.id} value={r.id}>{r.label}</option>
+              <option key={r.id} value={r.id}>{t(r.label)}</option>
             ))}
           </Select>
-          <p className="mt-1 text-xs text-muted">{k.description}</p>
+          <p className="mt-1 text-xs text-muted">{t(k.description)}</p>
         </div>
         <div>
-          <Label htmlFor="race-days">Length</Label>
+          <Label htmlFor="race-days">{t("Length")}</Label>
           <Select id="race-days" value={days} onChange={(e) => setDays(Number(e.target.value))}>
             {[3, 7, 14, 21, 30].map((d) => (
-              <option key={d} value={d}>{d} days</option>
+              <option key={d} value={d}>{t("{0} days", d)}</option>
             ))}
           </Select>
         </div>
         <div className="sm:col-span-2">
-          <Label htmlFor="race-title">Name (optional)</Label>
-          <Input id="race-title" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder={`${days}-day ${k.label.toLowerCase()}`} />
+          <Label htmlFor="race-title">{t("Name (optional)")}</Label>
+          <Input id="race-title" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder={t("{0}-day {1}", days, k.label.toLowerCase())} />
         </div>
         {circleId && (
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" checked={teams} onChange={(e) => setTeams(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
-            Team race - split joiners into two balanced teams
-          </label>
+            <input type="checkbox" checked={teams} onChange={(e) => setTeams(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />{t("Team race - split joiners into two balanced teams")}</label>
         )}
         {error && (
           <div className="sm:col-span-2">
-            <Alert tone={upgrade ? "warning" : "danger"}>{error}</Alert>
+            <Alert tone={upgrade ? "warning" : "danger"}>{t(error)}</Alert>
             <UpgradeHint show={upgrade} />
           </div>
         )}
         <div className="sm:col-span-2">
-          <Button disabled={pending}>{pending ? "Starting..." : "Start race"}</Button>
-          <p className="mt-2 text-xs text-muted">Everyone starts at zero. Only counts are shared.</p>
+          <Button disabled={pending}>{pending ? t("Starting...") : t("Start race")}</Button>
+          <p className="mt-2 text-xs text-muted">{t("Everyone starts at zero. Only counts are shared.")}</p>
         </div>
       </form>
     </Card>

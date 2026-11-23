@@ -1,15 +1,17 @@
 import { PageHeader } from "@/components/ui";
 import { Breathe, Grounding, Sounds, VentAndBurn } from "./calm";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Calm Corner" };
 
-export default function CalmPage() {
+export default async function CalmPage() {
+  const t = await getT();
   return (
     <>
       <PageHeader
-        eyebrow="Practice"
-        title="Calm Corner"
-        description="Stress ho to 1-2 minute yahan. Breathing, gussa nikalne ki jagah, sukoon ki awaaz aur grounding. Sab tumhare phone par hi chalta hai, kuch save nahi hota."
+        eyebrow={t("Practice")}
+        title={t("Calm Corner")}
+        description={t("Stress ho to 1-2 minute yahan. Breathing, gussa nikalne ki jagah, sukoon ki awaaz aur grounding. Sab tumhare phone par hi chalta hai, kuch save nahi hota.")}
       />
       <div className="grid gap-4 md:grid-cols-2">
         <Breathe />

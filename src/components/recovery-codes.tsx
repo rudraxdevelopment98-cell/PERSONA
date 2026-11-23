@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Copy, Download } from "lucide-react";
 import { Button } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 /** Shows freshly generated recovery codes once, with copy and download. */
 export function RecoveryCodes({ codes, email }: { codes: string[]; email?: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const text = `PERSONA 90 recovery codes${email ? ` for ${email}` : ""}\nEach code works once to reset a forgotten password.\n\n${codes.join("\n")}\n`;
   return (
@@ -13,7 +15,7 @@ export function RecoveryCodes({ codes, email }: { codes: string[]; email?: strin
       <div className="grid grid-cols-2 gap-2 rounded-2xl bg-bg p-4 font-mono text-sm sm:grid-cols-4">
         {codes.map((c) => (
           <span key={c} className="rounded-lg bg-surface px-2 py-1.5 text-center tracking-wider">
-            {c}
+            {t(c)}
           </span>
         ))}
       </div>
@@ -26,7 +28,7 @@ export function RecoveryCodes({ codes, email }: { codes: string[]; email?: strin
             setCopied(true);
           }}
         >
-          <Copy className="size-4" /> {copied ? "Copied" : "Copy all"}
+          <Copy className="size-4" /> {copied ? t("Copied") : t("Copy all")}
         </Button>
         <Button
           variant="secondary"
@@ -39,8 +41,7 @@ export function RecoveryCodes({ codes, email }: { codes: string[]; email?: strin
             URL.revokeObjectURL(a.href);
           }}
         >
-          <Download className="size-4" /> Download
-        </Button>
+          <Download className="size-4" />{" "}{t("Download")}</Button>
       </div>
     </div>
   );

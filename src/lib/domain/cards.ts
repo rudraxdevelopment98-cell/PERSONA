@@ -21,7 +21,7 @@ Mix which letter is better. Vary settings and skills across the five cards. No n
 Keep every field short so it fits on a phone card.`;
 
 /** Used when AI is unavailable: a varied built-in set, rotated by date. */
-export const FALLBACK_CARDS: Record<"en" | "hi", QuickCard[]> = {
+export const FALLBACK_CARDS: Record<"en" | "hi" | "gu", QuickCard[]> = {
   en: [
     { skill: "Communication", situation: "Your partner keeps checking their phone while you talk about something important.", a: "\"Can we talk for 10 minutes without phones?\"", b: "Stop talking and sulk", better: "a", why: "A clear, small request works better than going silent and hoping they notice." },
     { skill: "Boundaries", situation: "A classmate asks to copy your assignment again.", a: "Say yes to avoid awkwardness", b: "\"I can explain how I did it, but not share the file\"", better: "b", why: "Offering help on your terms keeps the friendship without risking your work." },
@@ -46,11 +46,23 @@ export const FALLBACK_CARDS: Record<"en" | "hi", QuickCard[]> = {
     { skill: "Confidence", situation: "Interview mein pucha jaata hai tumhari weakness kya hai.", a: "\"Meri koi asli weakness nahi\"", b: "Ek sachchi weakness aur uska plan batao", better: "b", why: "Plan ke saath sachchi weakness self-awareness dikhati hai, jo interviewer pasand karte hain." },
     { skill: "Communication", situation: "Dinner par papa baar baar marks ke baare mein puchte hain.", a: "\"Khaane ke baad akele mein baat karein?\"", b: "Chidh ke table se uth jao", better: "a", why: "Baat ko sahi waqt par le jaana dono ki izzat rakhta hai." },
   ],
+  gu: [
+    { skill: "Communication", situation: "મહત્ત્વની વાત કરતી વખતે જીવનસાથી વારંવાર ફોન જુએ છે.", a: "\"10 મિનિટ ફોન વગર વાત કરીએ?\"", b: "વાત બંધ કરીને મોઢું ફુલાવી દો", better: "a", why: "ચૂપ થઈ જવા કરતાં નાની, સ્પષ્ટ વિનંતી વધુ કામ કરે છે." },
+    { skill: "Boundaries", situation: "ક્લાસમેટ ફરી તમારું અસાઇનમેન્ટ કૉપી કરવા માંગે છે.", a: "અણગમો ટાળવા આપી દો", b: "\"કેવી રીતે કર્યું તે સમજાવી દઉં, ફાઇલ નહીં\"", better: "b", why: "પોતાની શરતે મદદ કરવાથી મિત્રતા અને તમારું કામ બંને બચે છે." },
+    { skill: "Communication", situation: "રૂમમેટને કહેવું છે કે રસોડાની ગંદકી તમને હેરાન કરે છે.", a: "\"કોણ શું સાફ કરશે તે નક્કી કરી લઈએ?\"", b: "ટોણાવાળી ચિઠ્ઠી મૂકી દો", better: "a", why: "આગળ માટેની વિનંતી દોષ આપ્યા વગર સમસ્યા ઉકેલે છે." },
+    { skill: "Self-discipline", situation: "ડૉક્ટરે રોજ 30 મિનિટ ચાલવાનું કહ્યું છે. ત્રણ દિવસથી ચૂકાય છે.", a: "સોમવારથી પાક્કું શરૂ", b: "આજે ફક્ત 10 મિનિટ ચાલો", better: "b", why: "પછીની પરફેક્ટ યોજના કરતાં આજની નાની શરૂઆત સારી." },
+    { skill: "Emotional intelligence", situation: "મહેનત કરેલા કામ પર કોઈની કડવી ટિપ્પણી આવે છે.", a: "તરત જવાબ આપીને બચાવ કરો", b: "એક કલાક રાહ જુઓ, પછી પૂછો શું સુધારી શકાય", better: "b", why: "થોભવાથી ટીકા ઝઘડો નહીં, કામનો ફીડબેક બને છે." },
+    { skill: "Assertiveness", situation: "દુકાનદાર ₹100 ઓછા છૂટા આપે છે.", a: "શાંતિથી કહો અને બાકીના પૈસા માંગો", b: "જવા દો, અજુગતું લાગે છે", better: "a", why: "શાંત, સીધી વાત સામાન્ય છે અને સેકન્ડોમાં ઠીક થઈ જાય છે." },
+    { skill: "Leadership", situation: "કાલે ગ્રુપ પ્રેઝન્ટેશન છે અને કોઈએ શરૂ નથી કર્યું.", a: "સ્લાઇડ વહેંચો અને રાત્રે 9 વાગ્યે ચેક-ઇન રાખો", b: "આજે રાત્રે બધું જાતે કરી લો", better: "a", why: "કામ વહેંચીને ચેક-ઇન રાખવાથી કામ પણ થાય છે અને બધા જોડાયેલા રહે છે." },
+    { skill: "Critical thinking", situation: "વાયરલ વીડિયો કહે છે કે એક અભ્યાસ મુજબ કૉફી તણાવ દૂર કરે છે.", a: "શેર કરી દો, સાચું લાગે છે", b: "પહેલાં અસલ અભ્યાસ શોધો", better: "b", why: "સ્રોત ચકાસવાથી ખોટી વાત ફેલાતી અટકે છે." },
+    { skill: "Confidence", situation: "સગાંના પ્રસંગમાં કોઈ પૂછે છે \"હજુ શું કરે છે?\" અને બધા જુએ છે.", a: "ટૂંકમાં અને સ્મિત સાથે તમારી યોજના કહો", b: "ધીમેથી \"બસ, ચાલે છે\" કહીને નજર ફેરવો", better: "a", why: "ટૂંકો, સ્પષ્ટ જવાબ તમારો આત્મવિશ્વાસ બતાવે છે અને વાત ત્યાં જ પૂરી થાય છે." },
+    { skill: "Communication", situation: "જમતી વખતે પપ્પા વારંવાર માર્ક્સ વિશે પૂછે છે.", a: "\"જમ્યા પછી એકલામાં વાત કરીએ?\"", b: "ચિડાઈને ટેબલ પરથી ઊભા થઈ જાઓ", better: "a", why: "વાતને યોગ્ય સમયે લઈ જવાથી બંનેનું માન સચવાય છે." },
+  ],
 };
 
 /** Five fallback cards for a date (rotates through the bank). */
 export function fallbackDeck(lang: DeckLang, date: string): QuickCard[] {
-  const bank = FALLBACK_CARDS[lang === "en" || lang === "hi" ? lang : lang === "gu" || lang === "mr" ? "hi" : "en"];
+  const bank = FALLBACK_CARDS[lang === "en" || lang === "hi" || lang === "gu" ? lang : lang === "mr" ? "hi" : "en"];
   const day = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86_400_000);
   const start = (day * CARDS_PER_DAY) % bank.length;
   return Array.from({ length: CARDS_PER_DAY }, (_, i) => bank[(start + i) % bank.length]);

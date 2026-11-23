@@ -1,6 +1,6 @@
 import { DEPTH_INFO, type AssessmentDepth } from "./assessment";
 
-type Lang = "en" | "hinglish" | "hi";
+type Lang = "en" | "hinglish" | "hi" | "gu";
 
 type DepthCopy = { name: string; tagline: string; detail: string };
 type Copy = {
@@ -87,6 +87,28 @@ const hi: Copy = {
   basedOn: (d) => `${hi.depths[d].name} पर आधारित (हर क्षमता पर ${DEPTH_INFO[d].perSkill} प्रश्न)।`,
 };
 
+const gu: Copy = {
+  pickTitle: "તમે કેટલું ઊંડું મૂલ્યાંકન કરવા માંગો છો?",
+  pickHint: "તમારા સમય મુજબ પસંદ કરો. જવાબ આપતાં વચ્ચે બદલી શકો છો, અને પછી કંઈ ફરી કર્યા વગર વધુ ઊંડા જઈ શકો છો.",
+  questions: (n) => `${n} પ્રશ્નો`,
+  minutes: (n) => `~${n} મિનિટ`,
+  recommended: "સૂચવેલું",
+  start: "શરૂ કરો",
+  depths: {
+    quick: { name: "ઝડપી ચેક", tagline: "ઝડપી પહેલો અંદાજ", detail: "દરેક કુશળતા પર એક અસલ પરિસ્થિતિ. આજે શરૂ કરવા માટે સારું - સ્કોર એક અંદાજ છે." },
+    standard: { name: "સામાન્ય", tagline: "સંતુલિત અને ભરોસાપાત્ર", detail: "દરેક કુશળતા પર ત્રણ પ્રશ્નો - પરિસ્થિતિઓ અને આદતો બંને. સમય અને ચોકસાઈનું સૌથી સારું સંતુલન." },
+    deep: { name: "ઊંડું વિશ્લેષણ", tagline: "સૌથી ચોક્કસ ચિત્ર", detail: "બધા પ્રશ્નો, દરેક કુશળતા પર ચાર, અને બે ટૂંકા વિચાર. કોચ અને વાર્તાઓને સૌથી વધુ સમજ મળે છે." },
+  },
+  optional: "(વૈકલ્પિક)",
+  changeLength: "લંબાઈ બદલો",
+  lengthLabel: (d) => `${gu.depths[d].name} · ${DEPTH_INFO[d].questions} પ્રશ્નો`,
+  deeperTitle: "વધુ ચોક્કસ પ્રોફાઇલ જોઈએ છે?",
+  deeperText: (days) => `થોડા વધુ પ્રશ્નોના જવાબ આપો - તમારા સ્કોર અને પ્રોફાઇલ વધુ પુરાવા સાથે ફરી બનશે. પહેલાંના જવાબ સચવાયેલા રહેશે. આ પહેલા ${days} દિવસ સુધી જ મળે છે, જેથી તમારી પ્રગતિ સાચી શરૂઆતથી મપાય.`,
+  deeperButton: (d, extra) => `${gu.depths[d].name} · +${extra} પ્રશ્નો`,
+  deeperIntro: (d, extra) => `વધુ ઊંડાણ: ${gu.depths[d].name} માટે ${extra} નવા પ્રશ્નો. તમારા પહેલાંના જવાબ ગણાઈ ગયા છે.`,
+  basedOn: (d) => `${gu.depths[d].name} પર આધારિત (દરેક કુશળતા પર ${DEPTH_INFO[d].perSkill} પ્રશ્ન).`,
+};
+
 export function depthCopy(lang: Lang): Copy {
-  return lang === "hi" ? hi : lang === "hinglish" ? hinglish : en;
+  return lang === "gu" ? gu : lang === "hi" ? hi : lang === "hinglish" ? hinglish : en;
 }

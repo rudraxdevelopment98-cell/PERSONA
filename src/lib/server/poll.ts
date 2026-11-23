@@ -1,7 +1,7 @@
 import "server-only";
 import { getPool } from "@/lib/db/pool";
 import { todayIn } from "@/lib/domain/programme";
-import { pollFor, pollText } from "@/lib/domain/poll";
+import { POLLS, pollFor, pollText } from "@/lib/domain/poll";
 import { itemsVisibleTo, loadSnapshots } from "./social";
 
 const q = async <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => (await getPool().query(sql, params)).rows as T[];
@@ -24,9 +24,10 @@ export type PollView = {
 export async function todayPoll(userId: string): Promise<PollView> {
   const [p] = await q<{ timezone: string; language: string | null }>("select timezone, language from public.profiles where id = $1", [userId]);
   const date = todayIn(p?.timezone ?? "UTC");
-  const poll = pollFor(date);
+  const [mine] = await q<{ choice: number; poll_id: string }>("select choice, poll_id from public.poll_votes where user_id = $1 and poll_date = $2", [userId, date]);
+  // Show the poll the person actually answered, even if today's rotation changed after they voted.
+  const poll = (mine && POLLS.find((x) => x.id === mine.poll_id)) || pollFor(date);
   const t = pollText(poll, p?.language);
-  const [mine] = await q<{ choice: number }>("select choice from public.poll_votes where user_id = $1 and poll_date = $2", [userId, date]);
   const view: PollView = { id: poll.id, date, skill: poll.skill, question: t.q, options: t.o, tip: t.tip, myChoice: mine?.choice ?? null, counts: [0, 0, 0], total: 0, friendsSame: [], friendsVoted: 0 };
   // Results only after you vote, so the crowd doesn't steer the answer.
   if (view.myChoice === null) return view;

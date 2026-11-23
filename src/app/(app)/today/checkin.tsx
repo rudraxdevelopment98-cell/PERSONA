@@ -13,6 +13,7 @@ import type { EpisodeAllowance } from "@/lib/server/plan";
 import type { CheckinAnalysis } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import type { CheckinRow } from "@/lib/server/types";
+import { useT } from "@/lib/i18n/client";
 
 // One in-flight build per page, shared by the automatic start and the button.
 let sessionBuild: Promise<unknown> | null = null;
@@ -27,6 +28,7 @@ function startSessionBuild() {
 }
 
 export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = null }: { checkin: CheckinRow | null; hasSession: boolean; lite?: EpisodeAllowance | null }) {
+  const t = useT();
   const [lite, setLite] = useState<EpisodeAllowance | null>(initialLite);
   const router = useRouter();
   const [checkin, setCheckin] = useState(initial);
@@ -98,15 +100,13 @@ export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = 
     return (
       <Card className="p-6 sm:p-8">
         <p className="text-4xl">☀️</p>
-        <h2 className="mt-3 text-xl font-extrabold">How was your last day?</h2>
-        <p className="mt-1 text-sm text-muted">3 min · shapes today&apos;s story</p>
-        {error && <div className="mt-4"><Alert tone="danger">{error}</Alert></div>}
+        <h2 className="mt-3 text-xl font-extrabold">{t("How was your last day?")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("3 min · shapes today's story")}</p>
+        {error && <div className="mt-4"><Alert tone="danger">{t(error)}</Alert></div>}
         {busy === "start" ? (
           <AIThinking className="mt-6" steps={["Remembering your last few days…", "Picking today's questions…", "Shuffling the cards…"]} />
         ) : (
-          <Button className="mt-6" onClick={start} disabled={busy !== null}>
-            Begin check-in
-          </Button>
+          <Button className="mt-6" onClick={start} disabled={busy !== null}>{t("Begin check-in")}</Button>
         )}
       </Card>
     );
@@ -129,49 +129,49 @@ export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = 
     <div className="space-y-6">
       {analysis && (
         <Card>
-          <CardHeader title="Check-in insight" />
+          <CardHeader title={t("Check-in insight")} />
           <div className="grid gap-5 px-5 py-4 md:grid-cols-2">
             <div className="space-y-3 text-sm leading-relaxed">
               <p>{analysis.summary}</p>
-              <p className="text-muted">{analysis.observation}</p>
+              <p className="text-muted">{t(analysis.observation)}</p>
             </div>
             <div className="space-y-3">
               {analysis.patterns.length > 0 && checkin.day_number >= 3 && (
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted">Recurring patterns</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("Recurring patterns")}</p>
                   <ul className="mt-1.5 space-y-1 text-sm">
                     {analysis.patterns.map((p, i) => (
-                      <li key={i}>· {p}</li>
+                      <li key={i}>· {t(p)}</li>
                     ))}
                   </ul>
                 </div>
               )}
               <div className="rounded-md bg-bg p-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted">Try today</p>
-                <p className="mt-1 text-sm">{analysis.suggestion_for_today}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("Try today")}</p>
+                <p className="mt-1 text-sm">{t(analysis.suggestion_for_today)}</p>
               </div>
             </div>
           </div>
         </Card>
       )}
-      {error && <Alert tone={analysis ? "danger" : "warning"}>{error}</Alert>}
+      {error && <Alert tone={analysis ? "danger" : "warning"}>{t(error)}</Alert>}
       {lite && !hasSession && <LiteDay allowance={lite} />}
       {!lite && !hasSession && (ready || buildStarted !== null) && (
         <Card className="p-6">
           {ready ? (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="font-semibold">Your episode is ready 🎬</h2>
-                <p className="mt-1 text-sm text-muted">Story, scenarios and today&apos;s mission are waiting.</p>
+                <h2 className="font-semibold">{t("Your episode is ready 🎬")}</h2>
+                <p className="mt-1 text-sm text-muted">{t("Story, scenarios and today's mission are waiting.")}</p>
               </div>
               <Button onClick={() => router.refresh()} className="cta-glow">
-                <Sparkles className="size-4" /> Open today&apos;s session <ArrowRight className="size-4" />
+                <Sparkles className="size-4" />{" "}{t("Open today's session")}{" "}<ArrowRight className="size-4" />
               </Button>
             </div>
           ) : (
             <>
-              <h2 className="mb-1 font-semibold">Writing today&apos;s episode…</h2>
-              <p className="mb-4 text-sm text-muted">About a minute</p>
+              <h2 className="mb-1 font-semibold">{t("Writing today's episode…")}</h2>
+              <p className="mb-4 text-sm text-muted">{t("About a minute")}</p>
               <WritingEpisode startedAt={buildStarted!} />
             </>
           )}
@@ -181,14 +181,14 @@ export function CheckinFlow({ checkin: initial, hasSession, lite: initialLite = 
         <Card className="p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-semibold">Your 30-minute session</h2>
+              <h2 className="font-semibold">{t("Your 30-minute session")}</h2>
               <p className="mt-1 text-sm text-muted">
-                {busy === "session" ? "About a minute" : "Story · scenarios · challenge · reflection"}
+                {busy === "session" ? t("About a minute") : t("Story · scenarios · challenge · reflection")}
               </p>
             </div>
             <Button onClick={buildSession} disabled={busy !== null}>
               {busy === "session" ? <Spinner /> : <Sparkles className="size-4" />}
-              {busy === "session" ? "Preparing your session…" : "Build today's session"}
+              {busy === "session" ? t("Preparing your session…") : t("Build today's session")}
               {busy !== "session" && <ArrowRight className="size-4" />}
             </Button>
           </div>

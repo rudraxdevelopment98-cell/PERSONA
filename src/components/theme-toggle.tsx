@@ -3,6 +3,7 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 type Theme = "system" | "light" | "dark";
 const OPTIONS: { id: Theme; label: string; icon: typeof Sun }[] = [
@@ -13,6 +14,7 @@ const OPTIONS: { id: Theme; label: string; icon: typeof Sun }[] = [
 
 /** Appearance setting: follow the device, or always light / always dark. Remembered on this device. */
 export function ThemeSetting() {
+  const t = useT();
   const [theme, setTheme] = useState<Theme>("system");
 
   useEffect(() => {
@@ -36,8 +38,8 @@ export function ThemeSetting() {
 
   return (
     <Card className="mb-6 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-      <h2 className="text-[15px] font-bold">Appearance</h2>
-      <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-full bg-bg p-1">
+      <h2 className="text-[15px] font-bold">{t("Appearance")}</h2>
+      <div role="radiogroup" aria-label={t("Theme")} className="grid grid-cols-3 gap-1 rounded-full bg-bg p-1">
         {OPTIONS.map((o) => (
           <button
             key={o.id}
@@ -51,7 +53,7 @@ export function ThemeSetting() {
             )}
           >
             <o.icon className="size-4" />
-            {o.label}
+            {t(o.label)}
           </button>
         ))}
       </div>

@@ -11,6 +11,7 @@ import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { assessmentPack, type AssessmentLang } from "@/lib/domain/assessment-i18n";
 import { postJSON } from "@/lib/client/api";
 import { VoiceTextarea } from "@/components/voice-input";
+import { useT } from "@/lib/i18n/client";
 
 const PAGE_SIZE = 5;
 const DRAFT_KEY = "persona90-assessment-draft";
@@ -30,17 +31,18 @@ function Question({
   onChange: (v: number, optionIndex: number) => void;
   index: number;
 }) {
+  const t = useT();
   const pack = assessmentPack(lang);
-  const t = pack?.items[item.id];
+  const tr = pack?.items[item.id];
   const options =
     item.kind === "likert"
       ? LIKERT_SCALE.map((s, i) => ({ value: s.value, label: pack?.likert[i] ?? s.label }))
-      : item.options.map((o, i) => ({ value: o.value, label: t?.options?.[i] ?? o.label }));
+      : item.options.map((o, i) => ({ value: o.value, label: tr?.options?.[i] ?? o.label }));
   return (
     <fieldset className="py-5 first:pt-0 last:pb-0">
       <legend className="mb-3 text-sm leading-relaxed text-ink">
         <span className="mr-2 text-muted tabular-nums">{index}.</span>
-        {t?.text ?? item.text}
+        {tr?.text ?? item.text}
       </legend>
       <div className={cx("grid gap-2", item.kind === "likert" ? "grid-cols-1 sm:grid-cols-5" : "grid-cols-1")}>
         {options.map((o, i) => {
@@ -61,7 +63,7 @@ function Question({
                 selected ? "border-primary bg-primary-soft font-medium text-ink" : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink",
               )}
             >
-              {o.label}
+              {t(o.label)}
             </button>
           );
         })}
@@ -84,9 +86,10 @@ export function AssessmentWizard({
   mode?: "baseline" | "deepen";
   askHeldBack?: boolean;
 }) {
+  const t = useT();
   const pack = assessmentPack(language);
   const ui = pack?.ui;
-  const t = depthCopy(language);
+  const dc = depthCopy(language);
   const router = useRouter();
   const [changing, setChanging] = useState(false);
   const ITEMS = useMemo(
@@ -193,10 +196,10 @@ export function AssessmentWizard({
         </span>
         <span className="inline-flex w-20 shrink-0 items-center justify-end gap-1 text-xs font-semibold text-muted" aria-live="polite">
           {saving > 0 ? (
-            (ui?.saving ?? "Saving…")
+            (t(ui?.saving ?? "") ?? t("Saving…"))
           ) : answered > 0 ? (
             <>
-              <CloudCheck className="size-3.5 text-success" /> {ui?.saved ?? "Saved"}
+              <CloudCheck className="size-3.5 text-success" /> {t(ui?.saved ?? "") ?? t("Saved")}
             </>
           ) : null}
         </span>
@@ -205,16 +208,16 @@ export function AssessmentWizard({
       {mode === "baseline" && !changing && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm">
           <span className="inline-flex items-center gap-2 font-semibold">
-            <Layers className="size-4 text-primary" /> {t.lengthLabel(depth)}
+            <Layers className="size-4 text-primary" /> {dc.lengthLabel(depth)}
           </span>
           <button type="button" onClick={() => setChanging(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-            <SlidersHorizontal className="size-3.5" /> {t.changeLength}
+            <SlidersHorizontal className="size-3.5" /> {t(dc.changeLength)}
           </button>
         </div>
       )}
       {mode === "deepen" && (
         <div className="flex items-center gap-2 rounded-xl bg-primary-soft px-4 py-2.5 text-sm font-semibold text-primary">
-          <Layers className="size-4 shrink-0" /> {t.deeperIntro(depth, ITEMS.length)}
+          <Layers className="size-4 shrink-0" /> {dc.deeperIntro(depth, ITEMS.length)}
         </div>
       )}
       {changing && (
@@ -226,7 +229,7 @@ export function AssessmentWizard({
       {resumed.current && (
         <div className="flex items-center gap-2 rounded-xl bg-accent-soft px-4 py-2.5 text-sm">
           <History className="size-4 shrink-0 text-accent" />
-          {ui ? ui.welcomeBack(Object.keys(initial).length) : `Welcome back - your ${Object.keys(initial).length} earlier answers are saved. Continue where you left off.`}
+          {ui ? ui.welcomeBack(Object.keys(initial).length) : t("Welcome back - your {0} earlier answers are saved. Continue where you left off.", Object.keys(initial).length)}
         </div>
       )}
 
@@ -234,7 +237,7 @@ export function AssessmentWizard({
         {!isReflection ? (
           <>
             <p className="mb-5 text-xs font-medium uppercase tracking-wide text-muted">
-              {ui?.part ?? "Part"} {page + 1} {ui?.of ?? "of"} {pages.length + 1} · {dims.join(" · ")}
+              {t(ui?.part ?? "") ?? t("Part")} {page + 1} {t(ui?.of ?? "") ?? "of"} {pages.length + 1} · {dims.join(" · ")}
             </p>
             <div className="divide-y divide-line">
               {current.map((item, i) => {
@@ -255,36 +258,36 @@ export function AssessmentWizard({
           </>
         ) : (
           <div className="space-y-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">{ui?.finalPart ?? "Final part · In your own words"}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">{t(ui?.finalPart ?? "") ?? t("Final part · In your own words")}</p>
             {showHeldBack && (
               <div>
                 <Label htmlFor="held">
-                  {ui?.heldBack ?? "Describe a recent situation where you held back from saying or doing something. What stopped you?"}
-                  {!heldBackRequired && <span className="ml-1 font-normal text-muted">{t.optional}</span>}
+                  {t(ui?.heldBack ?? "") ?? t("Describe a recent situation where you held back from saying or doing something. What stopped you?")}
+                  {!heldBackRequired && <span className="ml-1 font-normal text-muted">{t(dc.optional)}</span>}
                 </Label>
                 <VoiceTextarea id="held" value={heldBack} onChange={(e) => setHeldBack(e.target.value)} maxLength={2000} rows={4} />
               </div>
             )}
             {mode === "baseline" && (
               <div>
-                <Label htmlFor="goal">{ui?.goal ?? "What would you like to be noticeably different about how you think or act after 90 days?"}</Label>
+                <Label htmlFor="goal">{t(ui?.goal ?? "") ?? t("What would you like to be noticeably different about how you think or act after 90 days?")}</Label>
                 <VoiceTextarea id="goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={2000} rows={4} />
               </div>
             )}
-            <p className="text-xs text-muted">{ui?.privateNote ?? "These answers personalise your profile and stories. They are never shared."}</p>
+            <p className="text-xs text-muted">{ui?.privateNote ?? t("These answers personalise your profile and stories. They are never shared.")}</p>
           </div>
         )}
       </Card>
 
-      {error && <Alert tone="danger">{error}</Alert>}
+      {error && <Alert tone="danger">{t(error)}</Alert>}
 
       <div className="flex items-center justify-between">
         <Button variant="secondary" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0 || busy}>
-          <ArrowLeft className="size-4" /> {ui?.back ?? "Back"}
+          <ArrowLeft className="size-4" /> {t(ui?.back ?? "") ?? t("Back")}
         </Button>
         {!isReflection ? (
           <Button onClick={() => setPage((p) => p + 1)} disabled={!pageComplete}>
-            {ui?.continue ?? "Continue"} <ArrowRight className="size-4" />
+            {t(ui?.continue ?? "") ?? t("Continue")} <ArrowRight className="size-4" />
           </Button>
         ) : (
           <Button
@@ -297,7 +300,7 @@ export function AssessmentWizard({
               (mode === "baseline" && goal.trim().length < 10)
             }
           >
-            {busy ? <Spinner /> : <Check className="size-4" />} {busy ? (ui?.building ?? "Building your profile…") : (ui?.finish ?? "Finish assessment")}
+            {busy ? <Spinner /> : <Check className="size-4" />} {busy ? (t(ui?.building ?? "") ?? t("Building your profile…")) : (t(ui?.finish ?? "") ?? t("Finish assessment"))}
           </Button>
         )}
       </div>

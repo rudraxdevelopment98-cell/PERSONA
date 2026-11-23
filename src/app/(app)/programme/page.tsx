@@ -3,10 +3,12 @@ import { Badge, Card, CardHeader, PageHeader, cx } from "@/components/ui";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { PHASES, focusForDay } from "@/lib/domain/programme";
 import { getUserState } from "@/lib/server/state";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "90-Day Programme" };
 
 export default async function ProgrammePage() {
+  const t = await getT();
   const { db, user, state } = await getUserState();
   const { data: sessions } = await db.from("daily_sessions").select("day_number, focus_skill, completed_at, challenge_status").eq("user_id", user.id);
   const byDay = new Map((sessions ?? []).map((s) => [s.day_number as number, s]));
@@ -15,11 +17,11 @@ export default async function ProgrammePage() {
   return (
     <>
       <PageHeader
-        title="90-Day Programme"
+        title={t("90-Day Programme")}
         description={
           state.day > 0
-            ? `You are on day ${state.day}. Each phase cycles through five focus areas; every third day targets one of your weakest skills.`
-            : "Your programme starts when you complete the initial assessment."
+            ? t("You are on day {0}. Each phase cycles through five focus areas; every third day targets one of your weakest skills.", state.day)
+            : t("Your programme starts when you complete the initial assessment.")
         }
       />
       <div className="space-y-6">
@@ -32,17 +34,16 @@ export default async function ProgrammePage() {
             <Card key={phase.number}>
               <CardHeader
                 title={
-                  <span className="flex items-center gap-2">
-                    Phase {phase.number}: {phase.name} {current && <Badge tone="primary">Current</Badge>}
+                  <span className="flex items-center gap-2">{t("Phase {0}: {1}", phase.number, t(phase.name))} {current && <Badge tone="primary">{t("Current")}</Badge>}
                   </span>
                 }
-                description={`Days ${phase.days[0]}–${phase.days[1]} · ${phase.summary}`}
-                action={<span className="text-xs tabular-nums text-muted">{done}/30 done</span>}
+                description={t("Days {0}–{1} · {2}", phase.days[0], phase.days[1], t(phase.summary))}
+                action={<span className="text-xs tabular-nums text-muted">{t("{0}/30 done", done)}</span>}
               />
               {personal && (
                 <div className="border-b border-line bg-bg/60 px-5 py-3.5 text-sm leading-relaxed">
-                  <p><span className="font-medium">Your goal:</span> {personal.goal}</p>
-                  <p className="mt-1 text-muted">{personal.personal_emphasis}</p>
+                  <p><span className="font-medium">{t("Your goal:")}</span> {t(personal.goal)}</p>
+                  <p className="mt-1 text-muted">{t(personal.personal_emphasis)}</p>
                 </div>
               )}
               <ol className="grid divide-y divide-line sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-3">
@@ -61,11 +62,11 @@ export default async function ProgrammePage() {
                         {s?.completed_at ? <Check className="size-3.5" strokeWidth={3} /> : d}
                       </span>
                       <div className="min-w-0">
-                        <p className={cx("truncate text-sm", d > state.day ? "text-muted" : "text-ink")}>{f.title.replace(" - applied to your growth area", "")}</p>
+                        <p className={cx("truncate text-sm", d > state.day ? "text-muted" : "text-ink")}>{t(f.title.replace(" - applied to your growth area", ""))}</p>
                         <p className="truncate text-xs text-muted">
-                          {DIMENSION_META[f.dimension].label}
-                          {f.personalised ? " · personalised" : ""}
-                          {s?.challenge_status === "completed" ? " · challenge done" : ""}
+                          {t(DIMENSION_META[f.dimension].label)}
+                          {f.personalised ? t("· personalised") : ""}
+                          {s?.challenge_status === "completed" ? t("· challenge done") : ""}
                         </p>
                       </div>
                     </li>

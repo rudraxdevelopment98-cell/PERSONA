@@ -51,21 +51,22 @@ type Story = {
 import { EpisodeTag, NextEpisode, Previously, type EpisodeInfo } from "./episode";
 import { CelebrationOverlay, type Celebration } from "./celebration";
 import { VoiceTextarea } from "@/components/voice-input";
+import { useT } from "@/lib/i18n/client";
 
 type Step = { key: string; title: string; minutes: string; done: boolean };
 
 /** Five small steps instead of a list of locked boxes: done ones can be reopened, future ones stay quiet. */
 function StepHeader({ steps, view, current, onPick }: { steps: Step[]; view: number; current: number; onPick: (i: number) => void }) {
+  const t = useT();
   const doneCount = steps.filter((x) => x.done).length;
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs text-muted">
-        <span>
-          Step {view + 1} of {steps.length} · <span className="font-medium text-ink">{steps[view].title}</span> · {steps[view].minutes}
+        <span>{t("Step {0} of {1}", view + 1, steps.length)} · <span className="font-medium text-ink">{t(steps[view].title)}</span> · {t(steps[view].minutes)}
         </span>
-        <span className="tabular-nums">{doneCount}/{steps.length} done</span>
+        <span className="tabular-nums">{t("{0}/{1} done", doneCount, steps.length)}</span>
       </div>
-      <ol className="flex items-center gap-1.5" aria-label="Today's steps">
+      <ol className="flex items-center gap-1.5" aria-label={t("Today's steps")}>
         {steps.map((st, i) => {
           const open = st.done || i <= current;
           return (
@@ -94,8 +95,8 @@ function StepHeader({ steps, view, current, onPick }: { steps: Step[]; view: num
                   )}
                 >
                   {st.done && <Check className="size-3" strokeWidth={3} />}
-                  <span className="hidden sm:inline">{st.title}</span>
-                  <span className="sm:hidden">{st.title.split(" ")[0]}</span>
+                  <span className="hidden sm:inline">{t(st.title)}</span>
+                  <span className="sm:hidden">{t(st.title.split(" ")[0])}</span>
                 </span>
               </button>
             </li>
@@ -107,16 +108,16 @@ function StepHeader({ steps, view, current, onPick }: { steps: Step[]; view: num
 }
 
 function NextStep({ to, minutes, onClick, label }: { to: string; minutes: string; onClick: () => void; label?: string }) {
+  const t = useT();
   return (
     <div className="animate-pop flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
       <div className="min-w-0">
-        <p className="text-xs text-muted">{label ?? "Nice, step done."} Up next</p>
+        <p className="text-xs text-muted">{t(label ?? "") ?? t("Nice, step done.")}{" "}{t("Up next")}</p>
         <p className="truncate text-sm font-semibold">
-          {to} <span className="font-normal text-muted">· {minutes}</span>
+          {t(to)} <span className="font-normal text-muted">· {t(minutes)}</span>
         </p>
       </div>
-      <Button onClick={onClick}>
-        Continue <ArrowRight className="size-4" />
+      <Button onClick={onClick}>{t("Continue")}{" "}<ArrowRight className="size-4" />
       </Button>
     </div>
   );
@@ -124,18 +125,19 @@ function NextStep({ to, minutes, onClick, label }: { to: string; minutes: string
 
 /** Scenarios one at a time, with small dots for where you are. */
 function ScenarioDeck({ sessionId, scenarios, onAnswered }: { sessionId: string; scenarios: ClientScenario[]; onAnswered: (i: number, s: ClientScenario) => void }) {
+  const t = useT();
   const firstOpen = scenarios.findIndex((x) => !x.response);
   const [i, setI] = useState(firstOpen === -1 ? 0 : firstOpen);
   const sc = scenarios[i];
   return (
     <div className="space-y-3">
       {scenarios.length > 1 && (
-        <div className="flex items-center justify-center gap-2" aria-label={`Scenario ${i + 1} of ${scenarios.length}`}>
+        <div className="flex items-center justify-center gap-2" aria-label={t("Scenario {0} of {1}", i + 1, scenarios.length)}>
           {scenarios.map((x, j) => (
             <button
               key={j}
               type="button"
-              aria-label={`Scenario ${j + 1}`}
+              aria-label={t("Scenario {0}", j + 1)}
               disabled={!x.response && j !== i && j !== firstOpen}
               onClick={() => setI(j)}
               className={cx("h-2 rounded-full transition-all", j === i ? "w-6 bg-primary" : x.response ? "w-2 bg-success" : "w-2 bg-line-strong")}
@@ -149,7 +151,7 @@ function ScenarioDeck({ sessionId, scenarios, onAnswered }: { sessionId: string;
       {sc.response && i < scenarios.length - 1 && (
         <div className="flex justify-end">
           <Button variant="secondary" onClick={() => setI(i + 1)}>
-            {scenarios[i + 1].response ? "Next scenario" : `Next scenario (${i + 2}/${scenarios.length})`} <ArrowRight className="size-4" />
+            {scenarios[i + 1].response ? t("Next scenario") : t("Next scenario ({0}/{1})", i + 2, scenarios.length)} <ArrowRight className="size-4" />
           </Button>
         </div>
       )}
@@ -158,14 +160,15 @@ function ScenarioDeck({ sessionId, scenarios, onAnswered }: { sessionId: string;
 }
 
 function Feedback({ title, items }: { title?: string; items: { label: string; text: string }[] }) {
+  const t = useT();
   return (
     <div className="space-y-3">
-      {title && <p className="text-sm font-medium">{title}</p>}
+      {title && <p className="text-sm font-medium">{t(title)}</p>}
       {items
         .filter((i) => i.text)
         .map((i) => (
           <div key={i.label}>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">{i.label}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">{t(i.label)}</p>
             <p className="mt-0.5 text-sm leading-relaxed">{i.text}</p>
           </div>
         ))}
@@ -181,6 +184,7 @@ const RUBRIC_LABELS: Record<string, string> = {
 };
 
 function StoryReader({ sessionId, story, initialProgress, completed, onComplete, episode, aiVoice }: { sessionId: string; story: Story; initialProgress: number; completed: boolean; onComplete: () => void; episode: EpisodeInfo | null; aiVoice: AIVoice | null }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(completed ? 100 : initialProgress);
   const sent = useRef(initialProgress);
@@ -259,46 +263,42 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
             <EpisodeTag info={episode} />
           </div>
         )}
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">
-          Story · {story.word_count.toLocaleString()} words · about {minutes} min
-        </p>
-        <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{story.title}</h3>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("Story · {0} words · about {1} min", story.word_count.toLocaleString(), minutes)}</p>
+        <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{t(story.title)}</h3>
         <div ref={ref} className="story-body mt-6 max-w-[65ch] font-serif text-[17px] leading-[1.75] text-ink">
           {paragraphs.map((p, i) => (
             <p key={i} id={`story-p-${i}`} className={cx("-mx-2 rounded-lg px-2 transition-colors duration-300", speaking === i && "bg-primary-soft")}>
-              {p}
+              {t(p)}
             </p>
           ))}
         </div>
         {awaitingChoice && <StoryChoice sessionId={sessionId} choice={story.choice!} />}
         {story.chosen && story.choice && (
           <div className="mt-6 max-w-[65ch] rounded-2xl border border-line bg-bg p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-primary">
-              Tumhari choice · {story.choice.options.find((o) => o.id === story.chosen)?.vibe ?? ""}
+            <p className="text-xs font-bold uppercase tracking-wider text-primary">{t("Tumhari choice ·")}{" "}{t(story.choice.options.find((o) => o.id === story.chosen)?.vibe ?? "") ?? ""}
             </p>
             <p className="mt-1 font-semibold">{story.choice.options.find((o) => o.id === story.chosen)?.text}</p>
-            {story.choice_feedback && <p className="mt-2 text-sm leading-relaxed text-muted">{story.choice_feedback}</p>}
+            {story.choice_feedback && <p className="mt-2 text-sm leading-relaxed text-muted">{t(story.choice_feedback)}</p>}
           </div>
         )}
       </article>
       {completed ? (
         <div className="border-t border-line px-5 py-5 sm:px-10">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">Psychological insights</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("Psychological insights")}</p>
           <div className="mt-3 grid gap-4 md:grid-cols-3">
             {story.insights.map((ins) => (
               <div key={ins.title} className="rounded-xl bg-bg p-4">
-                <p className="text-sm font-medium">{ins.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{ins.explanation}</p>
+                <p className="text-sm font-medium">{t(ins.title)}</p>
+                <p className="mt-1 text-sm leading-relaxed text-muted">{t(ins.explanation)}</p>
               </div>
             ))}
           </div>
         </div>
       ) : (
         <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10">
-          {error ? <Alert tone="warning">{error}</Alert> : <span />}
+          {error ? <Alert tone="warning">{t(error)}</Alert> : <span />}
           <Button onClick={markRead} disabled={progress < 95 || busy || awaitingChoice}>
-            {busy && <Spinner />} I&apos;ve finished reading
-          </Button>
+            {busy && <Spinner />}{" "}{t("I've finished reading")}</Button>
         </div>
       )}
     </Card>
@@ -306,6 +306,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
 }
 
 function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: string; index: number; scenario: ClientScenario; onAnswered: (s: ClientScenario) => void }) {
+  const t = useT();
   const [choice, setChoice] = useState<string | null>(null);
   const [reasoning, setReasoning] = useState("");
   const [busy, setBusy] = useState(false);
@@ -338,12 +339,12 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
   return (
     <Card>
       <CardHeader
-        title={`Scenario ${index + 1}: ${scenario.title}`}
-        action={r?.score != null ? <Badge tone="primary">{r.score}/100</Badge> : scenario.format ? <Badge tone="accent">{scenario.format}</Badge> : undefined}
+        title={t("Scenario {0}: {1}", index + 1, scenario.title)}
+        action={r?.score != null ? <Badge tone="primary">{r.score}/100</Badge> : scenario.format ? <Badge tone="accent">{t(scenario.format)}</Badge> : undefined}
       />
       <div className="space-y-4 px-5 py-4">
-        <p className="text-sm leading-relaxed">{scenario.situation}</p>
-        <p className="text-sm font-medium">{scenario.question}</p>
+        <p className="text-sm leading-relaxed">{t(scenario.situation)}</p>
+        <p className="text-sm font-medium">{t(scenario.question)}</p>
         <div className="space-y-2">
           {scenario.options.map((o) => {
             const chosen = r ? r.choice_id === o.id : choice === o.id;
@@ -362,9 +363,9 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
                 >
                   <span className="font-medium uppercase text-muted">{o.id}</span>
                   <span className="flex-1">{o.text}</span>
-                  {o.quality && <Badge tone={o.quality === "strong" ? "success" : o.quality === "weak" ? "danger" : "neutral"}>{o.quality}</Badge>}
+                  {o.quality && <Badge tone={o.quality === "strong" ? "success" : o.quality === "weak" ? "danger" : "neutral"}>{t(o.quality)}</Badge>}
                 </button>
-                {o.consequence && <p className="mt-1 pl-9 text-xs leading-relaxed text-muted">{o.consequence}</p>}
+                {o.consequence && <p className="mt-1 pl-9 text-xs leading-relaxed text-muted">{t(o.consequence)}</p>}
               </div>
             );
           })}
@@ -373,19 +374,15 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
         {!r ? (
           <>
             <div>
-              <label htmlFor={`reason-${index}`} className="mb-1.5 block text-sm font-medium">
-                Why would you choose this?
-              </label>
+              <label htmlFor={`reason-${index}`} className="mb-1.5 block text-sm font-medium">{t("Why would you choose this?")}</label>
               <VoiceTextarea id={`reason-${index}`} rows={3} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
             </div>
-            {error && <Alert tone="danger">{error}</Alert>}
+            {error && <Alert tone="danger">{t(error)}</Alert>}
             {busy ? (
               <AIThinking steps={["Reading your answer…", "Comparing it with how confident people reply…", "Writing your feedback…"]} />
             ) : (
               <div className="flex justify-end">
-                <Button onClick={submit} disabled={!choice || reasoning.trim().length < 15}>
-                  Submit answer
-                </Button>
+                <Button onClick={submit} disabled={!choice || reasoning.trim().length < 15}>{t("Submit answer")}</Button>
               </div>
             )}
           </>
@@ -411,6 +408,7 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
 }
 
 function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: (status: ClientSession["challenge_status"], notes: string | null) => void }) {
+  const t = useT();
   const [notes, setNotes] = useState(session.challenge_notes ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -434,29 +432,29 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
   return (
     <Card>
       <CardHeader
-        title={c.title}
-        description={`Difficulty: ${c.difficulty}`}
+        title={t(c.title)}
+        description={t("Difficulty: {0}", c.difficulty)}
         action={
           session.challenge_status === "completed" ? (
-            <Badge tone="success">Completed</Badge>
+            <Badge tone="success">{t("Completed")}</Badge>
           ) : session.challenge_status === "skipped" ? (
-            <Badge>Skipped</Badge>
+            <Badge>{t("Skipped")}</Badge>
           ) : (
-            <Badge tone="warning">To do today</Badge>
+            <Badge tone="warning">{t("To do today")}</Badge>
           )
         }
       />
       <div className="space-y-4 px-5 py-4">
         <div className="flex gap-3">
           <Target className="mt-0.5 size-4 shrink-0 text-muted" strokeWidth={1.75} />
-          <p className="text-sm leading-relaxed">{c.description}</p>
+          <p className="text-sm leading-relaxed">{t(c.description)}</p>
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">You&apos;ve done it when</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("You've done it when")}</p>
           <ul className="mt-1.5 space-y-1 text-sm">
             {c.success_criteria.map((s, i) => (
               <li key={i} className="flex gap-2">
-                <Check className="mt-0.5 size-3.5 shrink-0 text-muted" /> {s}
+                <Check className="mt-0.5 size-3.5 shrink-0 text-muted" /> {t(s)}
               </li>
             ))}
           </ul>
@@ -464,27 +462,20 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
         {editing ? (
           <>
             <div>
-              <label htmlFor="challenge-notes" className="mb-1.5 block text-sm font-medium">
-                What happened?
-              </label>
+              <label htmlFor="challenge-notes" className="mb-1.5 block text-sm font-medium">{t("What happened?")}</label>
               <VoiceTextarea id="challenge-notes" rows={3} maxLength={4000} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
-            {error && <Alert tone="danger">{error}</Alert>}
+            {error && <Alert tone="danger">{t(error)}</Alert>}
             <div className="flex flex-wrap justify-end gap-2">
-              <Button variant="ghost" onClick={() => save("skipped")} disabled={busy}>
-                Skip this challenge
-              </Button>
+              <Button variant="ghost" onClick={() => save("skipped")} disabled={busy}>{t("Skip this challenge")}</Button>
               <Button onClick={() => save("completed")} disabled={busy || notes.trim().length < 10}>
-                {busy && <Spinner />} Mark as done
-              </Button>
+                {busy && <Spinner />}{" "}{t("Mark as done")}</Button>
             </div>
           </>
         ) : (
           <div className="flex flex-col gap-3 rounded-xl bg-bg p-4 sm:flex-row sm:items-start sm:justify-between">
-            <p className="text-sm leading-relaxed">{session.challenge_notes || "No notes recorded."}</p>
-            <Button variant="secondary" onClick={() => setEditing(true)}>
-              Update
-            </Button>
+            <p className="text-sm leading-relaxed">{session.challenge_notes || t("No notes recorded.")}</p>
+            <Button variant="secondary" onClick={() => setEditing(true)}>{t("Update")}</Button>
           </div>
         )}
       </div>
@@ -493,6 +484,7 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
 }
 
 function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (answers: string[], feedback: ReflectionFeedback | null, celebration: Celebration | null) => void }) {
+  const t = useT();
   const [answers, setAnswers] = useState<string[]>(session.reflection_answers ?? session.reflection_questions.map(() => ""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -516,10 +508,10 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
         {session.reflection_questions.map((q, i) => (
           <div key={i} className="px-5 py-4">
             <label htmlFor={`refl-${i}`} className="mb-2 block text-sm leading-relaxed">
-              {q}
+              {t(q)}
             </label>
             {session.completed ? (
-              <p className="rounded-xl bg-bg px-3 py-2 text-sm leading-relaxed">{answers[i]}</p>
+              <p className="rounded-xl bg-bg px-3 py-2 text-sm leading-relaxed">{t(answers[i])}</p>
             ) : (
               <VoiceTextarea
                 id={`refl-${i}`}
@@ -551,10 +543,8 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
             <AIThinking className="w-full" steps={["Reading your reflection…", "Connecting it with today's story…", "Picking what to practise tomorrow…"]} />
           ) : (
             <>
-              {error ? <Alert tone="danger">{error}</Alert> : <span />}
-              <Button onClick={submit} disabled={answers.some((a) => a.trim().length < 10)}>
-                Complete session
-              </Button>
+              {error ? <Alert tone="danger">{t(error)}</Alert> : <span />}
+              <Button onClick={submit} disabled={answers.some((a) => a.trim().length < 10)}>{t("Complete session")}</Button>
             </>
           )}
         </div>
@@ -576,6 +566,7 @@ export function SessionFlow({
   episode?: EpisodeInfo | null;
   aiVoice?: AIVoice | null;
 }) {
+  const t = useT();
   const router = useRouter();
   const [session, setSession] = useState(initial);
   const [scenarios, setScenarios] = useState(initialScenarios);
@@ -605,9 +596,8 @@ export function SessionFlow({
   return (
     <div className="space-y-6">
       {session.completed && (
-        <Alert tone="success">
-          Today&apos;s session is complete.{" "}
-          {session.challenge_status === "pending" ? "Remember to record your real-world challenge once you've tried it." : "See you tomorrow."}
+        <Alert tone="success">{t("Today's session is complete.")}{" "}
+          {session.challenge_status === "pending" ? t("Remember to record your real-world challenge once you've tried it.") : t("See you tomorrow.")}
         </Alert>
       )}
       {session.completed && episode && <NextEpisode info={episode} />}
@@ -619,16 +609,16 @@ export function SessionFlow({
       <div key={view} className="animate-step-in space-y-4">
         {view === 0 && (
           <Card className="p-5 sm:p-6">
-            <h2 className="text-lg font-semibold">{intro.title}</h2>
-            <p className="mt-3 text-sm leading-relaxed">{intro.why_it_matters}</p>
+            <h2 className="text-lg font-semibold">{t(intro.title)}</h2>
+            <p className="mt-3 text-sm leading-relaxed">{t(intro.why_it_matters)}</p>
             <div className="mt-4 rounded-xl border-l-2 border-primary bg-bg px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">Key idea</p>
-              <p className="mt-1 text-sm leading-relaxed">{intro.key_idea}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">{t("Key idea")}</p>
+              <p className="mt-1 text-sm leading-relaxed">{t(intro.key_idea)}</p>
             </div>
-            <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted">Today you will practise</p>
+            <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted">{t("Today you will practise")}</p>
             <ul className="mt-1.5 space-y-1 text-sm">
               {intro.what_you_will_practise.map((p, i) => (
-                <li key={i}>· {p}</li>
+                <li key={i}>· {t(p)}</li>
               ))}
             </ul>
             <Button
@@ -638,7 +628,7 @@ export function SessionFlow({
                 go(1);
               }}
             >
-              {started ? "Back to the story" : "Begin the story"} <ArrowRight className="size-4" />
+              {started ? t("Back to the story") : t("Begin the story")} <ArrowRight className="size-4" />
             </Button>
           </Card>
         )}
@@ -658,7 +648,7 @@ export function SessionFlow({
               />
             </div>
           ) : (
-            <Alert tone="danger">The story for this session could not be loaded.</Alert>
+            <Alert tone="danger">{t("The story for this session could not be loaded.")}</Alert>
           ))}
 
         {view === 2 && (
@@ -686,8 +676,8 @@ export function SessionFlow({
             {!session.completed && (
               <NextStep
                 to="Reflection"
-                minutes="3 min"
-                label={session.challenge_status === "pending" ? "Try it later today and come back to record it." : "Saved."}
+                minutes={t("3 min")}
+                label={session.challenge_status === "pending" ? t("Try it later today and come back to record it.") : t("Saved.")}
                 onClick={() => {
                   setChallengeSeen(true);
                   go(4);

@@ -7,6 +7,7 @@ import { Alert, Button, ButtonLink, Card, Input, cx } from "@/components/ui";
 import type { PlanInfo } from "@/lib/domain/plans";
 import type { PublicPaymentConfig } from "@/lib/server/payments";
 import { portalAction, redeemCouponAction, startTrialAction } from "./actions";
+import { useT } from "@/lib/i18n/client";
 
 type PaddleGlobal = {
   Environment: { set: (env: string) => void };
@@ -70,6 +71,7 @@ export function PricingClient({
   features: { label: string; free: string | boolean; pro: string | boolean }[];
   justPaid: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [cycle, setCycle] = useState<"month" | "year">("year");
   const [local, setLocal] = useState<{ month?: string; year?: string }>({});
@@ -130,7 +132,7 @@ export function PricingClient({
       {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
 
       <div className="flex justify-center">
-        <div className="inline-flex rounded-full border border-line bg-surface p-1 text-sm font-semibold" role="radiogroup" aria-label="Billing period">
+        <div className="inline-flex rounded-full border border-line bg-surface p-1 text-sm font-semibold" role="radiogroup" aria-label={t("Billing period")}>
           {(["month", "year"] as const).map((c) => (
             <button
               key={c}
@@ -140,7 +142,7 @@ export function PricingClient({
               onClick={() => setCycle(c)}
               className={cx("rounded-full px-4 py-1.5", cycle === c ? "bg-primary text-white" : "text-muted")}
             >
-              {c === "month" ? "Monthly" : `Yearly · save ${saving}%`}
+              {c === "month" ? t("Monthly") : t("Yearly · save {0}%", saving)}
             </button>
           ))}
         </div>
@@ -148,63 +150,58 @@ export function PricingClient({
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-6">
-          <p className="text-sm font-bold uppercase tracking-wider text-muted">Free</p>
+          <p className="text-sm font-bold uppercase tracking-wider text-muted">{t("Free")}</p>
           <p className="mt-2 text-4xl font-extrabold">{currency === "₹" ? "₹0" : "$0"}</p>
-          <p className="text-sm text-muted">forever</p>
-          <p className="mt-4 text-sm">Daily check-in, insight and streak for all 90 days. A full episode every day in week 1, then 3 a week, plus friends and progress tracking.</p>
+          <p className="text-sm text-muted">{t("forever")}</p>
+          <p className="mt-4 text-sm">{t("Daily check-in, insight and streak for all 90 days. A full episode every day in week 1, then 3 a week, plus friends and progress tracking.")}</p>
           <div className="mt-6">
             {signedIn ? (
-              <span className="inline-flex h-10 items-center rounded-xl bg-bg px-4 text-sm font-semibold text-muted">{isPro ? "Included in Pro" : "Your current plan"}</span>
+              <span className="inline-flex h-10 items-center rounded-xl bg-bg px-4 text-sm font-semibold text-muted">{isPro ? t("Included in Pro") : t("Your current plan")}</span>
             ) : (
-              <ButtonLink href="/signup" variant="secondary">Start free</ButtonLink>
+              <ButtonLink href="/signup" variant="secondary">{t("Start free")}</ButtonLink>
             )}
           </div>
         </Card>
 
         <Card className="relative border-primary p-6 ring-4 ring-primary/10">
-          <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Most popular</span>
+          <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">{t("Most popular")}</span>
           <p className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-primary">
-            <Sparkles className="size-4" /> Pro
-          </p>
+            <Sparkles className="size-4" />{" "}{t("Pro")}</p>
           <p className="mt-2 text-4xl font-extrabold">
-            {priceLabel}
-            <span className="text-base font-semibold text-muted">/{cycle === "month" ? "month" : "year"}</span>
+            {t(priceLabel)}
+            <span className="text-base font-semibold text-muted">/{cycle === "month" ? t("month") : t("year")}</span>
           </p>
-          <p className="text-sm text-muted">{cycle === "year" ? `billed yearly${perMonth}` : "billed monthly"} · local currency and taxes at checkout</p>
-          <p className="mt-4 text-sm">A new episode every day, the AI narrator, unlimited Decision Lab, Communication Lab and AI coaching, more circles and races, and full control of your story seasons.</p>
+          <p className="text-sm text-muted">{cycle === "year" ? t("billed yearly{0}", perMonth) : t("billed monthly")}{" "}{t("· local currency and taxes at checkout")}</p>
+          <p className="mt-4 text-sm">{t("A new episode every day, the AI narrator, unlimited Decision Lab, Communication Lab and AI coaching, more circles and races, and full control of your story seasons.")}</p>
           <div className="mt-6 space-y-2">
             {!signedIn ? (
-              <ButtonLink href="/signup">Start free - try Pro later</ButtonLink>
+              <ButtonLink href="/signup">{t("Start free - try Pro later")}</ButtonLink>
             ) : isPro ? (
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-success">
-                  You have Pro{plan?.source === "paddle" ? "" : plan?.source === "trial" ? " (free trial)" : plan?.source === "admin" ? " (gift)" : plan?.source === "coupon" ? " (code)" : ""}
+                <p className="text-sm font-semibold text-success">{t("You have Pro")}{plan?.source === "paddle" ? "" : plan?.source === "trial" ? t("(free trial)") : plan?.source === "admin" ? t("(gift)") : plan?.source === "coupon" ? t("(code)") : ""}
                   {plan?.endsAt ? ` · ${plan.cancelAt || plan.source !== "paddle" ? "until" : "renews"} ${new Date(plan.cancelAt ?? plan.endsAt).toLocaleDateString()}` : ""}
                 </p>
                 {plan?.source === "paddle" && !storeApp && (
-                  <Button variant="secondary" disabled={pending} onClick={() => act(portalAction as never, (r) => (window.open(String(r.url), "_blank", "noopener"), "Opening your billing portal…"))}>
-                    Manage subscription
-                  </Button>
+                  <Button variant="secondary" disabled={pending} onClick={() => act(portalAction as never, (r) => (window.open(String(r.url), "_blank", "noopener"), "Opening your billing portal…"))}>{t("Manage subscription")}</Button>
                 )}
                 {plan?.source !== "paddle" && config.enabled && !storeApp && (
-                  <Button variant="secondary" onClick={checkout} disabled={!paddleReady}>Subscribe to keep Pro</Button>
+                  <Button variant="secondary" onClick={checkout} disabled={!paddleReady}>{t("Subscribe to keep Pro")}</Button>
                 )}
               </div>
             ) : (
               <>
                 {plan?.trialAvailable && (
                   <Button className="w-full" disabled={pending} onClick={() => act(startTrialAction as never, () => "Your 7-day Pro trial has started. Enjoy!")}>
-                    <Gift className="size-4" /> Start 7-day free trial - no card
-                  </Button>
+                    <Gift className="size-4" />{" "}{t("Start 7-day free trial - no card")}</Button>
                 )}
                 {storeApp ? (
-                  !plan?.trialAvailable && <p className="text-sm text-muted">In-app subscription jaldi aa raha hai.</p>
+                  !plan?.trialAvailable && <p className="text-sm text-muted">{t("In-app subscription jaldi aa raha hai.")}</p>
                 ) : config.enabled ? (
                   <Button className="w-full" variant={plan?.trialAvailable ? "secondary" : "primary"} onClick={checkout} disabled={!paddleReady}>
-                    <Sparkles className="size-4" /> {paddleReady ? `Upgrade - ${priceLabel}/${cycle === "month" ? "month" : "year"}` : "Loading checkout…"}
+                    <Sparkles className="size-4" /> {paddleReady ? t("Upgrade - {0}/{1}", priceLabel, cycle === "month" ? "month" : "year") : t("Loading checkout…")}
                   </Button>
                 ) : (
-                  !plan?.trialAvailable && <p className="text-sm text-muted">Paid plans are opening soon. Have a code? Redeem it below.</p>
+                  !plan?.trialAvailable && <p className="text-sm text-muted">{t("Paid plans are opening soon. Have a code? Redeem it below.")}</p>
                 )}
               </>
             )}
@@ -216,18 +213,18 @@ export function PricingClient({
         <table className="w-full min-w-[520px] text-sm">
           <thead>
             <tr className="border-b border-line text-left">
-              <th className="px-5 py-3 font-semibold">What you get</th>
-              <th className="px-5 py-3 text-center font-semibold">Free</th>
-              <th className="px-5 py-3 text-center font-semibold text-primary">Pro</th>
+              <th className="px-5 py-3 font-semibold">{t("What you get")}</th>
+              <th className="px-5 py-3 text-center font-semibold">{t("Free")}</th>
+              <th className="px-5 py-3 text-center font-semibold text-primary">{t("Pro")}</th>
             </tr>
           </thead>
           <tbody>
             {features.map((f) => (
               <tr key={f.label} className="border-b border-line last:border-0">
-                <td className="px-5 py-3">{f.label}</td>
+                <td className="px-5 py-3">{t(f.label)}</td>
                 {[f.free, f.pro].map((v, i) => (
                   <td key={i} className="px-5 py-3 text-center">
-                    {v === true ? <Check className="mx-auto size-4 text-success" /> : v === false ? <Minus className="mx-auto size-4 text-muted" /> : <span className={i === 1 ? "font-semibold" : "text-muted"}>{v}</span>}
+                    {v === true ? <Check className="mx-auto size-4 text-success" /> : v === false ? <Minus className="mx-auto size-4 text-muted" /> : <span className={i === 1 ? "font-semibold" : "text-muted"}>{t(v)}</span>}
                   </td>
                 ))}
               </tr>
@@ -238,7 +235,7 @@ export function PricingClient({
 
       {signedIn && (
         <Card className="mx-auto max-w-md p-5">
-          <p className="font-semibold">Have a code?</p>
+          <p className="font-semibold">{t("Have a code?")}</p>
           <form
             className="mt-2 flex gap-2"
             onSubmit={(e) => {
@@ -247,16 +244,15 @@ export function PricingClient({
               setCode("");
             }}
           >
-            <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="e.g. FRIENDS30" aria-label="Code" maxLength={32} />
-            <Button variant="secondary" disabled={pending || code.trim().length < 4}>Redeem</Button>
+            <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t("e.g. FRIENDS30")} aria-label={t("Code")} maxLength={32} />
+            <Button variant="secondary" disabled={pending || code.trim().length < 4}>{t("Redeem")}</Button>
           </form>
         </Card>
       )}
 
-      <p className="text-center text-xs text-muted">
-        Cancel any time. Refund within 14 days of your first payment.{" "}
-        <a href="/terms" className="underline underline-offset-2">Terms</a> · <a href="/privacy" className="underline underline-offset-2">Privacy</a> ·{" "}
-        <a href="/refund" className="underline underline-offset-2">Refund policy</a>
+      <p className="text-center text-xs text-muted">{t("Cancel any time. Refund within 14 days of your first payment.")}{" "}
+        <a href="/terms" className="underline underline-offset-2">{t("Terms")}</a> · <a href="/privacy" className="underline underline-offset-2">{t("Privacy")}</a> ·{" "}
+        <a href="/refund" className="underline underline-offset-2">{t("Refund policy")}</a>
       </p>
     </div>
   );

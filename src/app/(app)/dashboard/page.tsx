@@ -18,6 +18,7 @@ import { LifePicker } from "@/components/life-picker";
 import { todayPoll } from "@/lib/server/poll";
 import { recoveryStatus } from "@/lib/server/recovery";
 import type { CheckinRow, SessionRow } from "@/lib/server/types";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Home" };
 
@@ -28,13 +29,14 @@ function greeting(hour: number) {
 }
 
 export default async function Dashboard() {
+  const t = await getT();
   const [{ db, user, state }, { stats, level }] = await Promise.all([getUserState(), getGamification()]);
   const name = state.profile.display_name || "there";
 
   if (!state.baseline) {
     return (
       <>
-        <PageHeader title={`Hi, ${name} 👋`} />
+        <PageHeader title={t("Hi, {0} 👋", name)} />
         <BaselineGate feature="Your 90-day programme" />
       </>
     );
@@ -111,21 +113,20 @@ export default async function Dashboard() {
       <section className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-muted">
-            {greeting(hour)}, {name}
+            {t("{0}, {1}", t(greeting(hour)), name)}
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            Day {state.day}
+          <h1 className="text-3xl font-extrabold tracking-tight">{t("Day")}{" "}{state.day}
             <span className="text-muted"> / {PROGRAMME_LENGTH}</span>
           </h1>
         </div>
         <div className="flex shrink-0 gap-1.5 text-xs font-bold">
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1.5 text-primary" title={`${stats.xp} XP`}>
-            <Zap className="size-3.5" /> Lv {level.level}
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1.5 text-primary" title={t("{0} XP", stats.xp)}>
+            <Zap className="size-3.5" />{" "}{t("Lv")}{" "}{level.level}
           </span>
           <span
             className={cx("inline-flex items-center rounded-full px-2.5 py-1.5", restUsed ? "bg-bg text-muted/50" : "bg-sky-soft")}
-            title={restUsed ? "Rest day used this week" : "1 rest day available: miss a day, keep your streak"}
-            aria-label={restUsed ? "Rest day used this week" : "1 rest day available"}
+            title={restUsed ? t("Rest day used this week") : t("1 rest day available: miss a day, keep your streak")}
+            aria-label={restUsed ? t("Rest day used this week") : t("1 rest day available")}
           >
             ❄️
           </span>
@@ -139,8 +140,8 @@ export default async function Dashboard() {
             <ShieldCheck className="size-5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">Account secure karo · 1 min</span>
-            <span className="block text-xs text-muted">Password bhool gaye to bhi wapas aa sako: recovery codes save karo.</span>
+            <span className="block text-sm font-bold">{t("Account secure karo · 1 min")}</span>
+            <span className="block text-xs text-muted">{t("Password bhool gaye to bhi wapas aa sako: recovery codes save karo.")}</span>
           </span>
         </Link>
       )}
@@ -151,15 +152,15 @@ export default async function Dashboard() {
         <section className="bg-brand relative overflow-hidden rounded-[28px] p-5 text-white shadow-raised transition-transform group-active:scale-[0.99] sm:p-7">
           <div className="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full bg-white/10 blur-2xl" />
           <p className="text-xs font-bold uppercase tracking-wider text-white/70">
-            {series ? series.label : `Phase ${focus.phase.number} · ${focus.phase.name}`}
+            {series ? t(series.label) : t("Phase {0} · {1}", focus.phase.number, t(focus.phase.name))}
           </p>
-          <h2 className="mt-1.5 line-clamp-2 font-serif text-2xl font-semibold leading-snug sm:text-3xl">{series ? series.title : focus.title}</h2>
+          <h2 className="mt-1.5 line-clamp-2 font-serif text-2xl font-semibold leading-snug sm:text-3xl">{series ? t(series.title) : t(focus.title)}</h2>
           <div className="mt-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-1.5" aria-label={`${done} of ${steps.length} done today`}>
+            <div className="flex items-center gap-1.5" aria-label={t("{0} of {1} done today", done, steps.length)}>
               {steps.map((st, i) => (
                 <span
                   key={st.label}
-                  title={st.label}
+                  title={t(st.label)}
                   className={cx(
                     "flex size-8 items-center justify-center rounded-full transition",
                     st.done ? "bg-white text-primary" : i === nextIndex ? "bg-white/25 ring-2 ring-white" : "bg-white/15 text-white/70",
@@ -170,7 +171,7 @@ export default async function Dashboard() {
               ))}
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-primary transition group-hover:gap-2.5">
-              {nextIndex === -1 ? "View" : nextIndex === 0 ? "Start" : "Continue"} <ArrowRight className="size-4" />
+              {nextIndex === -1 ? t("View") : nextIndex === 0 ? t("Start") : t("Continue")} <ArrowRight className="size-4" />
             </span>
           </div>
         </section>
@@ -179,7 +180,7 @@ export default async function Dashboard() {
       {c?.analysis?.suggestion_for_today && (
         <div className="flex items-start gap-3 rounded-3xl bg-accent-soft px-4 py-3.5">
           <Lightbulb className="mt-0.5 size-5 shrink-0 text-accent" />
-          <p className="text-sm leading-relaxed">{c.analysis.suggestion_for_today}</p>
+          <p className="text-sm leading-relaxed">{t(c.analysis.suggestion_for_today)}</p>
         </div>
       )}
 
@@ -188,13 +189,13 @@ export default async function Dashboard() {
       <DailyPoll initial={await todayPoll(user.id)} />
 
       {/* Quick practice, story-row style */}
-      <nav aria-label="Quick practice" className="no-scrollbar -mx-4 flex justify-between gap-3 overflow-x-auto px-4 sm:mx-0 sm:justify-start sm:gap-5 sm:px-0">
+      <nav aria-label={t("Quick practice")} className="no-scrollbar -mx-4 flex justify-between gap-3 overflow-x-auto px-4 sm:mx-0 sm:justify-start sm:gap-5 sm:px-0">
         {quick.map((q) => (
           <Link key={q.href} href={q.href} className="group flex w-14 shrink-0 flex-col items-center gap-1.5">
             <span className={cx("flex size-14 items-center justify-center rounded-full transition-transform group-hover:scale-105 group-active:scale-95", q.tone)}>
               <q.icon className="size-6" />
             </span>
-            <span className="text-xs font-semibold">{q.label}</span>
+            <span className="text-xs font-semibold">{t(q.label)}</span>
           </Link>
         ))}
       </nav>
@@ -205,17 +206,17 @@ export default async function Dashboard() {
       <Link href="/progress" className="group block">
         <Card className="p-5 transition group-hover:border-line-strong">
           <div className="flex items-center gap-4">
-            <ProgressRing value={overall} size={72} stroke={7} label={`Overall score ${overall}`}>
+            <ProgressRing value={overall} size={72} stroke={7} label={t("Overall score {0}", overall)}>
               <span className="text-xl font-extrabold tabular-nums">{Math.round(overall)}</span>
             </ProgressRing>
             <div className="min-w-0 flex-1">
-              <p className="font-bold">Your skills</p>
+              <p className="font-bold">{t("Your skills")}</p>
               <p className="text-sm">
                 <span className={cx("font-bold", delta >= 0 ? "text-success" : "text-danger")}>
                   {delta >= 0 ? "+" : ""}
                   {delta}
                 </span>{" "}
-                <span className="text-muted">since day 1</span>
+                <span className="text-muted">{t("since day 1")}</span>
               </p>
             </div>
             <ChevronRight className="size-5 text-muted transition group-hover:translate-x-0.5" />
@@ -229,20 +230,18 @@ export default async function Dashboard() {
       {(achievements ?? []).length > 0 && (
         <section>
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-bold">Badges</h2>
-            <Link href="/achievements" className="text-sm font-semibold text-primary">
-              See all
-            </Link>
+            <h2 className="font-bold">{t("Badges")}</h2>
+            <Link href="/achievements" className="text-sm font-semibold text-primary">{t("See all")}</Link>
           </div>
           <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             {(achievements ?? []).map((a) => {
               const def = badgeDefs.get(a.code as string);
               return (
-                <div key={a.code} className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center" title={def?.description}>
+                <div key={a.code} className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center" title={t(def?.description ?? "")}>
                   <span className="flex size-14 items-center justify-center rounded-full bg-sun text-white shadow-card">
                     <BadgeIcon name={def?.icon ?? "trophy"} className="size-6" />
                   </span>
-                  <span className="line-clamp-2 text-[11px] font-semibold leading-tight">{def?.title ?? a.code}</span>
+                  <span className="line-clamp-2 text-[11px] font-semibold leading-tight">{t(def?.title ?? "") ?? a.code}</span>
                 </div>
               );
             })}

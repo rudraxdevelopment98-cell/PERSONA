@@ -5,11 +5,13 @@ import { useRef, useState } from "react";
 import { ArrowRight, Check, Layers, Share2, X } from "lucide-react";
 import { Button, cx } from "@/components/ui";
 import type { CardsView } from "@/lib/server/cards";
+import { useT } from "@/lib/i18n/client";
 
 type Answer = CardsView["answers"][number];
 
 /** Five cards, one at a time: tap or swipe (left = A, right = B), the card flips to show the stronger move. */
 export function CardDeck({ initial }: { initial: CardsView }) {
+  const t = useT();
   const [answers, setAnswers] = useState<Answer[]>(initial.answers);
   const firstOpen = initial.cards.findIndex((_, i) => !initial.answers.some((a) => a.idx === i));
   const [i, setI] = useState(firstOpen === -1 ? initial.cards.length : firstOpen);
@@ -60,14 +62,13 @@ export function CardDeck({ initial }: { initial: CardsView }) {
       <div className="flex items-center justify-between">
         <div>
           <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent">
-            <Layers className="size-4" /> Quick cards
-          </p>
-          <h1 className="text-xl font-extrabold">5 situations · 1 minute</h1>
+            <Layers className="size-4" />{" "}{t("Quick cards")}</p>
+          <h1 className="text-xl font-extrabold">{t("5 situations · 1 minute")}</h1>
         </div>
-        {initial.streak > 0 && <span className="rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">🔥 {initial.streak} din</span>}
+        {initial.streak > 0 && <span className="rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">{t("🔥 {0} din", initial.streak)}</span>}
       </div>
 
-      <div className="flex gap-1.5" role="img" aria-label={`Card ${Math.min(i + 1, total)} of ${total}`}>
+      <div className="flex gap-1.5" role="img" aria-label={t("Card {0} of {1}", Math.min(i + 1, total), total)}>
         {initial.cards.map((_, k) => {
           const a = answers.find((x) => x.idx === k);
           return <span key={k} className={cx("h-1.5 flex-1 rounded-full", a ? (a.correct ? "bg-accent" : "bg-primary/40") : k === i ? "bg-primary" : "bg-line")} />;
@@ -86,8 +87,8 @@ export function CardDeck({ initial }: { initial: CardsView }) {
               onPointerUp={onUp}
               onPointerCancel={onUp}
             >
-              <p className="text-xs font-bold uppercase tracking-wider text-white/70">{card.skill}</p>
-              <p className="mt-4 font-serif text-[22px] leading-snug">{card.situation}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-white/70">{t(card.skill)}</p>
+              <p className="mt-4 font-serif text-[22px] leading-snug">{t(card.situation)}</p>
               <div className="mt-auto grid gap-2 pt-6">
                 {(["a", "b"] as const).map((k) => (
                   <button
@@ -101,10 +102,10 @@ export function CardDeck({ initial }: { initial: CardsView }) {
                     )}
                   >
                     <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-primary">{k.toUpperCase()}</span>
-                    <span>{card[k]}</span>
+                    <span>{t(card[k])}</span>
                   </button>
                 ))}
-                <p className="text-center text-[11px] text-white/60">← swipe for A · B ke liye swipe →</p>
+                <p className="text-center text-[11px] text-white/60">{t("← swipe for A · B ke liye swipe →")}</p>
               </div>
             </div>
           ) : (
@@ -112,12 +113,12 @@ export function CardDeck({ initial }: { initial: CardsView }) {
               <span className={cx("flex size-12 items-center justify-center rounded-full", answer.correct ? "bg-accent text-white" : "bg-primary-soft text-primary")}>
                 {answer.correct ? <Check className="size-6" strokeWidth={3} /> : <X className="size-6" strokeWidth={3} />}
               </span>
-              <p className="mt-3 text-lg font-extrabold">{answer.correct ? "Sahi pakda! 🎯" : "Is baar dusra wala behtar tha"}</p>
-              <p className="mt-3 text-xs font-bold uppercase tracking-wider text-muted">Stronger move · {answer.better.toUpperCase()}</p>
-              <p className="mt-1 text-[15px] font-semibold">{card[answer.better]}</p>
-              <p className="mt-4 text-[15px] leading-relaxed text-muted">{answer.why}</p>
+              <p className="mt-3 text-lg font-extrabold">{answer.correct ? t("Sahi pakda! 🎯") : t("Is baar dusra wala behtar tha")}</p>
+              <p className="mt-3 text-xs font-bold uppercase tracking-wider text-muted">{t("Stronger move · {0}", answer.better.toUpperCase())}</p>
+              <p className="mt-1 text-[15px] font-semibold">{t(card[answer.better])}</p>
+              <p className="mt-4 text-[15px] leading-relaxed text-muted">{t(answer.why)}</p>
               <Button className="mt-auto w-full" onClick={() => setI(i + 1)}>
-                {i + 1 < total ? "Next card" : "See result"} <ArrowRight className="size-4" />
+                {i + 1 < total ? t("Next card") : t("See result")} <ArrowRight className="size-4" />
               </Button>
             </div>
           )}
@@ -127,15 +128,12 @@ export function CardDeck({ initial }: { initial: CardsView }) {
           <p className="text-5xl font-black tabular-nums">
             {right}/{total}
           </p>
-          <p className="mt-2 text-lg font-extrabold">{right === total ? "Perfect! Sab sahi 🏆" : right >= 3 ? "Badhiya! 💪" : "Practice se hi aata hai 🌱"}</p>
-          <p className="mt-1 text-sm text-muted">Kal 5 naye cards. Roz ek minute, aur sahi move apne aap aane lagega.</p>
+          <p className="mt-2 text-lg font-extrabold">{right === total ? t("Perfect! Sab sahi 🏆") : right >= 3 ? t("Badhiya! 💪") : t("Practice se hi aata hai 🌱")}</p>
+          <p className="mt-1 text-sm text-muted">{t("Kal 5 naye cards. Roz ek minute, aur sahi move apne aap aane lagega.")}</p>
           <div className="mt-5 grid gap-2">
             <Button variant="secondary" onClick={share}>
-              <Share2 className="size-4" /> Doston ko challenge karo
-            </Button>
-            <Link href="/dashboard" className="text-sm font-semibold text-primary">
-              Home par wapas
-            </Link>
+              <Share2 className="size-4" />{" "}{t("Doston ko challenge karo")}</Button>
+            <Link href="/dashboard" className="text-sm font-semibold text-primary">{t("Home par wapas")}</Link>
           </div>
         </div>
       )}

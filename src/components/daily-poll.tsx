@@ -5,11 +5,13 @@ import { Share2, Vote } from "lucide-react";
 import { FaceAvatar } from "./moments";
 import { cx } from "./ui";
 import type { PollView } from "@/lib/server/poll";
+import { useT } from "@/lib/i18n/client";
 
 const LETTERS = ["A", "B", "C"];
 
 /** "Aaj ka sawaal": vote in one tap, then see how everyone (and your friends) answered. */
 export function DailyPoll({ initial }: { initial: PollView }) {
+  const t = useT();
   const [poll, setPoll] = useState(initial);
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,15 +42,15 @@ export function DailyPoll({ initial }: { initial: PollView }) {
   };
 
   return (
-    <section aria-label="Aaj ka sawaal" className="rounded-3xl border border-line bg-surface p-5">
+    <section aria-label={t("Aaj ka sawaal")} className="rounded-3xl border border-line bg-surface p-5">
       <div className="flex items-center justify-between gap-2">
         <p className="flex min-w-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent">
           <Vote className="size-4 shrink-0" />
-          <span className="truncate">Aaj ka sawaal · {poll.skill}</span>
+          <span className="truncate">{t("Aaj ka sawaal · {0}", t(poll.skill))}</span>
         </p>
-        <span className="shrink-0 whitespace-nowrap text-[11px] text-muted">{voted ? "Kal naya" : "10 sec"}</span>
+        <span className="shrink-0 whitespace-nowrap text-[11px] text-muted">{voted ? t("Kal naya") : t("10 sec")}</span>
       </div>
-      <p className="mt-2 text-[17px] font-bold leading-snug">{poll.question}</p>
+      <p className="mt-2 text-[17px] font-bold leading-snug">{t(poll.question)}</p>
       <div className="mt-3 space-y-2">
         {poll.options.map((o, i) => {
           const mine = poll.myChoice === i;
@@ -74,20 +76,20 @@ export function DailyPoll({ initial }: { initial: PollView }) {
               )}
               <span className="relative flex items-start gap-3">
                 <span className={cx("mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", mine ? "bg-accent text-white" : "bg-bg text-muted")}>
-                  {mine ? "✓" : LETTERS[i]}
+                  {mine ? "✓" : t(LETTERS[i])}
                 </span>
-                <span className="min-w-0 flex-1">{o}</span>
+                <span className="min-w-0 flex-1">{t(o)}</span>
                 {voted && <span className="shrink-0 font-bold tabular-nums">{pct(i)}%</span>}
               </span>
             </button>
           );
         })}
       </div>
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger">{t(error)}</p>}
       {voted && (
         <div className="animate-rise mt-4 space-y-3">
           <p className="text-xs text-muted">
-            {poll.total <= 1 ? "Aaj sabse pehle tumne vote kiya! 🎉" : `${poll.total} logon ne vote kiya · ${pct(poll.myChoice!)}% tumhare saath`}
+            {poll.total <= 1 ? t("Aaj sabse pehle tumne vote kiya! 🎉") : t("{0} logon ne vote kiya · {1}% tumhare saath", poll.total, pct(poll.myChoice!))}
           </p>
           {poll.friendsSame.length > 0 && (
             <div className="flex items-center gap-2">
@@ -97,17 +99,15 @@ export function DailyPoll({ initial }: { initial: PollView }) {
                 ))}
               </div>
               <p className="text-xs">
-                <b>{poll.friendsSame.map((f) => f.name.split(" ")[0]).join(", ")}</b> ne bhi yahi chuna
-              </p>
+                <b>{poll.friendsSame.map((f) => f.name.split(" ")[0]).join(", ")}</b>{" "}{t("ne bhi yahi chuna")}</p>
             </div>
           )}
           <div className="rounded-2xl bg-bg p-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted">💡 Tip</p>
-            <p className="mt-1 text-sm leading-relaxed">{poll.tip}</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted">{t("💡 Tip")}</p>
+            <p className="mt-1 text-sm leading-relaxed">{t(poll.tip)}</p>
           </div>
           <button type="button" onClick={share} className="inline-flex items-center gap-1.5 text-xs font-bold text-primary">
-            <Share2 className="size-3.5" /> Doston se pucho
-          </button>
+            <Share2 className="size-3.5" />{" "}{t("Doston se pucho")}</button>
         </div>
       )}
     </section>

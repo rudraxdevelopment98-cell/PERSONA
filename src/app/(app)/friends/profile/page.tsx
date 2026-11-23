@@ -5,11 +5,13 @@ import { getPool } from "@/lib/db/pool";
 import { badgeIcon, getProfileCard } from "@/lib/server/moments";
 import { nameOf } from "@/lib/server/social";
 import { ProfileEditor } from "./profile-editor";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Your profile" };
 export const dynamic = "force-dynamic";
 
 export default async function ProfileCardPage() {
+  const t = await getT();
   const { user } = await requireUser();
   const [card, name, badges] = await Promise.all([
     getProfileCard(user.id),
@@ -21,8 +23,7 @@ export default async function ProfileCardPage() {
   return (
     <div className="space-y-4">
       <ButtonLink href="/friends" variant="ghost" className="-ml-2 h-8 px-2">
-        <ArrowLeft className="size-4" /> Friends
-      </ButtonLink>
+        <ArrowLeft className="size-4" />{" "}{t("Friends")}</ButtonLink>
       <ProfileEditor name={name} initial={card} badges={badges.map((b) => ({ ...b, icon: badgeIcon(b.code) }))} />
     </div>
   );

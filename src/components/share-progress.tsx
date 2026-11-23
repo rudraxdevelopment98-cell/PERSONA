@@ -4,6 +4,7 @@ import { Download, Share2 } from "lucide-react";
 import { useState } from "react";
 import { createInviteAction } from "@/app/(app)/friends/actions";
 import { Button, Spinner, cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Shares a progress image plus a private invite link. Uses the phone's share
@@ -11,6 +12,7 @@ import { Button, Spinner, cx } from "./ui";
  * image and opens WhatsApp with the link.
  */
 export function ShareProgress({ className, variant = "secondary", label = "Share progress" }: { className?: string; variant?: "primary" | "secondary"; label?: string }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
 
@@ -46,11 +48,11 @@ export function ShareProgress({ className, variant = "secondary", label = "Share
   return (
     <div className={cx("flex flex-col items-center gap-1.5", className)}>
       <Button type="button" variant={variant} onClick={share} disabled={busy} className="w-full">
-        {busy ? <Spinner /> : done ? <Download className="size-4" /> : <Share2 className="size-4" />} {label}
+        {busy ? <Spinner /> : done ? <Download className="size-4" /> : <Share2 className="size-4" />} {t(label)}
       </Button>
       {done && (
         <p role="status" className="text-xs text-muted">
-          {done}
+          {t(done)}
         </p>
       )}
     </div>

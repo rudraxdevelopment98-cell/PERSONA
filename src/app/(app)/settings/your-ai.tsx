@@ -5,6 +5,7 @@ import { Bot, ExternalLink, KeyRound, Link2, ShieldCheck, Unplug } from "lucide-
 import { Alert, Badge, Button, Card, CardHeader, IconTile, Input, Label, Select, Spinner } from "@/components/ui";
 import type { ConnectionSummary } from "@/lib/server/ai-connection";
 import { connectWithKey, disconnectAI, listMyModels, setMyModel } from "./ai-actions";
+import { useT } from "@/lib/i18n/client";
 
 const PROVIDERS = [
   { id: "anthropic", label: "Claude (Anthropic)", keyUrl: "https://console.anthropic.com/settings/keys", placeholder: "sk-ant-…" },
@@ -23,6 +24,7 @@ export function YourAI(props: {
   notice: string | null;
   error: string | null;
 }) {
+  const t = useT();
   const c = props.connection;
   const [provider, setProvider] = useState<(typeof PROVIDERS)[number]["id"]>("anthropic");
   const [key, setKey] = useState("");
@@ -56,9 +58,9 @@ export function YourAI(props: {
             <Bot className="size-5" />
           </IconTile>
         }
-        title="Your AI"
-        description="Choose which AI writes your stories, questions, feedback and coaching."
-        action={c ? <Badge tone="success">Connected</Badge> : <Badge>Default</Badge>}
+        title={t("Your AI")}
+        description={t("Choose which AI writes your stories, questions, feedback and coaching.")}
+        action={c ? <Badge tone="success">{t("Connected")}</Badge> : <Badge>{t("Default")}</Badge>}
       />
       <div className="space-y-5 px-5 pb-5 pt-3">
         {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
@@ -69,17 +71,17 @@ export function YourAI(props: {
               <ShieldCheck className="size-5 text-accent" />
               <div className="min-w-0 flex-1 text-sm">
                 <p className="font-bold">
-                  {LABELS[c.provider]} {c.connectedVia === "oauth" ? "(signed in)" : `(key ${c.keyHint})`}
+                  {t(LABELS[c.provider])} {c.connectedVia === "oauth" ? t("(signed in)") : t("(key {0})", c.keyHint)}
                 </p>
-                <p className="text-muted">Your own account is used and billed for your AI requests. The key is stored encrypted and never shown again.</p>
+                <p className="text-muted">{t("Your own account is used and billed for your AI requests. The key is stored encrypted and never shown again.")}</p>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
-                <Label htmlFor="ai-model">Model</Label>
+                <Label htmlFor="ai-model">{t("Model")}</Label>
                 <Select id="ai-model" value={model} onChange={(e) => setModel(e.target.value)} disabled={pending}>
                   {(models.length ? models : [model]).map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                    <option key={m} value={m}>{t(m)}</option>
                   ))}
                 </Select>
               </div>
@@ -93,8 +95,7 @@ export function YourAI(props: {
                   })
                 }
               >
-                {pending && <Spinner />} Save model
-              </Button>
+                {pending && <Spinner />}{" "}{t("Save model")}</Button>
             </div>
             <Button
               variant="danger"
@@ -106,48 +107,43 @@ export function YourAI(props: {
                 })
               }
             >
-              <Unplug className="size-4" /> Disconnect and delete key
-            </Button>
+              <Unplug className="size-4" />{" "}{t("Disconnect and delete key")}</Button>
           </div>
         ) : (
           <>
-            <p className="text-sm text-muted">
-              Now using the app&apos;s default: <span className="font-semibold text-ink">{props.appProviderName}</span> · {props.appModel}.
-              {props.appIsFreeGemini && " It's free but can be slow at busy times, and Google may use submitted text to improve its products."}
+            <p className="text-sm text-muted">{t("Now using the app's default:")}{" "}<span className="font-semibold text-ink">{props.appProviderName}</span> · {t(props.appModel)}.
+              {props.appIsFreeGemini && t("It's free but can be slow at busy times, and Google may use submitted text to improve its products.")}
             </p>
 
             <div className="rounded-2xl border-2 border-dashed border-line p-4">
-              <p className="text-sm font-bold">Option 1 · Sign in with OpenRouter</p>
-              <p className="mt-0.5 text-sm text-muted">
-                One click. Use Claude Haiku, Gemini, GPT and hundreds more from your own OpenRouter account (Google sign-in supported, some models are free).
-              </p>
+              <p className="text-sm font-bold">{t("Option 1 · Sign in with OpenRouter")}</p>
+              <p className="mt-0.5 text-sm text-muted">{t("One click. Use Claude Haiku, Gemini, GPT and hundreds more from your own OpenRouter account (Google sign-in supported, some models are free).")}</p>
               <a
                 href="/api/ai/openrouter/start"
                 className="mt-3 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-card hover:bg-primary-hover"
               >
-                <Link2 className="size-4" /> Connect with OpenRouter
-              </a>
+                <Link2 className="size-4" />{" "}{t("Connect with OpenRouter")}</a>
             </div>
 
             <div className="rounded-2xl border-2 border-dashed border-line p-4">
-              <p className="text-sm font-bold">Option 2 · Use your own API key</p>
+              <p className="text-sm font-bold">{t("Option 2 · Use your own API key")}</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr]">
                 <div>
-                  <Label htmlFor="ai-provider">Provider</Label>
+                  <Label htmlFor="ai-provider">{t("Provider")}</Label>
                   <Select id="ai-provider" value={provider} onChange={(e) => setProvider(e.target.value as typeof provider)}>
                     {PROVIDERS.map((p) => (
-                      <option key={p.id} value={p.id}>{p.label}</option>
+                      <option key={p.id} value={p.id}>{t(p.label)}</option>
                     ))}
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="ai-key">API key</Label>
+                  <Label htmlFor="ai-key">{t("API key")}</Label>
                   <Input
                     id="ai-key"
                     type="password"
                     autoComplete="off"
                     spellCheck={false}
-                    placeholder={meta.placeholder}
+                    placeholder={t(meta.placeholder)}
                     value={key}
                     onChange={(e) => setKey(e.target.value)}
                   />
@@ -155,7 +151,7 @@ export function YourAI(props: {
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <a href={meta.keyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                  <KeyRound className="size-3.5" /> Get a {meta.label} key <ExternalLink className="size-3" />
+                  <KeyRound className="size-3.5" />{" "}{t("Get a")}{" "}{t(meta.label)}{" "}{t("key")}{" "}<ExternalLink className="size-3" />
                 </a>
                 <Button
                   disabled={pending || key.trim().length < 10}
@@ -172,10 +168,9 @@ export function YourAI(props: {
                     })
                   }
                 >
-                  {pending && <Spinner />} Check & connect
-                </Button>
+                  {pending && <Spinner />}{" "}{t("Check & connect")}</Button>
               </div>
-              <p className="mt-2 text-xs text-muted">The key is checked with the provider, then encrypted (AES-256) before it is stored. It is only used for your requests.</p>
+              <p className="mt-2 text-xs text-muted">{t("The key is checked with the provider, then encrypted (AES-256) before it is stored. It is only used for your requests.")}</p>
             </div>
           </>
         )}

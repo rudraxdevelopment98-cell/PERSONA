@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowRight, Zap } from "lucide-react";
 import { Alert, Button, Input, cx } from "@/components/ui";
 import { postJSON } from "@/lib/client/api";
+import { useT } from "@/lib/i18n/client";
 
 export type StoryChoiceData = { question: string; options: { id: string; text: string; vibe?: string }[] };
 
@@ -12,6 +13,7 @@ const SUSPENSE = ["Dil ki dhadkan tez…", "Sab ki nazar ek hi taraf…", "Ek sa
 
 /** The turning point: the reader decides what the protagonist does, then the episode continues from that choice. */
 export function StoryChoice({ sessionId, choice }: { sessionId: string; choice: StoryChoiceData }) {
+  const t = useT();
   const router = useRouter();
   const [picked, setPicked] = useState<string | null>(null);
   const [line, setLine] = useState("");
@@ -43,20 +45,19 @@ export function StoryChoice({ sessionId, choice }: { sessionId: string; choice: 
           <Zap className="relative size-8 fill-current" />
         </span>
         <p key={tick} className="animate-page font-serif text-xl">
-          {SUSPENSE[tick % SUSPENSE.length]}
+          {t(SUSPENSE[tick % SUSPENSE.length])}
         </p>
-        <p className="text-sm text-white/70">Tumhari choice se kahani aage likhi ja rahi hai</p>
+        <p className="text-sm text-white/70">{t("Tumhari choice se kahani aage likhi ja rahi hai")}</p>
       </div>
     );
   }
 
   return (
-    <section aria-label="Your choice" className="my-8 overflow-hidden rounded-3xl border-2 border-primary/30 bg-primary-soft">
+    <section aria-label={t("Your choice")} className="my-8 overflow-hidden rounded-3xl border-2 border-primary/30 bg-primary-soft">
       <div className="bg-primary px-5 py-4 text-white">
         <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/75">
-          <Zap className="size-3.5 fill-current" /> Faisla tumhara
-        </p>
-        <h3 className="mt-1 font-serif text-2xl font-semibold leading-snug">{choice.question}</h3>
+          <Zap className="size-3.5 fill-current" />{" "}{t("Faisla tumhara")}</p>
+        <h3 className="mt-1 font-serif text-2xl font-semibold leading-snug">{t(choice.question)}</h3>
       </div>
       <div className="grid gap-2.5 p-4 sm:p-5">
         {choice.options.map((o) => (
@@ -70,21 +71,19 @@ export function StoryChoice({ sessionId, choice }: { sessionId: string; choice: 
               picked === o.id ? "border-primary shadow-raised" : "border-transparent hover:border-primary/30",
             )}
           >
-            {o.vibe && <span className="mt-0.5 shrink-0 rounded-full bg-bg px-2 py-0.5 text-xs font-bold">{o.vibe}</span>}
+            {o.vibe && <span className="mt-0.5 shrink-0 rounded-full bg-bg px-2 py-0.5 text-xs font-bold">{t(o.vibe)}</span>}
             <span className="font-semibold leading-snug">{o.text}</span>
           </button>
         ))}
         {picked && (
           <div className="animate-page space-y-2 pt-1">
-            <label htmlFor="story-line" className="block text-sm font-semibold">
-              Us pal hero kya bole? <span className="font-normal text-muted">(optional, tumhari line kahani mein aayegi)</span>
+            <label htmlFor="story-line" className="block text-sm font-semibold">{t("Us pal hero kya bole?")}{" "}<span className="font-normal text-muted">{t("(optional, tumhari line kahani mein aayegi)")}</span>
             </label>
-            <Input id="story-line" maxLength={200} value={line} onChange={(e) => setLine(e.target.value)} placeholder="“Ek minute, meri baat suno…”" />
+            <Input id="story-line" maxLength={200} value={line} onChange={(e) => setLine(e.target.value)} placeholder={t("“Ek minute, meri baat suno…”")} />
           </div>
         )}
-        {error && <Alert tone="danger">{error}</Alert>}
-        <Button onClick={go} disabled={!picked} className="mt-1 justify-self-end">
-          Kahani aage badhao <ArrowRight className="size-4" />
+        {error && <Alert tone="danger">{t(error)}</Alert>}
+        <Button onClick={go} disabled={!picked} className="mt-1 justify-self-end">{t("Kahani aage badhao")}{" "}<ArrowRight className="size-4" />
         </Button>
       </div>
     </section>

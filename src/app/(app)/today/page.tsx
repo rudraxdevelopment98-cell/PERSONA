@@ -12,16 +12,18 @@ import { episodeAllowance } from "@/lib/server/plan";
 import { canUseAIVoice } from "@/lib/domain/voice";
 import { SponsorCard } from "@/components/sponsor-card";
 import { GENRES, WORLDS, byId } from "@/lib/domain/variety";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Daily Development" };
 export const maxDuration = 300;
 
 export default async function TodayPage() {
+  const t = await getT();
   const { db, user, state } = await getUserState();
   if (!state.baseline) {
     return (
       <>
-        <PageHeader title="Daily Development" />
+        <PageHeader title={t("Daily Development")} />
         <BaselineGate feature="Your daily session" />
       </>
     );
@@ -98,9 +100,9 @@ export default async function TodayPage() {
   return (
     <>
       <PageHeader
-        eyebrow={<>Day {state.day} · {DIMENSION_META[focus.dimension].label}</>}
-        title={focus.title}
-        action={focus.personalised ? <Badge tone="primary">✨ For you</Badge> : undefined}
+        eyebrow={<>{t("Day {0} · {1}", state.day, t(DIMENSION_META[focus.dimension].label))}</>}
+        title={t(focus.title)}
+        action={focus.personalised ? <Badge tone="primary">{t("✨ For you")}</Badge> : undefined}
       />
       {!checkin?.completed_at || !session ? (
         <CheckinFlow checkin={checkin} hasSession={Boolean(session)} lite={lite} />

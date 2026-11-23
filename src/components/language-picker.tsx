@@ -7,9 +7,11 @@ import { setLanguage } from "@/app/(app)/settings/actions";
 import { LANGUAGE_LABELS, type Language } from "@/lib/ai/prompts";
 import { languageInfo } from "@/lib/domain/languages";
 import { cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 /** Segmented language switch: changes the language of all AI-generated content. */
 export function LanguagePicker({ value }: { value: Language }) {
+  const t = useT();
   const router = useRouter();
   const [lang, setLang] = useState(value);
   const [pending, start] = useTransition();
@@ -18,7 +20,7 @@ export function LanguagePicker({ value }: { value: Language }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Languages className="size-4 text-muted" />
-      <span className="text-sm text-muted">AI content language:</span>
+      <span className="text-sm text-muted">{t("AI content language:")}</span>
       <div className="flex flex-wrap gap-1 rounded-2xl bg-primary-soft p-1">
         {(Object.keys(LANGUAGE_LABELS) as Language[]).map((l) => (
           <button
@@ -38,7 +40,7 @@ export function LanguagePicker({ value }: { value: Language }) {
               lang === l ? "bg-surface text-primary shadow-card" : "text-muted hover:text-ink",
             )}
           >
-            {languageInfo(l).label}
+            {t(languageInfo(l).label)}
           </button>
         ))}
       </div>

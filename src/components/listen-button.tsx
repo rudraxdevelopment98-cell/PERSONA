@@ -8,6 +8,7 @@ import { GOOD_VOICE, bestVoice, langOf, rankedVoices, saveVoiceName, savedVoiceN
 import { PIPER_VOICES, delivery, isDownloaded, loadVoice, piperSupported, piperVoice, speechSentences, synthesize, synthesizeScript, type PiperVoiceId } from "@/lib/client/piper";
 import { perform, type ScriptSentence } from "@/lib/domain/emotion";
 import { cx } from "./ui";
+import { useT } from "@/lib/i18n/client";
 
 const RATES = [1, 1.25, 0.85];
 const CACHE = "p90-voice-v1";
@@ -94,6 +95,7 @@ export function ListenButton({
   /** Lets Hinglish stories fetch a Devanagari listening script for Hindi voices. */
   sessionId?: string;
 }) {
+  const t = useT();
   const [deviceOk, setDeviceOk] = useState(false);
   // Checked after mount: the server can't know, and the first render must match it.
   const [piperOk, setPiperOk] = useState(false);
@@ -322,21 +324,21 @@ export function ListenButton({
       <button
         type="button"
         onClick={() => setSheet(true)}
-        aria-label={`Choose voice. Now: ${label}`}
-        title={note ?? `Awaaz: ${label}`}
+        aria-label={t("Choose voice. Now: {0}", label)}
+        title={note ?? t("Awaaz: {0}", label)}
         className={cx(
           "inline-flex h-8 items-center gap-1 rounded-full px-2 text-xs font-bold transition",
           engineChoice === "device" ? "text-muted hover:bg-bg" : "bg-sun-soft text-warning",
         )}
       >
         {engineChoice === "device" ? <Settings2 className="size-4" /> : <Sparkles className="size-4" />}
-        <span className="hidden sm:inline">{label}</span>
+        <span className="hidden sm:inline">{t(label)}</span>
       </button>
       <button
         type="button"
         onClick={toggle}
         disabled={state === "loading"}
-        aria-label={state === "playing" ? "Pause listening" : state === "paused" ? "Resume listening" : state === "loading" ? "Preparing audio" : "Listen to the story"}
+        aria-label={state === "playing" ? t("Pause listening") : state === "paused" ? t("Resume listening") : state === "loading" ? t("Preparing audio") : t("Listen to the story")}
         className={cx(
           "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold transition active:scale-95 disabled:opacity-70",
           state === "idle" ? "bg-primary-soft text-primary" : "bg-primary text-white",
@@ -351,12 +353,10 @@ export function ListenButton({
         ) : (
           <Headphones className="size-3.5" />
         )}
-        {state === "idle" ? "Listen" : state === "playing" ? "Pause" : state === "loading" ? "…" : "Play"}
+        {state === "idle" ? t("Listen") : state === "playing" ? t("Pause") : state === "loading" ? "…" : t("Play")}
       </button>
       {state !== "idle" && (
-        <button type="button" onClick={cycleRate} aria-label={`Speed ${rate}x`} className="h-8 rounded-full px-2 text-xs font-bold tabular-nums text-muted hover:bg-bg">
-          {rate}x
-        </button>
+        <button type="button" onClick={cycleRate} aria-label={t("Speed {0}x", rate)} className="h-8 rounded-full px-2 text-xs font-bold tabular-nums text-muted hover:bg-bg">{t("{0}x", rate)}</button>
       )}
       {sheet &&
         createPortal(
@@ -394,6 +394,7 @@ function VoiceSheet({
   current: { engine: Engine; piperId: PiperVoiceId | null };
   onChoose: (e: Engine, id?: PiperVoiceId) => void;
 }) {
+  const t = useT();
   const [ready, setReady] = useState<Record<string, boolean>>({});
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
@@ -463,41 +464,39 @@ function VoiceSheet({
   const bestDeviceScore = device[0] ? voiceScore(device[0], deviceLang) : 0;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 sm:items-center" role="dialog" aria-modal="true" aria-label="Choose a voice" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 sm:items-center" role="dialog" aria-modal="true" aria-label={t("Choose a voice")} onClick={onClose}>
       <div
         className="animate-page max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-raised sm:rounded-3xl"
         style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-extrabold">Awaaz chuno</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted hover:bg-bg">
+          <h2 className="text-lg font-extrabold">{t("Awaaz chuno")}</h2>
+          <button type="button" onClick={onClose} aria-label={t("Close")} className="rounded-full p-1.5 text-muted hover:bg-bg">
             <X className="size-5" />
           </button>
         </div>
 
         {ai && (
           <section className="mt-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted">✨ AI narrator</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">{t("✨ AI narrator")}</p>
             {ai.allowed ? (
               <Row
                 selected={current.engine === "ai"}
-                title="AI narrator"
-                sub={ai.pro ? "Sabse natural · Pro" : `${ai.remaining} free story is mahine`}
+                title={t("AI narrator")}
+                sub={ai.pro ? t("Sabse natural · Pro") : t("{0} free story is mahine", ai.remaining)}
                 onSelect={() => onChoose("ai")}
               />
             ) : (
-              <Link href="/pricing" className="mt-2 block rounded-2xl border border-dashed border-line p-3 text-sm text-muted hover:border-primary/40">
-                AI narrator · Pro mein milta hai →
-              </Link>
+              <Link href="/pricing" className="mt-2 block rounded-2xl border border-dashed border-line p-3 text-sm text-muted hover:border-primary/40">{t("AI narrator · Pro mein milta hai →")}</Link>
             )}
           </section>
         )}
 
         {piperSupported() && (
           <section className="mt-5">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted">🎧 HD awaaz · free · offline</p>
-            <p className="mt-1 text-xs text-muted">Ek baar download (~100 MB pehli baar, Wi-Fi par), phir hamesha free aur bina internet.</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">{t("🎧 HD awaaz · free · offline")}</p>
+            <p className="mt-1 text-xs text-muted">{t("Ek baar download (~100 MB pehli baar, Wi-Fi par), phir hamesha free aur bina internet.")}</p>
             <div className="mt-2 space-y-2">
               {piperList.map((v) => (
                 <div
@@ -507,42 +506,41 @@ function VoiceSheet({
                     current.engine === "piper" && current.piperId === v.id ? "border-primary bg-primary-soft" : "border-line",
                   )}
                 >
-                  <button type="button" onClick={() => playSample(v.sample)} aria-label={`Sample: ${v.label}`} className="rounded-full bg-bg p-2 text-primary hover:brightness-95">
+                  <button type="button" onClick={() => playSample(v.sample)} aria-label={t("Sample: {0}", v.label)} className="rounded-full bg-bg p-2 text-primary hover:brightness-95">
                     <Volume2 className="size-4" />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{v.label}</p>
+                    <p className="truncate text-sm font-semibold">{t(v.label)}</p>
                     <p className="text-xs text-muted">
-                      {progress[v.id] != null ? `Download ho raha hai… ${progress[v.id]}%` : ready[v.id] ? "Ready ✓" : "~64 MB"}
+                      {progress[v.id] != null ? t("Download ho raha hai… {0}%", progress[v.id]) : ready[v.id] ? t("Ready ✓") : t("~64 MB")}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => getPiper(v.id)}
                     disabled={progress[v.id] != null}
-                    aria-label={ready[v.id] ? `Use ${v.label}` : `Download ${v.label}`}
+                    aria-label={ready[v.id] ? t("Use {0}", v.label) : t("Download {0}", v.label)}
                     className={cx("rounded-full px-3 py-1.5 text-xs font-bold", ready[v.id] ? "bg-primary text-white" : "bg-primary-soft text-primary")}
                   >
                     {current.engine === "piper" && current.piperId === v.id ? (
                       <Check className="size-4" />
                     ) : ready[v.id] ? (
-                      "Use"
+                      t("Use")
                     ) : (
                       <span className="inline-flex items-center gap-1">
-                        <Download className="size-3.5" /> Get
-                      </span>
+                        <Download className="size-3.5" />{" "}{t("Get")}</span>
                     )}
                   </button>
                 </div>
               ))}
             </div>
-            {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+            {error && <p className="mt-2 text-xs text-danger">{t(error)}</p>}
           </section>
         )}
 
         {device.length > 0 && (
           <section className="mt-5">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted">📱 Phone ki awaaz · turant</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">{t("📱 Phone ki awaaz · turant")}</p>
             <div className="mt-2 space-y-2">
               {device.map((v) => (
                 <Row
@@ -568,17 +566,18 @@ function VoiceSheet({
 }
 
 function Row({ selected, title, sub, onSelect, onPreview }: { selected: boolean; title: string; sub: string; onSelect: () => void; onPreview?: () => void }) {
+  const t = useT();
   return (
     <div className={cx("mt-2 flex items-center gap-2 rounded-2xl border p-3", selected ? "border-primary bg-primary-soft" : "border-line")}>
       {onPreview && (
-        <button type="button" onClick={onPreview} aria-label={`Preview ${title}`} className="rounded-full bg-bg p-2 text-primary hover:brightness-95">
+        <button type="button" onClick={onPreview} aria-label={t("Preview {0}", title)} className="rounded-full bg-bg p-2 text-primary hover:brightness-95">
           <Volume2 className="size-4" />
         </button>
       )}
       <button type="button" onClick={onSelect} className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left">
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold">{title}</span>
-          <span className="block text-xs text-muted">{sub}</span>
+          <span className="block truncate text-sm font-semibold">{t(title)}</span>
+          <span className="block text-xs text-muted">{t(sub)}</span>
         </span>
         {selected && <Check className="size-4 shrink-0 text-primary" />}
       </button>

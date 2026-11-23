@@ -9,6 +9,7 @@ import { getUserState } from "@/lib/server/state";
 import { getProfileCard } from "@/lib/server/moments";
 import { FaceAvatar } from "@/components/moments";
 import { coverBg } from "@/lib/domain/moments";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Me" };
 
@@ -23,6 +24,7 @@ const LINKS = [
 ];
 
 export default async function MePage() {
+  const t = await getT();
   const [{ state, user }, { stats, level }] = await Promise.all([getUserState(), getGamification()]);
   const links = (await isAdmin(user.id).catch(() => false)) ? [...LINKS, { href: "/admin", label: "Admin", icon: ShieldCheck, tone: "primary" as const }] : LINKS;
   const name = state.profile.display_name || state.email?.split("@")[0] || "You";
@@ -33,18 +35,14 @@ export default async function MePage() {
         <div className="h-16" style={{ background: coverBg(card.cover) }} />
         <div className="p-5 pt-0">
           <div className="flex items-end gap-4">
-            <Link href="/friends/profile" aria-label="Edit profile card" className="-mt-8 shrink-0 rounded-full bg-surface p-1">
+            <Link href="/friends/profile" aria-label={t("Edit profile card")} className="-mt-8 shrink-0 rounded-full bg-surface p-1">
               <FaceAvatar name={name} emoji={card.avatar_emoji} cover={card.cover} size="lg" />
             </Link>
             <div className="min-w-0 pt-2">
               <p className="truncate text-xl font-extrabold">{name}</p>
-              <p className="text-sm text-muted">
-                Level {level.level} · {level.name}
-              </p>
+              <p className="text-sm text-muted">{t("Level {0} · {1}", level.level, t(level.name))}</p>
             </div>
-            <Link href="/friends/profile" className="mb-1 ml-auto shrink-0 text-xs font-semibold text-primary">
-              Edit
-            </Link>
+            <Link href="/friends/profile" className="mb-1 ml-auto shrink-0 text-xs font-semibold text-primary">{t("Edit")}</Link>
           </div>
           {card.bio && <p className="mt-3 text-sm">{card.bio}</p>}
           <div className="mt-5 grid grid-cols-3 text-center">
@@ -55,7 +53,7 @@ export default async function MePage() {
             ].map((s) => (
               <div key={s.l}>
                 <p className="text-xl font-extrabold tabular-nums">{s.v}</p>
-                <p className="text-xs text-muted">{s.l}</p>
+                <p className="text-xs text-muted">{t(s.l)}</p>
               </div>
             ))}
           </div>
@@ -65,8 +63,8 @@ export default async function MePage() {
         </div>
         <div className="px-5 py-3">
           <div className="mb-1 flex justify-between text-xs text-muted">
-            <span>Level {level.level}</span>
-            <span>{level.toNext} XP to level {level.level + 1}</span>
+            <span>{t("Level {0}", level.level)}</span>
+            <span>{level.toNext}{" "}{t("XP to level")}{" "}{level.level + 1}</span>
           </div>
           <ProgressBar value={level.progress} tone="accent" />
         </div>
@@ -78,7 +76,7 @@ export default async function MePage() {
             <IconTile tone={l.tone} size="sm">
               <l.icon className="size-4" />
             </IconTile>
-            <span className="flex-1 text-sm font-semibold">{l.label}</span>
+            <span className="flex-1 text-sm font-semibold">{t(l.label)}</span>
             <ChevronRight className="size-4 text-muted" />
           </Link>
         ))}
@@ -87,7 +85,7 @@ export default async function MePage() {
             <IconTile tone="neutral" size="sm">
               <LogOut className="size-4" />
             </IconTile>
-            <span className="text-sm font-semibold text-danger">Sign out</span>
+            <span className="text-sm font-semibold text-danger">{t("Sign out")}</span>
           </button>
         </form>
       </Card>

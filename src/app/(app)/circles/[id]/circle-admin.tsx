@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { leaveCircleAction, removeMemberAction, renameCircleAction, reportAction, setRoleAction } from "@/app/(app)/friends/actions";
 import { Alert, Button, Card, CardHeader, Input } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 export function MemberActions({ circleId, member, myRole }: { circleId: string; member: { id: string; name: string; role: string }; myRole: string }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -23,7 +25,7 @@ export function MemberActions({ circleId, member, myRole }: { circleId: string; 
     });
   return (
     <div className="relative ml-auto">
-      <button type="button" aria-label={`Manage ${member.name}`} onClick={() => setOpen((o) => !o)} className="rounded-lg p-1 text-muted hover:bg-bg">
+      <button type="button" aria-label={t("Manage {0}", member.name)} onClick={() => setOpen((o) => !o)} className="rounded-lg p-1 text-muted hover:bg-bg">
         <MoreHorizontal className="size-4" />
       </button>
       {open && (
@@ -35,7 +37,7 @@ export function MemberActions({ circleId, member, myRole }: { circleId: string; 
               className="w-full rounded-lg px-2.5 py-2 text-left text-sm hover:bg-bg"
               onClick={() => run(() => setRoleAction(circleId, member.id, member.role === "admin" ? "member" : "admin"))}
             >
-              {member.role === "admin" ? "Remove admin" : "Make admin"}
+              {member.role === "admin" ? t("Remove admin") : t("Make admin")}
             </button>
           )}
           <button
@@ -43,10 +45,8 @@ export function MemberActions({ circleId, member, myRole }: { circleId: string; 
             disabled={pending}
             className="w-full rounded-lg px-2.5 py-2 text-left text-sm text-danger hover:bg-danger-soft"
             onClick={() => confirm(`Remove ${member.name} from the circle?`) && run(() => removeMemberAction(circleId, member.id))}
-          >
-            Remove from circle
-          </button>
-          {error && <p className="px-2.5 text-xs text-danger">{error}</p>}
+          >{t("Remove from circle")}</button>
+          {error && <p className="px-2.5 text-xs text-danger">{t(error)}</p>}
         </div>
       )}
     </div>
@@ -54,6 +54,7 @@ export function MemberActions({ circleId, member, myRole }: { circleId: string; 
 }
 
 export function CircleAdmin({ circleId, name, emoji, myRole }: { circleId: string; name: string; emoji: string | null; myRole: string }) {
+  const t = useT();
   const router = useRouter();
   const [newName, setNewName] = useState(name);
   const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
@@ -61,7 +62,7 @@ export function CircleAdmin({ circleId, name, emoji, myRole }: { circleId: strin
   const isAdmin = myRole === "owner" || myRole === "admin";
   return (
     <Card>
-      <CardHeader title="Circle settings" />
+      <CardHeader title={t("Circle settings")} />
       <div className="space-y-3 p-4 pt-2">
         {isAdmin && (
           <form
@@ -75,8 +76,8 @@ export function CircleAdmin({ circleId, name, emoji, myRole }: { circleId: strin
               });
             }}
           >
-            <Input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} aria-label="Circle name" />
-            <Button variant="secondary" disabled={pending}>Rename</Button>
+            <Input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} aria-label={t("Circle name")} />
+            <Button variant="secondary" disabled={pending}>{t("Rename")}</Button>
           </form>
         )}
         {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
@@ -92,9 +93,7 @@ export function CircleAdmin({ circleId, name, emoji, myRole }: { circleId: strin
                   if (res?.error) setMsg({ tone: "danger", text: res.error });
                 });
             }}
-          >
-            Leave circle
-          </Button>
+          >{t("Leave circle")}</Button>
           <Button
             variant="ghost"
             disabled={pending}
@@ -106,9 +105,7 @@ export function CircleAdmin({ circleId, name, emoji, myRole }: { circleId: strin
                   setMsg(res.error ? { tone: "danger", text: res.error } : { tone: "success", text: "Report sent. Thank you." });
                 });
             }}
-          >
-            Report
-          </Button>
+          >{t("Report")}</Button>
         </div>
       </div>
     </Card>

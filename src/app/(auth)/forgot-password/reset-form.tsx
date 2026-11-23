@@ -6,10 +6,12 @@ import { HelpCircle, KeyRound } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Alert, Button, Input, Label, Spinner, cx } from "@/components/ui";
 import { postJSON } from "@/lib/client/api";
+import { useT } from "@/lib/i18n/client";
 
 type Method = "code" | "questions";
 
 export function ResetForm() {
+  const t = useT();
   const [method, setMethod] = useState<Method>("code");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -61,13 +63,11 @@ export function ResetForm() {
         <Link href="/" className="mb-8 inline-block">
           <Logo />
         </Link>
-        <h1 className="text-xl font-extrabold tracking-tight">Forgot your password?</h1>
+        <h1 className="text-xl font-extrabold tracking-tight">{t("Forgot your password?")}</h1>
         {done ? (
           <div className="mt-4 space-y-4">
-            <Alert tone="success">Your password has been changed and all devices were signed out.</Alert>
-            <Link href="/login" className="inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white">
-              Sign in
-            </Link>
+            <Alert tone="success">{t("Your password has been changed and all devices were signed out.")}</Alert>
+            <Link href="/login" className="inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white">{t("Sign in")}</Link>
           </div>
         ) : (
           <>
@@ -84,16 +84,16 @@ export function ResetForm() {
                   className={cx("inline-flex items-center justify-center gap-1.5 rounded-full py-1.5 text-sm font-semibold", method === m ? "bg-surface text-primary shadow-card" : "text-muted")}
                 >
                   {m === "code" ? <KeyRound className="size-4" /> : <HelpCircle className="size-4" />}
-                  {m === "code" ? "Recovery code" : "Security questions"}
+                  {m === "code" ? t("Recovery code") : t("Security questions")}
                 </button>
               ))}
             </div>
             <p className="mt-3 text-sm text-muted">
-              {method === "code" ? "Use one of the recovery codes you saved when you created your account." : "Answer the two questions you set in Settings."}
+              {method === "code" ? t("Use one of the recovery codes you saved when you created your account.") : t("Answer the two questions you set in Settings.")}
             </p>
             <form onSubmit={submit} method="post" className="mt-5 space-y-4">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("Email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -108,18 +108,18 @@ export function ResetForm() {
               </div>
               {method === "code" && (
                 <div>
-                  <Label htmlFor="code">Recovery code</Label>
-                  <Input id="code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="XXXXX-XXXXX" autoComplete="one-time-code" className="font-mono uppercase" />
+                  <Label htmlFor="code">{t("Recovery code")}</Label>
+                  <Input id="code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("XXXXX-XXXXX")} autoComplete="one-time-code" className="font-mono uppercase" />
                 </div>
               )}
               {method === "questions" && questions && (
                 <>
                   <div>
-                    <Label htmlFor="a1">{questions.q1}</Label>
+                    <Label htmlFor="a1">{t(questions.q1)}</Label>
                     <Input id="a1" required value={a1} onChange={(e) => setA1(e.target.value)} autoComplete="off" />
                   </div>
                   <div>
-                    <Label htmlFor="a2">{questions.q2}</Label>
+                    <Label htmlFor="a2">{t(questions.q2)}</Label>
                     <Input id="a2" required value={a2} onChange={(e) => setA2(e.target.value)} autoComplete="off" />
                   </div>
                 </>
@@ -127,23 +127,22 @@ export function ResetForm() {
               {showPasswords && (
                 <>
                   <div>
-                    <Label htmlFor="password">New password</Label>
+                    <Label htmlFor="password">{t("New password")}</Label>
                     <Input id="password" type="password" required minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
                   </div>
                   <div>
-                    <Label htmlFor="confirm">Confirm new password</Label>
+                    <Label htmlFor="confirm">{t("Confirm new password")}</Label>
                     <Input id="confirm" type="password" required minLength={10} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
                   </div>
                 </>
               )}
-              {error && <Alert tone="danger">{error}</Alert>}
+              {error && <Alert tone="danger">{t(error)}</Alert>}
               <Button type="submit" disabled={busy} className="w-full">
-                {busy ? <Spinner /> : <KeyRound className="size-4" />} {method === "questions" && !questions ? "Show my questions" : "Reset password"}
+                {busy ? <Spinner /> : <KeyRound className="size-4" />} {method === "questions" && !questions ? t("Show my questions") : t("Reset password")}
               </Button>
             </form>
-            <p className="mt-6 text-sm text-muted">
-              Lost both? For your privacy there is no other way in - your data is protected by your password.{" "}
-              <Link href="/login" className="font-semibold text-primary hover:underline">Back to sign in</Link>
+            <p className="mt-6 text-sm text-muted">{t("Lost both? For your privacy there is no other way in - your data is protected by your password.")}{" "}
+              <Link href="/login" className="font-semibold text-primary hover:underline">{t("Back to sign in")}</Link>
             </p>
           </>
         )}
