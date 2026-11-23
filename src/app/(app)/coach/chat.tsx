@@ -7,6 +7,7 @@ import { Alert, Button, Card, Spinner, cx } from "@/components/ui";
 import { clearCoachHistory } from "./actions";
 import { VoiceTextarea } from "@/components/voice-input";
 import { useT } from "@/lib/i18n/client";
+import { LearningConsent } from "@/components/learning-consent";
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
@@ -39,8 +40,9 @@ function Bubble({ m }: { m: Msg }) {
   );
 }
 
-export function CoachChat({ initial }: { initial: Msg[] }) {
+export function CoachChat({ initial, askLearning = false }: { initial: Msg[]; askLearning?: boolean }) {
   const t = useT();
+  const [ask, setAsk] = useState(askLearning);
   const [messages, setMessages] = useState<Msg[]>(initial);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -86,6 +88,8 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
   }
 
   return (
+    <>
+    {ask && <LearningConsent feature="coach" onClose={() => setAsk(false)} />}
     <Card className="flex h-[calc(100vh-15rem)] min-h-[28rem] flex-col">
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
         {messages.length === 0 ? (
@@ -155,5 +159,6 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
         )}
       </form>
     </Card>
+    </>
   );
 }

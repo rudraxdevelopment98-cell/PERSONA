@@ -1,4 +1,6 @@
-import { EyeOff, Lock, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Lock, Sparkles } from "lucide-react";
+import { LearningSwitch } from "@/components/learning-switch";
 import { Card, CardHeader, PageHeader, ProgressBar } from "@/components/ui";
 import { getUserState } from "@/lib/server/state";
 import { getProfile } from "@/lib/server/signals";
@@ -52,7 +54,7 @@ function Meter({ label, value, max, suffix }: { label: string; value: number | n
 
 export default async function PersonaPage() {
   const t = await getT();
-  const { user } = await getUserState();
+  const { user, state } = await getUserState();
   const p = await getProfile(user.id);
   const label = (k: string) => t(TAG_LABEL[k] ?? k);
   const arch = p?.archetype ? ARCHETYPE_INFO[p.archetype] : null;
@@ -63,16 +65,10 @@ export default async function PersonaPage() {
     <>
       <PageHeader eyebrow={t("Private")} title={t("My persona")} description={t("What the app understands about you, without keeping your words.")} />
       <div className="space-y-4">
-        <Card className="p-5">
-          <div className="flex items-start gap-3">
-            <Lock className="mt-0.5 size-5 shrink-0 text-accent" />
-            <div className="space-y-1.5 text-sm leading-relaxed">
-              <p className="font-semibold">{t("How your privacy is protected")}</p>
-              <p>{t("What you write in check-ins, reflections, labs and coach chats is turned into the tags and numbers below. Your own words are deleted after {0} hours.", RAW_TEXT_HOURS)}</p>
-              <p className="flex items-center gap-1.5 text-muted"><EyeOff className="size-4" /> {t("No names, places or quotes are kept. Your journal is never analysed.")}</p>
-            </div>
-          </div>
-        </Card>
+        <p className="flex items-center gap-1.5 text-sm text-muted">
+          <Lock className="size-4 text-accent" /> {t("No names or quotes. Your words are deleted after {0} hours.", RAW_TEXT_HOURS)}{" "}
+          <Link href="/guide#persona" className="font-semibold text-primary underline-offset-2 hover:underline">{t("How it works")}</Link>
+        </p>
 
         {!p || !p.events ? (
           <Card className="p-6 text-center">
@@ -145,6 +141,14 @@ export default async function PersonaPage() {
             </div>
           </Card>
         )}
+
+        <Card className="space-y-3 p-5">
+          <p className="font-semibold">{t("What the app may learn from")}</p>
+          <div className="flex flex-wrap gap-2">
+            <LearningSwitch feature="coach" label="Coach chats" on={state.profile.learn_from_coach ?? null} />
+            <LearningSwitch feature="journal" label="Journal" on={state.profile.learn_from_journal ?? null} />
+          </div>
+        </Card>
 
         <Card className="p-5">
           <p className="mb-3 text-sm text-muted">{t("You can delete these signals at any time. They rebuild from new activity.")}</p>

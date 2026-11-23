@@ -11,7 +11,7 @@ export default async function CalmPage() {
       <PageHeader
         eyebrow={t("Practice")}
         title={t("Calm Corner")}
-        description={t("Stress ho to 1-2 minute yahan. Breathing, gussa nikalne ki jagah, sukoon ki awaaz aur grounding. Sab tumhare phone par hi chalta hai, kuch save nahi hota.")}
+        description={t("Stress ho to 1-2 minute yahan. Kuch save nahi hota.")}
       />
       <div className="grid gap-4 md:grid-cols-2">
         <Breathe />

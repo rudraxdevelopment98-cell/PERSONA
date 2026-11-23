@@ -20,9 +20,8 @@ export default async function CoachPage() {
       action={chip}
       title={t("AI Coach")}
       description={
-        <>{t("Practical guidance based on your assessment, check-ins and practice results.")}{" "}
-          {state.profile.coach_journal_access ? t("Your coach can read your five most recent journal entries.") : t("Your journal stays private from the coach")}
-          {" "}(<Link href="/settings" className="underline underline-offset-2">{t("change")}</Link>{t("). The coach is not a therapist and does not diagnose.")}</>
+        <>{t("Practical guidance. Not a therapist.")}{" "}
+          <Link href="/guide#coach" className="underline underline-offset-2">{t("How it works")}</Link></>
       }
     />
   );
@@ -34,7 +33,7 @@ export default async function CoachPage() {
   return (
     <>
       {header}
-      <CoachChat initial={history} />
+      <CoachChat initial={history} askLearning={state.profile.learn_from_coach == null} />
     </>
   );
 }

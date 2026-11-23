@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
 import { Card, CardHeader, Delta, PageHeader, Stat, cx } from "@/components/ui";
 import { DIMENSION_META, type Dimension } from "@/lib/domain/dimensions";
 import { PROGRAMME_LENGTH } from "@/lib/domain/programme";
-import { CONSISTENCY_MIN_DAYS, DEMONSTRATED_FULL_WEIGHT_AT, WEIGHTS, DISCIPLINE_CONSISTENCY_WEIGHT, historyByDay, overallScore, strengthsAndGrowthAreas } from "@/lib/domain/scoring";
+import { historyByDay, overallScore, strengthsAndGrowthAreas } from "@/lib/domain/scoring";
 import { getUserState } from "@/lib/server/state";
 import type { ScoreHistoryRow } from "@/lib/server/types";
 import { OverallTrend, SkillTrend } from "./charts";
@@ -129,13 +130,9 @@ export default async function ProgressPage() {
               </tbody>
             </table>
           </div>
-          <details className="group border-t border-line px-5 py-3 text-xs leading-relaxed text-muted">
-            <summary className="cursor-pointer list-none font-semibold text-ink marker:hidden">{t("How scores work")}{" "}<span className="text-muted group-open:hidden">›</span></summary>
-            <p className="mt-2">
-              <span className="font-medium text-ink">{t("Self-reported behaviour")}</span> ({WEIGHTS.self * 100}{t("%): your baseline blended with your daily check-in ratings.")}{" "}
-              <span className="font-medium text-ink">{t("Demonstrated performance")}</span> ({WEIGHTS.demonstrated * 100}{t("%): rubric scores for your reasoning in scenarios and labs, reaching full weight after")}{" "}{DEMONSTRATED_FULL_WEIGHT_AT}{" "}{t("pieces of evidence.")}{" "}
-              <span className="font-medium text-ink">{t("Consistency")}</span>{t(": completion of sessions, check-ins and challenges since day 1. It measures follow-through, so it counts towards self-discipline only (")}{DISCIPLINE_CONSISTENCY_WEIGHT * 100}{t("% weight, from day")}{" "}{CONSISTENCY_MIN_DAYS}{t("). Weights are shared out among the components that have data. These are development indicators, not clinical measurements.")}</p>
-          </details>
+          <p className="border-t border-line px-5 py-3 text-sm">
+            <Link href="/guide#scores" className="font-semibold text-primary underline-offset-2 hover:underline">{t("How scores work")} ›</Link>
+          </p>
           </details>
         </Card>
 

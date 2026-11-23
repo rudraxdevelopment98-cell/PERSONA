@@ -15,7 +15,7 @@ export default async function CirclesPage() {
   const circles = await myCircles(user.id);
   return (
     <>
-      <PageHeader eyebrow={t("Together")} title={t("Circles")} description={t("Private groups of up to 30 people - a study group, your team, college friends. Share a progress board, cheer each other and race.")} />
+      <PageHeader eyebrow={t("Together")} title={t("Circles")} description={t("Small private groups. Share progress, cheer and race.")} />
       <div className="space-y-4">
         {circles.length === 0 ? (
           <Card>

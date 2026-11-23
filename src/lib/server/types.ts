@@ -22,6 +22,8 @@ export type ProfileRow = {
   development_profile: DevelopmentProfile | null;
   roadmap: unknown;
   coach_journal_access: boolean;
+  learn_from_coach?: boolean | null;
+  learn_from_journal?: boolean | null;
   language: Language;
   next_world?: string | null;
   suspended_at?: string | null;

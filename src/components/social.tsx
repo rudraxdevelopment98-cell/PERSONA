@@ -1,5 +1,6 @@
 "use client";
 
+import { focusLabel } from "@/lib/domain/programme";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
@@ -136,7 +137,7 @@ export function ProgressTile({
       {has("activity") && week && !compact && (
         <p className="text-xs text-muted">{t("This week:")}{" "}<b className="text-ink">{week.sessions}</b>{" "}{t("sessions ·")}{" "}<b className="text-ink">{week.checkins}</b>{" "}{t("check-ins ·")}{" "}<b className="text-ink">{week.challenges}</b>{" "}{t("challenges")}</p>
       )}
-      {has("focus") && view.focus && <p className="text-xs text-muted">{t("Today's focus:")}{" "}<b className="text-ink">{t(view.focus.title)}</b></p>}
+      {has("focus") && view.focus && <p className="text-xs text-muted">{t("Today's focus:")}{" "}<b className="text-ink">{t(focusLabel(view.focus.title))}</b></p>}
       {has("badges") && view.badges && view.badges.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {view.badges.slice(0, compact ? 3 : 8).map((b) => (

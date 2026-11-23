@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ScoreBars } from "@/components/score-bars";
 import { Badge, Card, CardHeader } from "@/components/ui";
 import type { DevelopmentProfile } from "@/lib/ai/schemas";
@@ -88,13 +89,8 @@ export async function ProfileView({ profile }: { profile: DevelopmentProfile }) 
   );
 }
 
-const HOW: Record<AssessmentDepth, string> = {
-  quick: "Each skill was measured with one real-life situation, scored 1–5. That's a quick first read - expect these to move as the app sees how you actually practise.",
-  standard: "Each skill has one situation and two behavioural statements (one of them reverse-scored, so agreeing with it lowers the score), each scored 1–5.",
-  deep: "Each dimension has three behavioural statements and one situation, each scored 1–5. Some statements are reverse-scored, so agreeing with them lowers the score.",
-};
 
-export async function AssessmentResults({ scores, profile, depth = "deep" }: { scores: Record<Dimension, number>; profile: DevelopmentProfile | null; depth?: AssessmentDepth }) {
+export async function AssessmentResults({ scores, profile }: { scores: Record<Dimension, number>; profile: DevelopmentProfile | null; depth?: AssessmentDepth }) {
   const t = await getT();
   return (
     <div className="space-y-6">
@@ -105,18 +101,9 @@ export async function AssessmentResults({ scores, profile, depth = "deep" }: { s
             <ScoreBars rows={DIMENSIONS.map((d) => ({ dimension: d, current: scores[d] }))} />
           </div>
         </Card>
-        <Card className="md:col-span-2">
-          <details className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-semibold">
-              {t("How these scores work")} <span className="text-muted group-open:rotate-90">›</span>
-            </summary>
-            <div className="space-y-3 px-5 pb-4 text-sm leading-relaxed text-muted">
-              <p>{t(HOW[depth])}</p>
-              <p className="rounded-md bg-bg px-3 py-2 font-mono text-xs text-ink">{t("score = (average item score − 1) ÷ 4 × 100")}</p>
-              <p>{t("Development indicators, not clinical measurements.")}</p>
-            </div>
-          </details>
-        </Card>
+        <p className="text-sm md:col-span-2">
+          <Link href="/guide#scores" className="font-semibold text-primary underline-offset-2 hover:underline">{t("How these scores work")} ›</Link>
+        </p>
       </div>
       {profile ? <ProfileView profile={profile} /> : <RegenerateProfile />}
     </div>

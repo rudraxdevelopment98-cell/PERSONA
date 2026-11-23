@@ -26,7 +26,7 @@ export const SIGNAL_PATTERNS = [
   "procrastination", "seeking_reassurance", "assertive_action", "calm_reflection", "reframing", "asking_for_help", "taking_initiative", "setting_boundary",
 ] as const;
 export const DECISION_STYLES = ["avoidant", "impulsive", "dependent", "deliberate", "balanced"] as const;
-export const SIGNAL_SOURCES = ["checkin", "reflection", "challenge", "story_line", "scenario", "decision", "communication", "coach", "assessment"] as const;
+export const SIGNAL_SOURCES = ["checkin", "reflection", "challenge", "story_line", "scenario", "decision", "communication", "coach", "assessment", "journal"] as const;
 
 export type SignalSource = (typeof SIGNAL_SOURCES)[number];
 export type Pattern = (typeof SIGNAL_PATTERNS)[number];

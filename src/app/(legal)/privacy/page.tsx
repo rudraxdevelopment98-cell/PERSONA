@@ -99,15 +99,21 @@ export default async function PrivacyPage() {
       </ul>
       <p>Our providers may store and process data outside India, with security measures in place.</p>
 
-      <h2>6. How long we keep it</h2>
+      <h2 id="persona">6. How long we keep it</h2>
       <p>
         <strong>Your own words are kept only briefly.</strong> What you write or say in check-ins, reflections, story lines, the Decision and
-        Communication Labs, the AI coach and the &ldquo;held back&rdquo; part of the assessment is turned into private persona signals: a few
+        Communication Labs and the &ldquo;held back&rdquo; part of the assessment is turned into private persona signals: a few
         tags from a fixed list (for example a feeling, a type of situation, a thinking pattern, the role of the other person such as
         &ldquo;parent&rdquo;) and numbers (stress, confidence, mood, skill evidence). The signals cannot contain names, places or quotes. Your own
         words are then deleted after 48 hours, and after 7 days at the latest; coach conversations are deleted after 48 hours. The signals build a
         persona profile (a type, levels and tags) that personalises your programme. You can see it and delete it at any time in Me &rarr; My
-        persona. Your journal is your diary: it is kept until you delete it and is never turned into signals.
+        persona.
+      </p>
+      <p>
+        <strong>Coach chats and your journal need your yes.</strong> The first time you open the AI coach, and whenever you switch on
+        &ldquo;App learns from it&rdquo; in the journal, we ask whether that text may be turned into persona signals in the same way. If you say no,
+        it is never used for your persona or scores, and saying no later also deletes the signals already taken from it. Coach conversations are
+        deleted after 48 hours either way. Your journal is your diary: it is kept until you delete it, and only you can read it.
       </p>
       <p>
         We keep your data while your account is active. If you delete your account, your data is removed from our live database straight away and from

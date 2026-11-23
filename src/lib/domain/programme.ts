@@ -1,5 +1,7 @@
 import type { Dimension } from "./dimensions";
 
+const PERSONAL_SUFFIX = " - applied to your growth area";
+
 export const PROGRAMME_LENGTH = 90;
 
 export type Phase = {
@@ -82,7 +84,7 @@ export function focusForDay(
   if (weakest.length > 0 && offset % 3 === 2) {
     const target = weakest[Math.floor(offset / 3) % weakest.length];
     if (target !== base.dimension) {
-      return { title: `${base.title} - applied to your growth area`, dimension: target, personalised: true };
+      return { title: `${base.title}${PERSONAL_SUFFIX}`, dimension: target, personalised: true };
     }
   }
   return { ...base, personalised: false };
@@ -177,3 +179,6 @@ export function bestStreakWithRest(completedDays: number[]): number {
   });
   return best;
 }
+
+/** Shown on screens without the "- applied to your growth area" tail (a ✨ For you badge says it instead). */
+export const focusLabel = (title: string) => title.replace(PERSONAL_SUFFIX, "");

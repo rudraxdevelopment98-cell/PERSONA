@@ -24,7 +24,8 @@ import {
  *      and after RAW_TEXT_MAX_DAYS no matter what.
  *   3. rebuildProfile(): persona profile recomputed from signals + skill scores.
  *
- * The journal is the person's own diary: never read here and never wiped.
+ * Coach chats and journal entries are read only when the person said yes in the one-time popup
+ * (profiles.learn_from_coach / learn_from_journal). The journal itself is never wiped.
  */
 
 const q = async <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => (await getPool().query(sql, params)).rows as T[];
@@ -96,10 +97,20 @@ async function pendingItems(limit: number, userId?: string): Promise<Item[]> {
   const coach = await q<{ id: string; user_id: string; content: string }>(
     `select x.id::text, x.user_id, x.content from public.coach_messages x
       where x.role = 'user' and ${RECENT("x.created_at")} and ${NO_SIGNAL("coach", "x")} ${who}
+        and exists (select 1 from public.profiles pr where pr.id = x.user_id and pr.learn_from_coach)
       order by x.created_at desc limit $1`,
     p,
   );
   for (const c of coach) out.push({ user_id: c.user_id, source: "coach", ref_id: c.id, text: c.content });
+
+  const journal = await q<{ id: string; user_id: string; title: string; body: string }>(
+    `select x.id::text, x.user_id, x.title, x.body from public.journal_entries x
+      where ${RECENT("x.created_at")} and ${NO_SIGNAL("journal", "x")} ${who}
+        and exists (select 1 from public.profiles pr where pr.id = x.user_id and pr.learn_from_journal)
+      order by x.created_at desc limit $1`,
+    p,
+  );
+  for (const j of journal) out.push({ user_id: j.user_id, source: "journal", ref_id: j.id, text: clip(`${j.title}\n${j.body}`, 3000) });
 
   const assessments = await q<{ id: string; user_id: string; reflections: { held_back?: string; goal?: string } | null }>(
     `select x.id::text, x.user_id, x.reflections from public.assessments x
@@ -211,7 +222,8 @@ export async function redactOld(userId?: string): Promise<Record<string, number>
     where x.redacted_at is null and x.status = 'completed' and x.reflections ? 'held_back' and ${due("x.completed_at", "assessment")} ${who}`);
   // Coach: whole conversations go after the window (replies can repeat what was said).
   r.coach = await count(`delete from public.coach_messages x where x.created_at < now() - interval '${RAW_TEXT_HOURS} hours'
-    and (x.created_at < now() - interval '${RAW_TEXT_MAX_DAYS} days' or x.role = 'assistant' or not ${NO_SIGNAL("coach", "x")}) ${who}`);
+    and (x.created_at < now() - interval '${RAW_TEXT_MAX_DAYS} days' or x.role = 'assistant' or not ${NO_SIGNAL("coach", "x")}
+         or not exists (select 1 from public.profiles pr where pr.id = x.user_id and pr.learn_from_coach)) ${who}`);
   return r;
 }
 
@@ -262,4 +274,14 @@ export async function runSignalsJob() {
   const extracted = await extractPending({ limit: 80 });
   const redacted = await redactOld();
   return { extracted, redacted };
+}
+
+/** Saves the person's yes/no for learning from coach chats or the journal. A "no" also removes signals already taken from that source. */
+export async function setLearningChoice(userId: string, feature: "coach" | "journal", allowed: boolean) {
+  const col = feature === "coach" ? "learn_from_coach" : "learn_from_journal";
+  await q(`update public.profiles set ${col} = $2 where id = $1`, [userId, allowed]);
+  if (!allowed) {
+    await q("delete from public.signal_events where user_id = $1 and source = $2", [userId, feature]);
+    await rebuildProfile(userId);
+  }
 }

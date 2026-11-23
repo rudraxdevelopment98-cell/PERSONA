@@ -23,7 +23,7 @@ export default async function DecisionLabPage() {
     <PageHeader
       action={chip}
       title={t("Decision Lab")}
-      description={t("Practise realistic decisions with real trade-offs. You are evaluated on how you reason - your criteria, alternatives, risks and ownership - not on picking a 'right' answer. Time to first choice and changes of mind are recorded to reveal hesitation patterns.")}
+      description={t("Make a tough choice. You are scored on how you think, not on a 'right' answer.")}
     />
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="The Decision Lab" /></>);

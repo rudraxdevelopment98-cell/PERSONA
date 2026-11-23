@@ -4,6 +4,7 @@ import { getUserState } from "@/lib/server/state";
 import type { JournalRow } from "@/lib/server/types";
 import { JournalEditor, JournalEntryItem, JournalFilters } from "./journal";
 import { getT } from "@/lib/i18n/server";
+import { LearningSwitch } from "@/components/learning-switch";
 
 export const metadata = { title: "Journal" };
 
@@ -11,7 +12,7 @@ const TYPES = ["reflection", "observation", "decision", "emotion", "lesson"] as 
 
 export default async function JournalPage({ searchParams }: { searchParams: Promise<{ q?: string; type?: string }> }) {
   const t = await getT();
-  const { db, user } = await getUserState();
+  const { db, user, state } = await getUserState();
   const { q = "", type = "" } = await searchParams;
   const query = q.trim().slice(0, 200);
 
@@ -25,7 +26,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader
         title={t("Personal Journal")}
-        description={t("A private space for reflections, observations, decisions, emotional patterns and lessons. Only you can read it - the AI Coach can see it only if you allow that in Settings.")}
+        description={t("Your private diary. Only you can read it.")}
+        action={<LearningSwitch feature="journal" on={state.profile.learn_from_journal ?? null} />}
       />
       <div className="space-y-6">
         <JournalEditor />

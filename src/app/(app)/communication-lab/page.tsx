@@ -24,7 +24,7 @@ export default async function CommunicationLabPage() {
       action={chip}
       title={t("Communication Lab")}
       eyebrow={t("Practice")}
-      description={t("Say no, disagree, take criticism - out loud or in writing. Each reply is scored on clarity, assertiveness, empathy and composure, and you get a stronger version in your own voice.")}
+      description={t("Say no, disagree, take criticism. Get a score and a stronger version of your reply.")}
     />
   );
   if (!state.baseline) return (<>{header}<BaselineGate feature="The Communication Lab" /></>);

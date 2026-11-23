@@ -1,3 +1,4 @@
+import { focusLabel } from "@/lib/domain/programme";
 import { BaselineGate } from "@/components/baseline-gate";
 import { Badge, PageHeader } from "@/components/ui";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
@@ -101,7 +102,7 @@ export default async function TodayPage() {
     <>
       <PageHeader
         eyebrow={<>{t("Day {0} · {1}", state.day, t(DIMENSION_META[focus.dimension].label))}</>}
-        title={t(focus.title)}
+        title={t(focusLabel(focus.title))}
         action={focus.personalised ? <Badge tone="primary">{t("✨ For you")}</Badge> : undefined}
       />
       {!checkin?.completed_at || !session ? (

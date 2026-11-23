@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShareProgress } from "@/components/share-progress";
 import { InstallApp } from "@/components/install-app";
-import { ChevronRight, ClipboardList, Fingerprint, Gem, LineChart, LogOut, Map, NotebookPen, Settings, ShieldCheck, Trophy } from "lucide-react";
+import { BookOpen, ChevronRight, ClipboardList, Fingerprint, Gem, LineChart, LogOut, Map, NotebookPen, Settings, ShieldCheck, Trophy } from "lucide-react";
 import { isAdmin } from "@/lib/server/admin";
 import { Card, IconTile, ProgressBar } from "@/components/ui";
 import { getGamification } from "@/lib/server/gamification";
@@ -20,6 +20,7 @@ const LINKS = [
   { href: "/journal", label: "Journal", icon: NotebookPen, tone: "sky" as const },
   { href: "/programme", label: "90-day plan", icon: Map, tone: "primary" as const },
   { href: "/assessment", label: "Assessment & profile", icon: ClipboardList, tone: "coral" as const },
+  { href: "/guide", label: "Guide: how it works", icon: BookOpen, tone: "accent" as const },
   { href: "/settings", label: "Settings", icon: Settings, tone: "neutral" as const },
   { href: "/pricing", label: "Plan & Pro", icon: Gem, tone: "sun" as const },
 ];
