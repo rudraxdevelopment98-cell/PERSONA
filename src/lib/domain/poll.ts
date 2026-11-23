@@ -225,4 +225,4 @@ export function pollFor(date: string): Poll {
 }
 
 export const pollText = (p: Poll, language: string | null | undefined) =>
-  language === "gu" && POLLS_GU[p.id] ? POLLS_GU[p.id] : language === "hinglish" || language === "hi" || language === "gu" || language === "mr" ? p.hi : p.en;
+  language === "gu" && POLLS_GU[p.id] ? POLLS_GU[p.id] : language === "hinglish" || language === "hi" || language === "gu" ? p.hi : p.en;

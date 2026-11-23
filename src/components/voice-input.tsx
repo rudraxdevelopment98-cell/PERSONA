@@ -18,11 +18,6 @@ const T: Record<Language, { listening: string; thinking: string; hint: string; d
   hinglish: { listening: "Sun raha hoon…", thinking: "Likh raha hoon…", hint: "Khul ke bolo. Ho jaye toh ✓ dabao.", done: "Ho gaya", cancel: "Cancel", mic: "Type nahi, bol ke likho" },
   hi: { listening: "सुन रहा हूँ…", thinking: "लिख रहा हूँ…", hint: "खुलकर बोलिए। हो जाए तो ✓ दबाइए।", done: "हो गया", cancel: "रद्द करें", mic: "टाइप नहीं, बोलकर लिखें" },
   gu: { listening: "સાંભળું છું…", thinking: "લખી રહ્યો છું…", hint: "ખુલીને બોલો. થઈ જાય એટલે ✓ દબાવો.", done: "થઈ ગયું", cancel: "રદ કરો", mic: "ટાઇપ નહીં, બોલીને લખો" },
-  mr: { listening: "ऐकतोय…", thinking: "लिहितोय…", hint: "मोकळेपणाने बोला. झाल्यावर ✓ दाबा.", done: "झाले", cancel: "रद्द करा", mic: "टाइप नको, बोलून लिहा" },
-  bn: { listening: "শুনছি…", thinking: "লিখছি…", hint: "মন খুলে বলুন। হয়ে গেলে ✓ চাপুন।", done: "হয়ে গেছে", cancel: "বাতিল", mic: "টাইপ নয়, বলে লিখুন" },
-  ta: { listening: "கேட்கிறேன்…", thinking: "எழுதுகிறேன்…", hint: "தயங்காமல் பேசுங்கள். முடிந்ததும் ✓ அழுத்துங்கள்.", done: "முடிந்தது", cancel: "ரத்து", mic: "டைப் வேண்டாம், பேசி எழுதுங்கள்" },
-  te: { listening: "వింటున్నాను…", thinking: "రాస్తున్నాను…", hint: "స్వేచ్ఛగా మాట్లాడండి. అయిపోయాక ✓ నొక్కండి.", done: "అయింది", cancel: "రద్దు", mic: "టైప్ కాదు, మాట్లాడి రాయండి" },
-  kn: { listening: "ಕೇಳುತ್ತಿದ್ದೇನೆ…", thinking: "ಬರೆಯುತ್ತಿದ್ದೇನೆ…", hint: "ಮನಬಿಚ್ಚಿ ಮಾತನಾಡಿ. ಮುಗಿದ ಮೇಲೆ ✓ ಒತ್ತಿ.", done: "ಆಯಿತು", cancel: "ರದ್ದು", mic: "ಟೈಪ್ ಬೇಡ, ಮಾತನಾಡಿ ಬರೆಯಿರಿ" },
 };
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;

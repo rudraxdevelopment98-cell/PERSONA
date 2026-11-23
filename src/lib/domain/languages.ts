@@ -8,11 +8,6 @@ export const LANGUAGES = [
   { id: "hinglish", label: "Hinglish", english: "Hinglish", short: "Hing", speech: "hi-IN", script: "Latin", hint: "Roman Hindi + English mix" },
   { id: "hi", label: "हिन्दी", english: "Hindi", short: "हिं", speech: "hi-IN", script: "Devanagari", hint: "देवनागरी में हिंदी" },
   { id: "gu", label: "ગુજરાતી", english: "Gujarati", short: "ગુ", speech: "gu-IN", script: "Gujarati", hint: "ગુજરાતીમાં વાર્તા, ફીડબેક અને કોચ" },
-  { id: "mr", label: "मराठी", english: "Marathi", short: "मरा", speech: "mr-IN", script: "Devanagari", hint: "मराठीत गोष्टी, फीडबॅक आणि कोच" },
-  { id: "bn", label: "বাংলা", english: "Bengali", short: "বাং", speech: "bn-IN", script: "Bengali", hint: "বাংলায় গল্প, ফিডব্যাক আর কোচ" },
-  { id: "ta", label: "தமிழ்", english: "Tamil", short: "தமி", speech: "ta-IN", script: "Tamil", hint: "தமிழில் கதைகள், கருத்து, பயிற்சியாளர்" },
-  { id: "te", label: "తెలుగు", english: "Telugu", short: "తెలు", speech: "te-IN", script: "Telugu", hint: "తెలుగులో కథలు, ఫీడ్‌బ్యాక్, కోచ్" },
-  { id: "kn", label: "ಕನ್ನಡ", english: "Kannada", short: "ಕನ್", speech: "kn-IN", script: "Kannada", hint: "ಕನ್ನಡದಲ್ಲಿ ಕಥೆಗಳು, ಫೀಡ್‌ಬ್ಯಾಕ್, ಕೋಚ್" },
 ] as const;
 
 export type Language = (typeof LANGUAGES)[number]["id"];
@@ -23,7 +18,7 @@ export const languageInfo = (id: string | null | undefined) => LANGUAGES.find((l
 /** Hindi-belt languages fall back to Hinglish content where no translation exists; the rest to English. */
 export function fallbackLang(id: string | null | undefined): "en" | "hinglish" | "hi" {
   if (id === "hinglish" || id === "hi") return id;
-  if (id === "gu" || id === "mr") return "hinglish";
+  if (id === "gu") return "hinglish";
   return "en";
 }
 
@@ -36,9 +31,4 @@ export const SAVED_TEXT: Record<Language, string> = {
   hinglish: "Language Hinglish ho gayi",
   hi: "भाषा हिन्दी कर दी गई",
   gu: "ભાષા ગુજરાતી થઈ ગઈ",
-  mr: "भाषा मराठी झाली",
-  bn: "ভাষা বাংলা করা হয়েছে",
-  ta: "மொழி தமிழாக மாற்றப்பட்டது",
-  te: "భాష తెలుగుకు మార్చబడింది",
-  kn: "ಭಾಷೆ ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿತು",
 };

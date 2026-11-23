@@ -89,7 +89,7 @@ export default async function Landing() {
     { q: "Kya ye free hai?", a: "Haan. Free plan mein roz check-in, streak, poll aur quick cards; pehle hafte roz poora episode, phir hafte mein 3. Pro mein roz naya episode aur AI narrator. Card ke bina 7 din Pro try kar sakte ho." },
     { q: "Kya ye sirf job walon ke liye hai?", a: "Nahi. Student, job, apna business, ghar sambhalne wale ya kaam dhoondhne wale, sab ke liye. Tum batate ho ki life ke kaun se hisse (family, dost, rishte, padhai, kaam, health, paisa) mein grow karna hai, aur kahaniyan wahi se aati hain." },
     { q: "Roz kitna time chahiye?", a: "Poora session ~30 minute. Busy din par sirf 2 minute ka check-in bhi streak bachata hai." },
-    { q: "Hindi ya Hinglish mein milega?", a: "Haan: English, Hinglish ya हिन्दी. Kahaniyan, sawaal aur awaaz tumhari bhasha mein." },
+    { q: "Hindi, Hinglish ya Gujarati mein milega?", a: "Haan: English, Hinglish, हिन्दी aur ગુજરાતી. Settings mein bhasha chuno; kahaniyan, sawaal, awaaz aur Gujarati mein poora app bhi." },
     { q: "Mera data safe hai?", a: "Journal, jawab aur coach chats sirf tumhare hain. Dost sirf wahi dekhte hain jo tum share karo. Data kabhi bhi download ya delete kar sakte ho." },
     { q: "Kya ye therapy hai?", a: "Nahi. Ye self-development ke liye hai, diagnosis ya ilaaj nahi. Mushkil waqt mein professional se baat karo; India mein Tele-MANAS 14416." },
     { q: "App kahan milega?", a: "Abhi browser mein kholo aur \"Install\" dabao, phone par app jaisa chalega. Play Store app jaldi." },
@@ -112,7 +112,7 @@ export default async function Landing() {
               <LineChart className="size-3.5" />{" "}{t("90 din · 30 minute roz · free")}</span>
             <h1 className="mt-4 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">{t("Roz ek kahani.")}<br />
               <span className="text-accent">{t("Faisla")}</span>{" "}{t("tumhara.")}</h1>
-            <p className="mt-5 max-w-md text-lg text-muted">{t("Confidence, baat-cheet aur faisle lene ki skill: ghar, dost, padhai, kaam aur rishton mein. Interactive kahaniyon aur roz ki chhoti practice se. English, Hinglish ya हिन्दी.")}</p>
+            <p className="mt-5 max-w-md text-lg text-muted">{t("Confidence, baat-cheet aur faisle lene ki skill: ghar, dost, padhai, kaam aur rishton mein. Interactive kahaniyon aur roz ki chhoti practice se. English, Hinglish, हिन्दी ya ગુજરાતી.")}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/signup" className="h-12 px-6 text-base">{t("Free shuru karo")}{" "}<ArrowRight className="size-4" />
               </ButtonLink>
