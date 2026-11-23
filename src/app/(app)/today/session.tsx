@@ -112,7 +112,7 @@ function NextStep({ to, minutes, onClick, label }: { to: string; minutes: string
   return (
     <div className="animate-pop flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
       <div className="min-w-0">
-        <p className="text-xs text-muted">{t(label ?? "") ?? t("Nice, step done.")}{" "}{t("Up next")}</p>
+        <p className="text-xs text-muted">{t(label ?? "") || t("Nice, step done.")}{" "}{t("Up next")}</p>
         <p className="truncate text-sm font-semibold">
           {t(to)} <span className="font-normal text-muted">· {t(minutes)}</span>
         </p>
@@ -275,7 +275,7 @@ function StoryReader({ sessionId, story, initialProgress, completed, onComplete,
         {awaitingChoice && <StoryChoice sessionId={sessionId} choice={story.choice!} />}
         {story.chosen && story.choice && (
           <div className="mt-6 max-w-[65ch] rounded-2xl border border-line bg-bg p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-primary">{t("Tumhari choice ·")}{" "}{t(story.choice.options.find((o) => o.id === story.chosen)?.vibe ?? "") ?? ""}
+            <p className="text-xs font-bold uppercase tracking-wider text-primary">{t("Tumhari choice ·")}{" "}{t(story.choice.options.find((o) => o.id === story.chosen)?.vibe ?? "") || ""}
             </p>
             <p className="mt-1 font-semibold">{story.choice.options.find((o) => o.id === story.chosen)?.text}</p>
             {story.choice_feedback && <p className="mt-2 text-sm leading-relaxed text-muted">{t(story.choice_feedback)}</p>}

@@ -196,10 +196,10 @@ export function AssessmentWizard({
         </span>
         <span className="inline-flex w-20 shrink-0 items-center justify-end gap-1 text-xs font-semibold text-muted" aria-live="polite">
           {saving > 0 ? (
-            (t(ui?.saving ?? "") ?? t("Saving…"))
+            (t(ui?.saving ?? "") || t("Saving…"))
           ) : answered > 0 ? (
             <>
-              <CloudCheck className="size-3.5 text-success" /> {t(ui?.saved ?? "") ?? t("Saved")}
+              <CloudCheck className="size-3.5 text-success" /> {t(ui?.saved ?? "") || t("Saved")}
             </>
           ) : null}
         </span>
@@ -237,7 +237,7 @@ export function AssessmentWizard({
         {!isReflection ? (
           <>
             <p className="mb-5 text-xs font-medium uppercase tracking-wide text-muted">
-              {t(ui?.part ?? "") ?? t("Part")} {page + 1} {t(ui?.of ?? "") ?? "of"} {pages.length + 1} · {dims.join(" · ")}
+              {t(ui?.part ?? "") || t("Part")} {page + 1} {t(ui?.of ?? "") || "of"} {pages.length + 1} · {dims.join(" · ")}
             </p>
             <div className="divide-y divide-line">
               {current.map((item, i) => {
@@ -258,11 +258,11 @@ export function AssessmentWizard({
           </>
         ) : (
           <div className="space-y-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">{t(ui?.finalPart ?? "") ?? t("Final part · In your own words")}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">{t(ui?.finalPart ?? "") || t("Final part · In your own words")}</p>
             {showHeldBack && (
               <div>
                 <Label htmlFor="held">
-                  {t(ui?.heldBack ?? "") ?? t("Describe a recent situation where you held back from saying or doing something. What stopped you?")}
+                  {t(ui?.heldBack ?? "") || t("Describe a recent situation where you held back from saying or doing something. What stopped you?")}
                   {!heldBackRequired && <span className="ml-1 font-normal text-muted">{t(dc.optional)}</span>}
                 </Label>
                 <VoiceTextarea id="held" value={heldBack} onChange={(e) => setHeldBack(e.target.value)} maxLength={2000} rows={4} />
@@ -270,7 +270,7 @@ export function AssessmentWizard({
             )}
             {mode === "baseline" && (
               <div>
-                <Label htmlFor="goal">{t(ui?.goal ?? "") ?? t("What would you like to be noticeably different about how you think or act after 90 days?")}</Label>
+                <Label htmlFor="goal">{t(ui?.goal ?? "") || t("What would you like to be noticeably different about how you think or act after 90 days?")}</Label>
                 <VoiceTextarea id="goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={2000} rows={4} />
               </div>
             )}
@@ -283,11 +283,11 @@ export function AssessmentWizard({
 
       <div className="flex items-center justify-between">
         <Button variant="secondary" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0 || busy}>
-          <ArrowLeft className="size-4" /> {t(ui?.back ?? "") ?? t("Back")}
+          <ArrowLeft className="size-4" /> {t(ui?.back ?? "") || t("Back")}
         </Button>
         {!isReflection ? (
           <Button onClick={() => setPage((p) => p + 1)} disabled={!pageComplete}>
-            {t(ui?.continue ?? "") ?? t("Continue")} <ArrowRight className="size-4" />
+            {t(ui?.continue ?? "") || t("Continue")} <ArrowRight className="size-4" />
           </Button>
         ) : (
           <Button
@@ -300,7 +300,7 @@ export function AssessmentWizard({
               (mode === "baseline" && goal.trim().length < 10)
             }
           >
-            {busy ? <Spinner /> : <Check className="size-4" />} {busy ? (t(ui?.building ?? "") ?? t("Building your profile…")) : (t(ui?.finish ?? "") ?? t("Finish assessment"))}
+            {busy ? <Spinner /> : <Check className="size-4" />} {busy ? (t(ui?.building ?? "") || t("Building your profile…")) : (t(ui?.finish ?? "") || t("Finish assessment"))}
           </Button>
         )}
       </div>

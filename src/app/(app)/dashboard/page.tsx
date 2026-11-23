@@ -241,7 +241,7 @@ export default async function Dashboard() {
                   <span className="flex size-14 items-center justify-center rounded-full bg-sun text-white shadow-card">
                     <BadgeIcon name={def?.icon ?? "trophy"} className="size-6" />
                   </span>
-                  <span className="line-clamp-2 text-[11px] font-semibold leading-tight">{t(def?.title ?? "") ?? a.code}</span>
+                  <span className="line-clamp-2 text-[11px] font-semibold leading-tight">{t(def?.title ?? "") || a.code}</span>
                 </div>
               );
             })}

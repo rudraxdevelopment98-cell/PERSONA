@@ -54,14 +54,14 @@ export function DeepFeedback(props: {
       {props.concept?.name && (
         <div className="rounded-2xl bg-sky-soft p-4">
           <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-sky">
-            <Lightbulb className="size-3.5" /> {t(props.conceptLabel ?? "") ?? t("Psychology behind it")}
+            <Lightbulb className="size-3.5" /> {t(props.conceptLabel ?? "") || t("Psychology behind it")}
           </p>
           <p className="mt-1 font-bold">{props.concept.name}</p>
           <p className="mt-0.5 text-sm leading-relaxed">{t(props.concept.explanation)}</p>
         </div>
       )}
       {props.example && (
-        <Row icon={<Wand2 className="size-4" />} tone="primary" label={t(props.exampleLabel ?? "") ?? t("How a skilled person might think")}>
+        <Row icon={<Wand2 className="size-4" />} tone="primary" label={t(props.exampleLabel ?? "") || t("How a skilled person might think")}>
           <p className="whitespace-pre-line">{t(props.example)}</p>
         </Row>
       )}

@@ -13,7 +13,7 @@ export function InviteBanner({ token, text }: { token: string; text: string }) {
   return (
     <div className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-4 py-3">
       <Users className="size-5 shrink-0 text-accent" />
-      <p className="min-w-0 flex-1 text-sm font-semibold text-ink">{t(error ?? "") ?? text}</p>
+      <p className="min-w-0 flex-1 text-sm font-semibold text-ink">{t(error ?? "") || text}</p>
       <Button
         variant="accent"
         className="h-9"

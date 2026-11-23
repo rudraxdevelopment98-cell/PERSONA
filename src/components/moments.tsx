@@ -556,7 +556,7 @@ export function QuickCheer({ to, name, circleId = null }: { to: string; name: st
         aria-label={t("Cheer {0}", name)}
         className={cx("flex size-10 items-center justify-center rounded-full border border-line text-lg transition active:scale-90", sent ? "bg-accent-soft" : "bg-surface hover:bg-bg")}
       >
-        {t(sent ?? "") ?? "👋"}
+        {t(sent ?? "") || "👋"}
       </button>
       {open && (
         <div className="animate-pop absolute right-0 top-11 z-20 flex gap-1 rounded-full border border-line bg-surface p-1 shadow-raised">

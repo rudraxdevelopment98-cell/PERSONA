@@ -129,7 +129,7 @@ export function LanguageMenu({ value, align = "right", up = false }: { value: La
             error ? "bg-danger-soft text-danger" : "bg-primary text-white",
           )}
         >
-          {t(error ?? "") ?? t(toast ?? "")}
+          {t(error ?? "") || t(toast ?? "")}
         </div>
       )}
     </div>
