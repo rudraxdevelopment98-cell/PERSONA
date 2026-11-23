@@ -7,6 +7,7 @@ import { DepthPicker } from "./depth-picker";
 import { getUserState } from "@/lib/server/state";
 import { Card, PageHeader } from "@/components/ui";
 import { LanguagePicker } from "@/components/language-picker";
+import { fallbackLang } from "@/lib/domain/languages";
 import { AssessmentWizard } from "./wizard";
 import { AssessmentResults } from "./results";
 
@@ -29,7 +30,7 @@ const INTRO = {
 
 export default async function AssessmentPage({ searchParams }: { searchParams: Promise<{ deepen?: string }> }) {
   const [{ db, user, state }, sp] = await Promise.all([getUserState(), searchParams]);
-  const lang = state.profile.language;
+  const lang = fallbackLang(state.profile.language);
   const t = depthCopy(lang);
 
   if (state.baseline) {
@@ -98,8 +99,8 @@ export default async function AssessmentPage({ searchParams }: { searchParams: P
   return (
     <>
       <PageHeader
-        title={INTRO[state.profile.language].title}
-        description={INTRO[state.profile.language].description}
+        title={INTRO[lang].title}
+        description={INTRO[lang].description}
       />
       <div className="mb-5">
         <LanguagePicker value={state.profile.language} />

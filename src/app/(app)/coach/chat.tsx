@@ -3,8 +3,9 @@
 import { UpgradeHint } from "@/components/upgrade";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowUp, Trash2 } from "lucide-react";
-import { Alert, Button, Card, Spinner, Textarea, cx } from "@/components/ui";
+import { Alert, Button, Card, Spinner, cx } from "@/components/ui";
 import { clearCoachHistory } from "./actions";
+import { VoiceTextarea } from "@/components/voice-input";
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
@@ -113,7 +114,7 @@ export function CoachChat({ initial }: { initial: Msg[] }) {
           send(input);
         }}
       >
-        <Textarea
+        <VoiceTextarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

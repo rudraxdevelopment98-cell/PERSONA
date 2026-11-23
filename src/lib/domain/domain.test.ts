@@ -315,3 +315,35 @@ describe("streak with weekly rest day", () => {
     expect(bestStreakWithRest([])).toBe(0);
   });
 });
+
+import { describe as describeLang, expect as expectLang, it as itLang } from "vitest";
+import { languageInstruction } from "@/lib/ai/prompts";
+import { LANGUAGES, fallbackLang, isLanguage } from "./languages";
+import { deckLang } from "./cards";
+import { langOf } from "@/lib/client/voices";
+
+describeLang("languages", () => {
+  itLang("has 9 languages with a speech tag each", () => {
+    expectLang(LANGUAGES).toHaveLength(9);
+    for (const l of LANGUAGES) expectLang(l.speech).toMatch(/^[a-z]{2}-IN$/);
+  });
+  itLang("asks the AI for each Indian language in its own script", () => {
+    expectLang(languageInstruction("gu")).toContain("Gujarati in Gujarati script");
+    expectLang(languageInstruction("ta")).toContain("Tamil in Tamil script");
+    expectLang(languageInstruction("mr")).toContain("Marathi in Devanagari script");
+    expectLang(languageInstruction("hinglish")).toContain("Hinglish");
+  });
+  itLang("falls back sensibly where no translation exists", () => {
+    expectLang(fallbackLang("gu")).toBe("hinglish");
+    expectLang(fallbackLang("ta")).toBe("en");
+    expectLang(deckLang("hinglish")).toBe("hi");
+    expectLang(deckLang("kn")).toBe("kn");
+    expectLang(isLanguage("xx")).toBe(false);
+  });
+  itLang("picks the narrator voice from the script", () => {
+    expectLang(langOf("આજે વાર્તા")).toBe("gu");
+    expectLang(langOf("இன்று")).toBe("ta");
+    expectLang(langOf("आज")).toBe("hi");
+    expectLang(langOf("Aaj ki kahani")).toBe("en");
+  });
+});

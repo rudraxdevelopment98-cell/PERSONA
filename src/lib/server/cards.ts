@@ -2,12 +2,12 @@ import "server-only";
 import { getPool } from "@/lib/db/pool";
 import { generateStructured, runWithAIContext } from "@/lib/ai/client";
 import { todayIn } from "@/lib/domain/programme";
-import { CARDS_PER_DAY, CARDS_SYSTEM, deckLang, deckSchema, fallbackDeck, type QuickCard } from "@/lib/domain/cards";
+import { CARDS_PER_DAY, CARDS_SYSTEM, deckLang, deckSchema, type DeckLang, fallbackDeck, type QuickCard } from "@/lib/domain/cards";
 
 const q = async <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => (await getPool().query(sql, params)).rows as T[];
 
 /** Today's shared deck for a language: made once by AI for everyone, or the built-in set if AI fails. */
-async function deckFor(date: string, lang: "en" | "hi"): Promise<QuickCard[]> {
+async function deckFor(date: string, lang: DeckLang): Promise<QuickCard[]> {
   const [row] = await q<{ cards: QuickCard[] }>("select cards from public.daily_cards where card_date = $1 and lang = $2", [date, lang]);
   if (row) return row.cards;
   let cards: QuickCard[];
@@ -20,7 +20,7 @@ async function deckFor(date: string, lang: "en" | "hi"): Promise<QuickCard[]> {
         schema: deckSchema,
         effort: "low",
         maxTokens: 3000,
-        language: lang === "en" ? "en" : "hinglish",
+        language: lang === "hi" ? "hinglish" : lang,
       }),
     );
     cards = out.cards.slice(0, CARDS_PER_DAY).map((c) => ({

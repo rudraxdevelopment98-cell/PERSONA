@@ -61,7 +61,10 @@ export default async function PrivacyPage() {
         </tbody>
       </table>
       <p>
-        Speech-to-text in the Communication Lab is done by your browser or phone; the app does not record or upload your audio. The &ldquo;HD voice&rdquo;
+        Voice input (the mic button on answer boxes) only listens while the listening screen is open. The short recording is sent to our AI
+        provider to turn it into text in your language and is then discarded: we never store your audio, only the text you choose to save. If no
+        AI model is available, your browser or phone does the speech-to-text instead. Speech-to-text in the Communication Lab&apos;s voice practice
+        is done by your browser or phone. The &ldquo;HD voice&rdquo;
         reads stories aloud on your device. The optional AI narrator creates audio from the story text only.
       </p>
 

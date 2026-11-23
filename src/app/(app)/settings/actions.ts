@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { LANGUAGE_IDS } from "@/lib/domain/languages";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { deleteUserAccount, requireUser } from "@/lib/db/server";
@@ -18,7 +19,7 @@ const schema = z.object({
     }
   }, "Unknown timezone."),
   coach_journal_access: z.boolean(),
-  language: z.enum(["en", "hinglish", "hi"]),
+  language: z.enum(LANGUAGE_IDS),
 });
 
 export async function updateSettings(input: z.infer<typeof schema>): Promise<{ error?: string }> {
@@ -32,7 +33,7 @@ export async function updateSettings(input: z.infer<typeof schema>): Promise<{ e
 }
 
 export async function setLanguage(language: string): Promise<{ error?: string }> {
-  const parsed = z.enum(["en", "hinglish", "hi"]).safeParse(language);
+  const parsed = z.enum(LANGUAGE_IDS).safeParse(language);
   if (!parsed.success) return { error: "Unknown language." };
   const { db, user } = await requireUser();
   const { error } = await db.from("profiles").update({ language: parsed.data }).eq("id", user.id);

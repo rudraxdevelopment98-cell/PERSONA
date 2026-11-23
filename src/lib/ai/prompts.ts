@@ -222,9 +222,10 @@ How you coach:
 
 ${SAFETY_RULES}`;
 
-export type Language = "en" | "hinglish" | "hi";
+import { LANGUAGES, languageInfo, type Language } from "@/lib/domain/languages";
+export type { Language };
 
-export const LANGUAGE_LABELS: Record<Language, string> = { en: "English", hinglish: "Hinglish", hi: "हिन्दी (Hindi)" };
+export const LANGUAGE_LABELS = Object.fromEntries(LANGUAGES.map((l) => [l.id, l.id === "hi" || l.id === "en" || l.id === "hinglish" ? l.label : `${l.label} (${l.english})`])) as Record<Language, string>;
 
 /** Appended to every system prompt so all user-facing text is in the user's language. */
 export function languageInstruction(lang: Language | null | undefined): string {
@@ -233,6 +234,15 @@ export function languageInstruction(lang: Language | null | undefined): string {
       return `\n\nLANGUAGE: Write every user-facing text value in natural Hinglish - Hindi written in Roman (Latin) script, mixed with everyday English words, the way young urban Indians speak and text (for example: "Aaj meeting mein tumne apni baat kyun nahi rakhi? Thoda risk lena padta hai."). Keep psychological terms in English. Stories may use Indian settings and names more often. JSON keys, ids, enum values and dimension names must stay exactly as specified, in English.`;
     case "hi":
       return `\n\nLANGUAGE: Write every user-facing text value in simple, natural, conversational Hindi in Devanagari script (avoid heavy Sanskritised words; common English terms like "meeting" or "feedback" are fine). Stories may use Indian settings and names more often. JSON keys, ids, enum values and dimension names must stay exactly as specified, in English.`;
+    case "gu":
+    case "mr":
+    case "bn":
+    case "ta":
+    case "te":
+    case "kn": {
+      const l = languageInfo(lang);
+      return `\n\nLANGUAGE: Write every user-facing text value in simple, natural, conversational ${l.english} in ${l.script} script, the way people actually speak it today (avoid heavy literary or formal words; common English words like "meeting", "feedback" or "phone" are fine, written in ${l.script} script or in English). Stories may use Indian settings and names from that region more often. JSON keys, ids, enum values and dimension names must stay exactly as specified, in English.`;
+    }
     default:
       return `\n\nLANGUAGE: Write every user-facing text value in clear, natural English.`;
   }

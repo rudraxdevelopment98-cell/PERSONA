@@ -1,5 +1,6 @@
 "use client";
 
+import { fallbackLang, type Language } from "@/lib/domain/languages";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, Gauge, Layers, ListChecks, Zap } from "lucide-react";
@@ -11,8 +12,8 @@ import { postJSON } from "@/lib/client/api";
 const ICONS = { quick: Zap, standard: Gauge, deep: Layers };
 const TONES = { quick: "bg-sun-soft text-warning", standard: "bg-primary-soft text-primary", deep: "bg-accent-soft text-accent" };
 
-export function DepthPicker({ language, current, onCancel }: { language: "en" | "hinglish" | "hi"; current?: AssessmentDepth; onCancel?: () => void }) {
-  const t = depthCopy(language);
+export function DepthPicker({ language, current, onCancel }: { language: Language; current?: AssessmentDepth; onCancel?: () => void }) {
+  const t = depthCopy(fallbackLang(language));
   const router = useRouter();
   const [choice, setChoice] = useState<AssessmentDepth>(current ?? "standard");
   const [busy, setBusy] = useState(false);

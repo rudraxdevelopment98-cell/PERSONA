@@ -36,9 +36,21 @@ const writePref = (v: string) => {
   } catch {}
 };
 
-/** "hi" for Devanagari, "hinglish" for Roman Hindi, else "en". */
-function storyLanguage(text: string): "hi" | "hinglish" | "en" {
-  if (/[ऀ-ॿ]/.test(text)) return "hi";
+const VOICE_HELLO: Record<VoiceLang, string> = {
+  en: "Namaste! I will read today's story for you.",
+  hi: "नमस्ते! मैं आज की कहानी सुनाऊँगी।",
+  mr: "नमस्कार! मी आजची गोष्ट वाचून दाखवते.",
+  gu: "નમસ્તે! હું આજની વાર્તા સંભળાવીશ.",
+  bn: "নমস্কার! আমি আজকের গল্পটা পড়ে শোনাব।",
+  ta: "வணக்கம்! இன்றைய கதையை நான் படித்துக் காட்டுகிறேன்.",
+  te: "నమస్తే! ఈరోజు కథ నేను చదివి వినిపిస్తాను.",
+  kn: "ನಮಸ್ಕಾರ! ಇವತ್ತಿನ ಕಥೆಯನ್ನು ನಾನು ಓದಿ ಹೇಳುತ್ತೇನೆ.",
+};
+
+/** The story's language from its script: Indian scripts map to their voice, Roman Hindi is "hinglish", else "en". */
+function storyLanguage(text: string): VoiceLang | "hinglish" {
+  const script = langOf(text);
+  if (script !== "en") return script;
   const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
   const hind = words.filter((w) => /^(hai|hain|nahi|kya|mein|tum|aur|ki|ka|ke|ko|se|ne|bhi|toh|tha|thi|kar|raha|rahi|apni|apna|uska|uski)$/.test(w)).length;
   return words.length && hind / words.length > 0.06 ? "hinglish" : "en";
@@ -111,7 +123,7 @@ export function ListenButton({
         const ex = /!["”']?$/.test(t);
         return { text: t, intensity: 2, speaker: "narrator" as const, emotion: d.pauseAfter >= 0.7 ? ("whisper" as const) : ex ? ("excited" as const) : q ? ("surprised" as const) : d.noise > 1.1 ? ("happy" as const) : ("neutral" as const) };
       });
-  const deviceLang: VoiceLang = lang === "hi" ? "hi" : "en";
+  const deviceLang: VoiceLang = lang === "hinglish" ? "en" : lang;
 
   // Choose the engine: saved preference first, then AI if allowed, else the device.
   useEffect(() => {
@@ -376,7 +388,7 @@ function VoiceSheet({
   onChoose,
 }: {
   onClose: () => void;
-  lang: "hi" | "hinglish" | "en";
+  lang: VoiceLang | "hinglish";
   deviceLang: VoiceLang;
   ai: AIVoice | null;
   current: { engine: Engine; piperId: PiperVoiceId | null };
@@ -415,7 +427,7 @@ function VoiceSheet({
     sample.current?.pause();
     const s = window.speechSynthesis;
     s.cancel();
-    const u = new SpeechSynthesisUtterance(deviceLang === "hi" ? "नमस्ते! मैं आज की कहानी सुनाऊँगी।" : "Namaste! I will read today's story for you.");
+    const u = new SpeechSynthesisUtterance(VOICE_HELLO[deviceLang]);
     u.voice = v;
     u.lang = v.lang;
     s.speak(u);

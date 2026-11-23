@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Flame, Pause, Play, Wind } from "lucide-react";
-import { Button, Card, Textarea, cx } from "@/components/ui";
+import { Button, Card, cx } from "@/components/ui";
+import { VoiceTextarea } from "@/components/voice-input";
 
 const buzz = (ms: number) => {
   try {
@@ -145,7 +146,7 @@ export function VentAndBurn() {
           </div>
         ) : (
           <>
-            <Textarea
+            <VoiceTextarea
               id="vent-text"
               rows={5}
               maxLength={2000}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { LANGUAGE_IDS } from "@/lib/domain/languages";
 import { requireUser } from "@/lib/db/server";
 import * as admin from "@/lib/server/admin";
 
@@ -158,7 +159,7 @@ const campaignSchema = z.object({
   ctaLabel: z.string().trim().min(2).max(30),
   url: z.string().trim().url("Enter a full https:// link.").max(400),
   placements: z.array(z.enum(["dashboard", "after_session", "labs"])).min(1, "Pick at least one place."),
-  languages: z.array(z.enum(["en", "hinglish", "hi"])).nullable(),
+  languages: z.array(z.enum(LANGUAGE_IDS)).nullable(),
   days: z.number().int().min(1).max(3650).nullable(),
   maxViews: z.number().int().min(1).max(100_000_000).nullable(),
   weight: z.number().int().min(1).max(10),

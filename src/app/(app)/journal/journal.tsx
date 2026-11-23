@@ -3,9 +3,10 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { Alert, Badge, Button, Card, Input, Label, Select, Spinner, Textarea } from "@/components/ui";
+import { Alert, Badge, Button, Card, Input, Label, Select, Spinner } from "@/components/ui";
 import type { JournalRow } from "@/lib/server/types";
 import { deleteJournalEntry, saveJournalEntry } from "./actions";
+import { VoiceTextarea } from "@/components/voice-input";
 
 const TYPES = [
   { id: "reflection", label: "Daily reflection" },
@@ -84,7 +85,7 @@ export function JournalEditor({ entry, onDone }: { entry?: JournalRow; onDone?: 
       </div>
       <div>
         <Label htmlFor={`body-${entry?.id ?? "new"}`}>Entry</Label>
-        <Textarea id={`body-${entry?.id ?? "new"}`} rows={7} maxLength={20000} value={body} onChange={(e) => setBody(e.target.value)} placeholder={PROMPTS[type]} />
+        <VoiceTextarea id={`body-${entry?.id ?? "new"}`} rows={7} maxLength={20000} value={body} onChange={(e) => setBody(e.target.value)} placeholder={PROMPTS[type]} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

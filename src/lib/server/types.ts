@@ -1,3 +1,4 @@
+import type { Language } from "@/lib/domain/languages";
 import type { SessionVariety } from "./variety";
 import type { Dimension } from "@/lib/domain/dimensions";
 import type {
@@ -21,7 +22,7 @@ export type ProfileRow = {
   development_profile: DevelopmentProfile | null;
   roadmap: unknown;
   coach_journal_access: boolean;
-  language: "en" | "hinglish" | "hi";
+  language: Language;
   next_world?: string | null;
   suspended_at?: string | null;
   reminders_enabled?: boolean;

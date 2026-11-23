@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
-import { Alert, Button, Spinner, Textarea, cx } from "@/components/ui";
+import { Alert, Button, Spinner, cx } from "@/components/ui";
 import type { CheckinQuestion } from "@/lib/ai/schemas";
 import { MOMENT_TAGS } from "@/lib/domain/moment";
+import { VoiceTextarea } from "@/components/voice-input";
 
 type Answers = Record<string, string | number>;
 
@@ -147,7 +148,7 @@ function MomentCard({ note, tags, onNote, onTags }: { note: string; tags: string
           </button>
         ))}
       </div>
-      <Textarea
+      <VoiceTextarea
         id="today-note"
         rows={4}
         maxLength={2000}
@@ -239,7 +240,7 @@ export function CheckinDeck({
             {q.type === "scale" && <EmojiScale q={q} value={answers[q.id] as number | undefined} onChange={set} />}
             {q.type === "choice" && <Options q={q} style={style} value={answers[q.id] as string | undefined} onPick={pick} />}
             {q.type === "text" && (
-              <Textarea
+              <VoiceTextarea
                 rows={4}
                 maxLength={2000}
                 autoFocus

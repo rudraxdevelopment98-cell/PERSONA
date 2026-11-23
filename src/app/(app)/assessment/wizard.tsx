@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, CloudCheck, History, Layers, SlidersHorizontal } from "lucide-react";
-import { Alert, Button, Card, Label, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
+import { Alert, Button, Card, Label, ProgressBar, Spinner, cx } from "@/components/ui";
 import { DEPTH_INFO, LIKERT_SCALE, itemsForDepth, type AssessmentDepth, type AssessmentItem } from "@/lib/domain/assessment";
 import { depthCopy } from "@/lib/domain/assessment-depth-i18n";
 import { DepthPicker } from "./depth-picker";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { assessmentPack, type AssessmentLang } from "@/lib/domain/assessment-i18n";
 import { postJSON } from "@/lib/client/api";
+import { VoiceTextarea } from "@/components/voice-input";
 
 const PAGE_SIZE = 5;
 const DRAFT_KEY = "persona90-assessment-draft";
@@ -261,13 +262,13 @@ export function AssessmentWizard({
                   {ui?.heldBack ?? "Describe a recent situation where you held back from saying or doing something. What stopped you?"}
                   {!heldBackRequired && <span className="ml-1 font-normal text-muted">{t.optional}</span>}
                 </Label>
-                <Textarea id="held" value={heldBack} onChange={(e) => setHeldBack(e.target.value)} maxLength={2000} rows={4} />
+                <VoiceTextarea id="held" value={heldBack} onChange={(e) => setHeldBack(e.target.value)} maxLength={2000} rows={4} />
               </div>
             )}
             {mode === "baseline" && (
               <div>
                 <Label htmlFor="goal">{ui?.goal ?? "What would you like to be noticeably different about how you think or act after 90 days?"}</Label>
-                <Textarea id="goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={2000} rows={4} />
+                <VoiceTextarea id="goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={2000} rows={4} />
               </div>
             )}
             <p className="text-xs text-muted">{ui?.privateNote ?? "These answers personalise your profile and stories. They are never shared."}</p>

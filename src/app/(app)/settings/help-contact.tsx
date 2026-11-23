@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { reportAction } from "../friends/actions";
-import { Alert, Button, Card, CardHeader, Select, Textarea } from "@/components/ui";
+import { Alert, Button, Card, CardHeader, Select } from "@/components/ui";
+import { VoiceTextarea } from "@/components/voice-input";
 
 const TOPICS = ["Question", "Refund or payment", "Privacy or my data", "Grievance", "Bug", "Feedback"];
 
@@ -35,7 +36,7 @@ export function HelpContact() {
             <option key={t}>{t}</option>
           ))}
         </Select>
-        <Textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} rows={4} placeholder="How can we help?" aria-label="Message" />
+        <VoiceTextarea value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} rows={4} placeholder="How can we help?" aria-label="Message" />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-muted">
             <Link href="/terms" className="underline">Terms</Link> · <Link href="/privacy" className="underline">Privacy</Link> ·{" "}

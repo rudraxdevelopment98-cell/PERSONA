@@ -4,12 +4,13 @@ import { AIThinking } from "@/components/ai-thinking";
 import { UpgradeHint, isUpgradeError } from "@/components/upgrade";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Badge, Button, Card, CardHeader, Label, Select, Spinner, Textarea, cx } from "@/components/ui";
+import { Alert, Badge, Button, Card, CardHeader, Label, Select, Spinner, cx } from "@/components/ui";
 import type { DecisionEvaluation, DecisionScenario } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import { DECISION_CATEGORIES, DECISION_DIFFICULTIES } from "@/lib/domain/labs";
 import { DeepFeedback } from "@/components/feedback";
 import { RubricTable } from "@/components/rubric";
+import { VoiceTextarea } from "@/components/voice-input";
 
 type Pending = { id: string; scenario: DecisionScenario; category: string; difficulty: string };
 
@@ -163,7 +164,7 @@ export function DecisionLab({ pending }: { pending: Pending | null }) {
               <>
                 <div>
                   <Label htmlFor="reasoning">Your reasoning: what matters most here, what did you weigh up, and what could go wrong?</Label>
-                  <Textarea id="reasoning" rows={4} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
+                  <VoiceTextarea id="reasoning" rows={4} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="confidence">

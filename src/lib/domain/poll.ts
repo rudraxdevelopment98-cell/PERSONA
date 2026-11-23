@@ -223,4 +223,4 @@ export function pollFor(date: string): Poll {
   return POLLS[((day % POLLS.length) + POLLS.length) % POLLS.length];
 }
 
-export const pollText = (p: Poll, language: string | null | undefined) => (language === "en" ? p.en : p.hi);
+export const pollText = (p: Poll, language: string | null | undefined) => (language === "hinglish" || language === "hi" || language === "gu" || language === "mr" ? p.hi : p.en);

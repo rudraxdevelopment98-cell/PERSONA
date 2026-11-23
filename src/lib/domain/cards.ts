@@ -49,12 +49,15 @@ export const FALLBACK_CARDS: Record<"en" | "hi", QuickCard[]> = {
 };
 
 /** Five fallback cards for a date (rotates through the bank). */
-export function fallbackDeck(lang: "en" | "hi", date: string): QuickCard[] {
-  const bank = FALLBACK_CARDS[lang];
+export function fallbackDeck(lang: DeckLang, date: string): QuickCard[] {
+  const bank = FALLBACK_CARDS[lang === "en" || lang === "hi" ? lang : lang === "gu" || lang === "mr" ? "hi" : "en"];
   const day = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86_400_000);
   const start = (day * CARDS_PER_DAY) % bank.length;
   return Array.from({ length: CARDS_PER_DAY }, (_, i) => bank[(start + i) % bank.length]);
 }
 
 /** Deck language: English for English users, Hinglish for everyone else. */
-export const deckLang = (language: string | null | undefined): "en" | "hi" => (language === "en" ? "en" : "hi");
+export type DeckLang = "en" | "hi" | "gu" | "mr" | "bn" | "ta" | "te" | "kn";
+/** Deck language: "hi" is the Hinglish deck (shared by Hinglish and Hindi users); other Indian languages get their own deck. */
+export const deckLang = (language: string | null | undefined): DeckLang =>
+  language === "en" ? "en" : language === "gu" || language === "mr" || language === "bn" || language === "ta" || language === "te" || language === "kn" ? language : "hi";

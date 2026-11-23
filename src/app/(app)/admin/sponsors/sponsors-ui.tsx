@@ -1,4 +1,5 @@
 "use client";
+import { LANGUAGES } from "@/lib/domain/languages";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -11,11 +12,7 @@ const PLACES = [
   { id: "after_session", label: "After a finished session" },
   { id: "labs", label: "Decision & Communication Lab" },
 ];
-const LANGS = [
-  { id: "en", label: "English" },
-  { id: "hinglish", label: "Hinglish" },
-  { id: "hi", label: "हिन्दी" },
-];
+const LANGS = LANGUAGES.map((l) => ({ id: l.id, label: l.label }));
 
 export function CampaignForm() {
   const router = useRouter();

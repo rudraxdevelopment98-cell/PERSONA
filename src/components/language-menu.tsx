@@ -5,25 +5,24 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Languages } from "lucide-react";
 import { setLanguage } from "@/app/(app)/settings/actions";
 import type { Language } from "@/lib/ai/prompts";
+import { LANGUAGES, SAVED_TEXT } from "@/lib/domain/languages";
 import { Spinner, cx } from "./ui";
 
-const OPTIONS: { id: Language; label: string; short: string; hint: string }[] = [
-  { id: "en", label: "English", short: "EN", hint: "Stories, feedback and coach in English" },
-  { id: "hinglish", label: "Hinglish", short: "Hing", hint: "Roman Hindi + English mix" },
-  { id: "hi", label: "हिन्दी", short: "हिं", hint: "देवनागरी में हिंदी" },
-];
+const OPTIONS = LANGUAGES;
 
 const NOTE: Record<Language, string> = {
   en: "Changes the language of AI content: check-ins, stories, scenarios, feedback, coach and the assessment.",
-  hinglish: "AI content ki bhasha badalta hai: check-in, story, scenarios, feedback, coach aur assessment.",
+  hinglish: "AI content ki bhasha badalta hai: check-in, story, scenarios, feedback, coach aur voice input.",
   hi: "AI सामग्री की भाषा बदलता है: चेक-इन, कहानी, परिदृश्य, फ़ीडबैक, कोच और आकलन।",
+  gu: "AI કન્ટેન્ટની ભાષા બદલે છે: ચેક-ઇન, વાર્તા, પરિસ્થિતિઓ, ફીડબેક, કોચ અને વોઇસ. મેનુ હજુ English/Hinglish માં છે.",
+  mr: "AI मजकुराची भाषा बदलते: चेक-इन, गोष्ट, प्रसंग, फीडबॅक, कोच आणि आवाज. मेनू अजून English/Hinglish मध्ये आहेत.",
+  bn: "AI কনটেন্টের ভাষা বদলায়: চেক-ইন, গল্প, পরিস্থিতি, ফিডব্যাক, কোচ আর ভয়েস। মেনু এখনো English-এ।",
+  ta: "AI உள்ளடக்க மொழியை மாற்றுகிறது: செக்-இன், கதை, சூழ்நிலைகள், கருத்து, பயிற்சியாளர், குரல். மெனுக்கள் இன்னும் English-ல்.",
+  te: "AI కంటెంట్ భాష మారుతుంది: చెక్-ఇన్, కథ, సన్నివేశాలు, ఫీడ్‌బ్యాక్, కోచ్, వాయిస్. మెనూలు ఇంకా English లో.",
+  kn: "AI ವಿಷಯದ ಭಾಷೆ ಬದಲಾಗುತ್ತದೆ: ಚೆಕ್-ಇನ್, ಕಥೆ, ಸನ್ನಿವೇಶಗಳು, ಫೀಡ್‌ಬ್ಯಾಕ್, ಕೋಚ್, ಧ್ವನಿ. ಮೆನುಗಳು ಇನ್ನೂ English ನಲ್ಲಿ.",
 };
 
-const SAVED: Record<Language, string> = {
-  en: "Language set to English",
-  hinglish: "Language Hinglish ho gayi",
-  hi: "भाषा हिन्दी कर दी गई",
-};
+const SAVED = SAVED_TEXT;
 
 /** Compact header menu to switch the AI content language at any time. */
 export function LanguageMenu({ value, align = "right", up = false }: { value: Language; align?: "left" | "right"; up?: boolean }) {
@@ -94,7 +93,7 @@ export function LanguageMenu({ value, align = "right", up = false }: { value: La
         <div
           role="menu"
           className={cx(
-            "fixed inset-x-3 top-16 z-50 rounded-2xl border border-line bg-surface p-1.5 shadow-raised sm:absolute sm:inset-x-auto sm:top-10 sm:w-64",
+            "fixed inset-x-3 top-16 z-50 max-h-[70vh] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-raised sm:absolute sm:inset-x-auto sm:top-10 sm:w-64",
             align === "right" ? "sm:right-0" : "sm:left-0",
             up && "sm:top-auto sm:bottom-10",
           )}

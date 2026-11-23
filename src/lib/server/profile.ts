@@ -1,3 +1,4 @@
+import type { Language } from "@/lib/domain/languages";
 import "server-only";
 import type { Db } from "@/lib/db/server";
 import { generateStructured } from "@/lib/ai/client";
@@ -12,7 +13,7 @@ export async function generateDevelopmentProfile(
   userId: string,
   scores: Record<Dimension, number>,
   reflections: { held_back?: string; goal: string } | null,
-  language: "en" | "hinglish" | "hi" = "en",
+  language: Language = "en",
   depth: AssessmentDepth = "deep",
 ) {
   const info = DEPTH_INFO[depth];

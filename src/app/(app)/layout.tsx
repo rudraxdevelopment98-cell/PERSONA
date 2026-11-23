@@ -7,6 +7,7 @@ import { getPlan } from "@/lib/server/plan";
 import { getUserState } from "@/lib/server/state";
 import { InviteBanner } from "./invite-banner";
 import { ConsentBanner } from "./consent-banner";
+import { VoiceLangProvider } from "@/components/voice-input";
 import { hasAcceptedLegal } from "@/lib/server/legal";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const storeApp = (await cookies()).get("p90_store")?.value === "play";
   const agreed = await hasAcceptedLegal(user.id).catch(() => true);
   return (
+    <VoiceLangProvider lang={state.profile.language}>
     <div className="min-h-screen">
       <AppNav
         name={name}
@@ -51,5 +53,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </main>
     </div>
+    </VoiceLangProvider>
   );
 }

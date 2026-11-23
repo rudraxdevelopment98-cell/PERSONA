@@ -13,9 +13,10 @@ import {
   removePushAction,
   reportAction,
 } from "@/app/(app)/friends/actions";
-import { Alert, Button, Card, Input, Select, Textarea, cx } from "./ui";
+import { Alert, Button, Card, Input, Select, cx } from "./ui";
 import { FaceAvatar } from "./moments";
 import { enablePush, pushState } from "@/lib/client/push";
+import { VoiceTextarea } from "@/components/voice-input";
 
 export function initials(name: string) {
   return (
@@ -288,7 +289,7 @@ export function FriendMenu({ userId, name }: { userId: string; name: string }) {
                 <option>Fake account</option>
                 <option>Other</option>
               </Select>
-              <Textarea value={details} onChange={(e) => setDetails(e.target.value)} maxLength={1000} placeholder="Details (optional)" className="min-h-16" />
+              <VoiceTextarea value={details} onChange={(e) => setDetails(e.target.value)} maxLength={1000} placeholder="Details (optional)" className="min-h-16" />
               <div className="flex gap-2">
                 <Button type="button" variant="ghost" onClick={() => setMode("menu")}>Back</Button>
                 <Button disabled={pending}>Send report</Button>

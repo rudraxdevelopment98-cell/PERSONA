@@ -1,5 +1,6 @@
 "use client";
 
+import { languageInfo, type Language } from "@/lib/domain/languages";
 import { AIThinking } from "@/components/ai-thinking";
 import { UpgradeHint, isUpgradeError } from "@/components/upgrade";
 import { useRouter } from "next/navigation";
@@ -7,12 +8,13 @@ import { useState } from "react";
 import { Gauge, Keyboard, Mic, MicOff, RotateCcw, Timer, Waves } from "lucide-react";
 import { DeepFeedback } from "@/components/feedback";
 import { RubricTable } from "@/components/rubric";
-import { Alert, Badge, Button, Card, CardHeader, Label, Spinner, Textarea, cx } from "@/components/ui";
+import { Alert, Badge, Button, Card, CardHeader, Label, Spinner, cx } from "@/components/ui";
 import type { CommunicationEvaluation, CommunicationPrompt } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import { useSpeech } from "@/lib/client/use-speech";
 import { COMMUNICATION_EXERCISES, EXERCISE_BY_ID } from "@/lib/domain/labs";
 import type { SpeechMetrics } from "@/lib/domain/speech";
+import { VoiceTextarea } from "@/components/voice-input";
 
 type Pending = { id: string; exercise_type: string; prompt: CommunicationPrompt };
 const LABELS = { clarity: "Clarity", assertiveness: "Assertiveness", empathy: "Empathy", composure: "Composure" };
@@ -48,7 +50,7 @@ export function CommunicationLab({
 }: {
   stats: { id: string; count: number; avg: number | null }[];
   pending: Pending | null;
-  language: "en" | "hinglish" | "hi";
+  language: Language;
 }) {
   const router = useRouter();
   const [current, setCurrent] = useState<Pending | null>(pending);
@@ -58,7 +60,7 @@ export function CommunicationLab({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [upgrade, setUpgrade] = useState(false);
-  const speech = useSpeech(language === "hi" ? "hi-IN" : "en-IN");
+  const speech = useSpeech(language === "hinglish" ? "en-IN" : languageInfo(language).speech);
   const voiceMode = mode === "voice" && speech.supported;
   const spoken = `${speech.transcript} ${speech.interim}`.trim();
   const reply = voiceMode ? speech.transcript : typed;
@@ -224,7 +226,7 @@ export function CommunicationLab({
                 ) : (
                   <div>
                     <Label htmlFor="reply">What do you say? Write it exactly as you would say it.</Label>
-                    <Textarea id="reply" rows={4} maxLength={3000} value={typed} onChange={(e) => setTyped(e.target.value)} />
+                    <VoiceTextarea id="reply" rows={4} maxLength={3000} value={typed} onChange={(e) => setTyped(e.target.value)} />
                   </div>
                 )}
 

@@ -8,7 +8,7 @@ import { DeepFeedback } from "@/components/feedback";
 import { ListenButton, type AIVoice } from "@/components/listen-button";
 import { StoryChoice, type StoryChoiceData } from "./story-choice";
 import { RubricTable } from "@/components/rubric";
-import { Alert, Badge, Button, Card, CardHeader, ProgressBar, Spinner, Textarea, cx } from "@/components/ui";
+import { Alert, Badge, Button, Card, CardHeader, ProgressBar, Spinner, cx } from "@/components/ui";
 import type { ReflectionFeedback, ScenarioEvaluation } from "@/lib/ai/schemas";
 import { postJSON } from "@/lib/client/api";
 import type { Dimension } from "@/lib/domain/dimensions";
@@ -50,6 +50,7 @@ type Story = {
 };
 import { EpisodeTag, NextEpisode, Previously, type EpisodeInfo } from "./episode";
 import { CelebrationOverlay, type Celebration } from "./celebration";
+import { VoiceTextarea } from "@/components/voice-input";
 
 type Step = { key: string; title: string; minutes: string; done: boolean };
 
@@ -375,7 +376,7 @@ function ScenarioCard({ sessionId, index, scenario, onAnswered }: { sessionId: s
               <label htmlFor={`reason-${index}`} className="mb-1.5 block text-sm font-medium">
                 Why would you choose this?
               </label>
-              <Textarea id={`reason-${index}`} rows={3} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
+              <VoiceTextarea id={`reason-${index}`} rows={3} maxLength={4000} value={reasoning} onChange={(e) => setReasoning(e.target.value)} />
             </div>
             {error && <Alert tone="danger">{error}</Alert>}
             {busy ? (
@@ -466,7 +467,7 @@ function ChallengeCard({ session, onSaved }: { session: ClientSession; onSaved: 
               <label htmlFor="challenge-notes" className="mb-1.5 block text-sm font-medium">
                 What happened?
               </label>
-              <Textarea id="challenge-notes" rows={3} maxLength={4000} value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <VoiceTextarea id="challenge-notes" rows={3} maxLength={4000} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             {error && <Alert tone="danger">{error}</Alert>}
             <div className="flex flex-wrap justify-end gap-2">
@@ -520,7 +521,7 @@ function ReflectionCard({ session, onDone }: { session: ClientSession; onDone: (
             {session.completed ? (
               <p className="rounded-xl bg-bg px-3 py-2 text-sm leading-relaxed">{answers[i]}</p>
             ) : (
-              <Textarea
+              <VoiceTextarea
                 id={`refl-${i}`}
                 rows={3}
                 maxLength={3000}

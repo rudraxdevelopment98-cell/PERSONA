@@ -5,10 +5,19 @@
  * eSpeak voices sound robotic. We rank them and let the person choose.
  */
 
-export type VoiceLang = "hi" | "en";
+export type VoiceLang = "hi" | "en" | "gu" | "mr" | "bn" | "ta" | "te" | "kn";
 
-/** Devanagari text needs a Hindi voice; English and Roman Hinglish read best with Indian English. */
-export const langOf = (text: string): VoiceLang => (/[ऀ-ॿ]/.test(text) ? "hi" : "en");
+/** The script decides the voice: Devanagari → Hindi, Gujarati → Gujarati, ...; Latin (English, Hinglish) → Indian English. */
+export const langOf = (text: string): VoiceLang =>
+  /[\u0A80-\u0AFF]/.test(text) ? "gu"
+  : /[\u0980-\u09FF]/.test(text) ? "bn"
+  : /[\u0B80-\u0BFF]/.test(text) ? "ta"
+  : /[\u0C00-\u0C7F]/.test(text) ? "te"
+  : /[\u0C80-\u0CFF]/.test(text) ? "kn"
+  : /[\u0900-\u097F]/.test(text) ? "hi"
+  : "en";
+
+const VOICE_NAMES: Record<VoiceLang, string> = { hi: "Hindi", en: "English (India)", gu: "Gujarati", mr: "Marathi", bn: "Bengali", ta: "Tamil", te: "Telugu", kn: "Kannada" };
 
 const NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|jester|organ|pipe organ|superstar|trinoids|whisper|wobble|zarvox|grandma|grandpa|rocko|shelley|flo\b|eddy|reed|sandy/i;
 
@@ -16,8 +25,8 @@ export function voiceScore(v: SpeechSynthesisVoice, lang: VoiceLang): number {
   const code = v.lang.replace("_", "-").toLowerCase();
   const name = v.name;
   let s = 0;
-  if (lang === "hi") {
-    if (!code.startsWith("hi")) return -1000;
+  if (lang !== "en") {
+    if (!code.startsWith(lang)) return -1000;
     s += 40;
   } else {
     if (!code.startsWith("en")) return -1000;
@@ -69,7 +78,7 @@ export function bestVoice(lang: VoiceLang): { lang: string; voice: SpeechSynthes
   const ranked = rankedVoices(lang);
   const saved = savedVoiceName(lang);
   const voice = (saved && ranked.find((v) => v.name === saved)) || ranked[0] || null;
-  return { lang: voice?.lang ?? (lang === "hi" ? "hi-IN" : "en-IN"), voice };
+  return { lang: voice?.lang ?? `${lang}-IN`, voice };
 }
 
 /**
@@ -103,9 +112,9 @@ export function sentences(text: string, max = 220): string[] {
 /** Where to get a better free voice, by platform. */
 export function voiceTip(lang: VoiceLang): string {
   const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
-  const which = lang === "hi" ? "Hindi" : "English (India)";
+  const which = VOICE_NAMES[lang];
   if (/iPhone|iPad|iPod/i.test(ua))
-    return `iPhone: Settings → Accessibility → Spoken Content → Voices → ${which} → "${lang === "hi" ? "Lekha" : "Rishi"} (Enhanced)" download karo (free). Phir yahan wo awaaz chuno.`;
+    return `iPhone: Settings → Accessibility → Spoken Content → Voices → ${which} → ${lang === "hi" ? '"Lekha (Enhanced)"' : lang === "en" ? '"Rishi (Enhanced)"' : "koi Enhanced awaaz"} download karo (free). Phir yahan wo awaaz chuno.`;
   if (/Android/i.test(ua))
     return `Android: Settings → "Text-to-speech" → Google engine → Install voice data → ${which} download karo (free). Chrome mein "Google" wali awaaz sabse natural hai.`;
   if (/Edg\//.test(ua)) return `Edge mein "Microsoft … Online (Natural)" awaaz chuno: ye free aur sabse natural hain.`;
