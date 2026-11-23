@@ -12,10 +12,10 @@ import { useT } from "@/lib/i18n/client";
 const OPTIONS = LANGUAGES;
 
 const NOTE: Record<Language, string> = {
-  en: "Changes the language of AI content: check-ins, stories, scenarios, feedback, coach and the assessment.",
-  hinglish: "AI content ki bhasha badalta hai: check-in, story, scenarios, feedback, coach aur voice input.",
-  hi: "AI सामग्री की भाषा बदलता है: चेक-इन, कहानी, परिदृश्य, फ़ीडबैक, कोच और आकलन।",
-  gu: "AI કન્ટેન્ટની ભાષા બદલે છે: ચેક-ઇન, વાર્તા, પરિસ્થિતિઓ, ફીડબેક, કોચ અને વોઇસ. મેનુ હજુ English/Hinglish માં છે.",
+  en: "Changes the language of the whole app: menus, check-ins, stories, scenarios, feedback, coach and voice.",
+  hinglish: "Poore app ki bhasha badalta hai: menu, check-in, story, scenarios, feedback, coach aur voice.",
+  hi: "पूरे ऐप की भाषा बदलता है: मेन्यू, चेक-इन, कहानी, परिस्थितियाँ, फ़ीडबैक, कोच और आवाज़।",
+  gu: "આખી એપની ભાષા બદલે છે: મેનુ, ચેક-ઇન, વાર્તા, પરિસ્થિતિઓ, ફીડબેક, કોચ અને અવાજ.",
 };
 
 const SAVED = SAVED_TEXT;

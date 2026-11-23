@@ -1,3 +1,4 @@
+import { POLLS_HI } from "./poll-hi";
 import { POLLS_GU } from "./poll-gu";
 /**
  * "Aaj ka sawaal": one everyday situation a day, the same for everyone. Ten seconds to vote,
@@ -225,4 +226,4 @@ export function pollFor(date: string): Poll {
 }
 
 export const pollText = (p: Poll, language: string | null | undefined) =>
-  language === "gu" && POLLS_GU[p.id] ? POLLS_GU[p.id] : language === "hinglish" || language === "hi" || language === "gu" ? p.hi : p.en;
+  language === "gu" && POLLS_GU[p.id] ? POLLS_GU[p.id] : language === "hi" && POLLS_HI[p.id] ? POLLS_HI[p.id] : language === "hinglish" || language === "hi" || language === "gu" ? p.hi : p.en;

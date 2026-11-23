@@ -20,7 +20,7 @@ async function deckFor(date: string, lang: DeckLang): Promise<QuickCard[]> {
         schema: deckSchema,
         effort: "low",
         maxTokens: 3000,
-        language: lang === "hi" ? "hinglish" : lang,
+        language: lang === "hi" ? "hinglish" : lang === "hindi" ? "hi" : lang,
       }),
     );
     cards = out.cards.slice(0, CARDS_PER_DAY).map((c) => ({

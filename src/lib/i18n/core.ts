@@ -43,6 +43,6 @@ export function makeT(dict: Dict | null): TFn {
 }
 
 /** Languages whose whole interface is translated (others show the original text). */
-export const UI_LANGS = ["gu"] as const;
+export const UI_LANGS = ["gu", "hi"] as const;
 export type UILang = (typeof UI_LANGS)[number];
 export const hasUI = (lang: string | null | undefined): lang is UILang => (UI_LANGS as readonly string[]).includes(lang ?? "");

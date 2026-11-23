@@ -21,7 +21,7 @@ Mix which letter is better. Vary settings and skills across the five cards. No n
 Keep every field short so it fits on a phone card.`;
 
 /** Used when AI is unavailable: a varied built-in set, rotated by date. */
-export const FALLBACK_CARDS: Record<"en" | "hi" | "gu", QuickCard[]> = {
+export const FALLBACK_CARDS: Record<"en" | "hi" | "gu" | "hindi", QuickCard[]> = {
   en: [
     { skill: "Communication", situation: "Your partner keeps checking their phone while you talk about something important.", a: "\"Can we talk for 10 minutes without phones?\"", b: "Stop talking and sulk", better: "a", why: "A clear, small request works better than going silent and hoping they notice." },
     { skill: "Boundaries", situation: "A classmate asks to copy your assignment again.", a: "Say yes to avoid awkwardness", b: "\"I can explain how I did it, but not share the file\"", better: "b", why: "Offering help on your terms keeps the friendship without risking your work." },
@@ -58,6 +58,18 @@ export const FALLBACK_CARDS: Record<"en" | "hi" | "gu", QuickCard[]> = {
     { skill: "Confidence", situation: "સગાંના પ્રસંગમાં કોઈ પૂછે છે \"હજુ શું કરે છે?\" અને બધા જુએ છે.", a: "ટૂંકમાં અને સ્મિત સાથે તમારી યોજના કહો", b: "ધીમેથી \"બસ, ચાલે છે\" કહીને નજર ફેરવો", better: "a", why: "ટૂંકો, સ્પષ્ટ જવાબ તમારો આત્મવિશ્વાસ બતાવે છે અને વાત ત્યાં જ પૂરી થાય છે." },
     { skill: "Communication", situation: "જમતી વખતે પપ્પા વારંવાર માર્ક્સ વિશે પૂછે છે.", a: "\"જમ્યા પછી એકલામાં વાત કરીએ?\"", b: "ચિડાઈને ટેબલ પરથી ઊભા થઈ જાઓ", better: "a", why: "વાતને યોગ્ય સમયે લઈ જવાથી બંનેનું માન સચવાય છે." },
   ],
+  hindi: [
+    { skill: "Communication", situation: "ज़रूरी बात करते समय साथी बार-बार फ़ोन देखता है।", a: "\"10 मिनट बिना फ़ोन के बात करें?\"", b: "बात बंद करके मुँह फुला लें", better: "a", why: "चुप हो जाने से बेहतर छोटी, साफ़ गुज़ारिश काम करती है।" },
+    { skill: "Boundaries", situation: "क्लासमेट फिर से आपका असाइनमेंट कॉपी करने को माँगता है।", a: "झिझक से बचने के लिए दे दें", b: "\"कैसे किया समझा देता/देती हूँ, फ़ाइल नहीं\"", better: "b", why: "अपनी शर्त पर मदद करने से दोस्ती भी बचती है और आपका काम भी।" },
+    { skill: "Communication", situation: "रूममेट को बताना है कि रसोई की गंदगी आपको परेशान करती है।", a: "\"तय कर लें कौन क्या साफ़ करेगा?\"", b: "ताना मारता हुआ नोट छोड़ दें", better: "a", why: "आगे के लिए गुज़ारिश बिना दोष दिए समस्या सुलझा देती है।" },
+    { skill: "Self-discipline", situation: "डॉक्टर ने रोज़ 30 मिनट चलने को कहा है। तीन दिन से छूट रहा है।", a: "सोमवार से पक्का शुरू", b: "आज सिर्फ़ 10 मिनट चलें", better: "b", why: "बाद की परफ़ेक्ट योजना से आज की छोटी शुरुआत बेहतर है।" },
+    { skill: "Emotional intelligence", situation: "मेहनत वाले काम पर किसी की कड़वी टिप्पणी आती है।", a: "तुरंत जवाब देकर बचाव करें", b: "एक घंटा रुकें, फिर पूछें क्या बेहतर हो सकता है", better: "b", why: "रुकने से आलोचना झगड़ा नहीं, काम का फ़ीडबैक बन जाती है।" },
+    { skill: "Assertiveness", situation: "दुकानदार ₹100 कम छुट्टे देता है।", a: "शांति से बताएँ और बाकी पैसे माँगें", b: "जाने दें, अजीब लगता है", better: "a", why: "शांत, सीधी बात आम है और सेकंडों में ठीक हो जाती है।" },
+    { skill: "Leadership", situation: "कल ग्रुप प्रेज़ेंटेशन है और किसी ने शुरू नहीं किया।", a: "स्लाइड बाँटें और रात 9 बजे चेक-इन रखें", b: "आज रात सब ख़ुद कर लें", better: "a", why: "काम बाँटकर चेक-इन रखने से काम भी होता है और सब जुड़े रहते हैं।" },
+    { skill: "Critical thinking", situation: "वायरल वीडियो कहता है कि एक स्टडी के हिसाब से कॉफ़ी तनाव ख़त्म करती है।", a: "शेयर कर दें, सही लगता है", b: "पहले असली स्टडी खोजें", better: "b", why: "स्रोत जाँचने से गलत बात फैलने से रुकती है।" },
+    { skill: "Confidence", situation: "रिश्तेदार के फ़ंक्शन में कोई पूछता है \"आजकल क्या कर रहे हो?\" और सब देखते हैं।", a: "छोटे में और मुस्कुराकर अपनी योजना बताएँ", b: "धीरे से \"बस, चल रहा है\" कहकर नज़र फेर लें", better: "a", why: "छोटा, साफ़ जवाब आपका आत्मविश्वास दिखाता है और बात वहीं ख़त्म हो जाती है।" },
+    { skill: "Communication", situation: "खाने के समय पापा बार-बार अंकों के बारे में पूछते हैं।", a: "\"खाने के बाद अकेले में बात करें?\"", b: "चिढ़कर टेबल से उठ जाएँ", better: "a", why: "बात को सही समय पर ले जाना दोनों का सम्मान रखता है।" },
+  ],
 };
 
 /** Five fallback cards for a date (rotates through the bank). */
@@ -69,7 +81,8 @@ export function fallbackDeck(lang: DeckLang, date: string): QuickCard[] {
 }
 
 /** Deck language: English for English users, Hinglish for everyone else. */
-export type DeckLang = "en" | "hi" | "gu";
+/** "hi" is the Hinglish deck (shared by Hinglish users); "hindi" is Devanagari Hindi. */
+export type DeckLang = "en" | "hi" | "gu" | "hindi";
 /** Deck language: "hi" is the Hinglish deck (shared by Hinglish and Hindi users); other Indian languages get their own deck. */
 export const deckLang = (language: string | null | undefined): DeckLang =>
-  language === "en" ? "en" : language === "gu" ? "gu" : "hi";
+  language === "en" ? "en" : language === "gu" ? "gu" : language === "hi" ? "hindi" : "hi";
