@@ -10,15 +10,24 @@ import { CHECKIN_LENSES, byId, checkinLens } from "@/lib/domain/variety";
 
 export const maxDuration = 300;
 
-function normalise(questions: CheckinQuestion[]): CheckinQuestion[] {
+/** The always-present mood meter, in the person's language (used if the AI didn't add one). */
+const METER: Record<string, [string, string, string]> = {
+  en: ["Where is your confidence today?", "Very low", "Full of energy"],
+  hinglish: ["Aaj ka confidence meter kahan hai?", "Bilkul low", "Full josh"],
+  hi: ["आज आपका आत्मविश्वास कहाँ है?", "बिल्कुल कम", "पूरे जोश में"],
+  gu: ["આજે તમારો આત્મવિશ્વાસ ક્યાં છે?", "બિલકુલ ઓછો", "પૂરા જોશમાં"],
+};
+
+function normalise(questions: CheckinQuestion[], language: string): CheckinQuestion[] {
+  const [meterText, meterLow, meterHigh] = METER[language] ?? METER.en;
   // The mood meter (scale) always opens the deck; it feeds the confidence score, so add one if missing.
   const scale = questions.find((q) => q.type === "scale") ?? {
     id: "q0",
-    text: "Aaj ka confidence meter kahan hai?",
+    text: meterText,
     type: "scale" as const,
     dimension: "confidence" as const,
-    scale_low_label: "Bilkul low",
-    scale_high_label: "Full josh",
+    scale_low_label: meterLow,
+    scale_high_label: meterHigh,
     options: null,
     style: "emoji" as const,
     purpose: "Daily confidence rating",
@@ -29,8 +38,8 @@ function normalise(questions: CheckinQuestion[]): CheckinQuestion[] {
     id: `q${i + 1}`,
     options: q.type === "choice" ? (q.options ?? []).slice(0, q.style === "this_or_that" ? 2 : 5) : null,
     style: q.type === "scale" ? "emoji" : q.type === "text" || !q.style || q.style === "emoji" ? "normal" : q.style,
-    scale_low_label: q.type === "scale" ? (q.scale_low_label ?? "Not at all") : null,
-    scale_high_label: q.type === "scale" ? (q.scale_high_label ?? "Completely") : null,
+    scale_low_label: q.type === "scale" ? (q.scale_low_label ?? meterLow) : null,
+    scale_high_label: q.type === "scale" ? (q.scale_high_label ?? meterHigh) : null,
   }));
 }
 
@@ -72,7 +81,7 @@ Write today's check-in questions.`;
   let questions: CheckinQuestion[] = [];
   for (let attempt = 0; attempt < 2 && questions.length < 3; attempt++) {
     const out = await generateStructured({ language: state.profile.language, system: CHECKIN_QUESTIONS_SYSTEM, prompt, schema: checkinQuestionsSchema, effort: "low" });
-    questions = normalise(out.questions);
+    questions = normalise(out.questions, state.profile.language);
   }
   if (questions.length < 3) throw new HttpError(502, "Could not prepare today's questions. Please try again.");
 
