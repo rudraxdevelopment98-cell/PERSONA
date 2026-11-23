@@ -77,7 +77,7 @@ export default async function DecisionLabPage() {
                       </summary>
                       <div className="mt-3 space-y-2 text-sm leading-relaxed">
                         <p><span className="text-muted">{t("You chose:")}</span> {option?.text}</p>
-                        <p><span className="text-muted">{t("Your reasoning:")}</span> {l.reasoning}</p>
+                        <p><span className="text-muted">{t("Your reasoning:")}</span> {l.reasoning || <span className="text-muted">{t("🔒 Your own words were deleted after 48 hours. Only the insights are kept.")}</span>}</p>
                         {l.evaluation && (
                           <>
                             <p><span className="text-muted">{t("Feedback:")}</span> {t(l.evaluation.to_improve)}</p>

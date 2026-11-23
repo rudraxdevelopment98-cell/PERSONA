@@ -72,7 +72,7 @@ export default async function CommunicationLabPage() {
                     </summary>
                     <div className="mt-3 space-y-2 text-sm leading-relaxed">
                       <p><span className="text-muted">{t("They said:")}</span>{" "}{t("“")}{t(c.prompt.they_say)}{t("”")}</p>
-                      <p><span className="text-muted">{t("You said:")}</span> {t(c.response ?? "")}</p>
+                      <p><span className="text-muted">{t("You said:")}</span> {c.response || <span className="text-muted">{t("🔒 Your own words were deleted after 48 hours. Only the insights are kept.")}</span>}</p>
                       {c.evaluation && <p><span className="text-muted">{t("Stronger version:")}</span> {t(c.evaluation.stronger_version)}</p>}
                     </div>
                   </details>

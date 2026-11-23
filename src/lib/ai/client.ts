@@ -66,6 +66,7 @@ const LIGHT_FEATURES = new Set([
   "story.narration",
   "cards.daily",
   "voice.romanise",
+  "signals.extract",
 ]);
 export const isLightFeature = (f: string) => LIGHT_FEATURES.has(f);
 

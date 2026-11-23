@@ -387,3 +387,48 @@ describeLang("notification messages", () => {
     expectLang(msg("xx", "reminder.ready")).toBe("🌱 Your session is ready");
   });
 });
+
+import { buildProfile, cleanSignal, levelOf, profileForAI, signalSchema, type SignalEvent } from "./signals";
+describeLang("persona signals", () => {
+  const ev = (over: Partial<SignalEvent>, daysAgo = 0): SignalEvent => ({
+    life_area: "family", roles: ["parent"], emotions: ["anxious"], themes: ["criticism"], patterns: ["overthinking"],
+    decision_style: "avoidant", stress: 7, confidence: 3, mood: -1, skills: { decision_making: -1 },
+    created_at: new Date(Date.UTC(2026, 10, 23) - daysAgo * 86_400_000).toISOString(), ...over,
+  });
+  const NOW = Date.UTC(2026, 10, 23);
+  itLang("the signal schema has no free-text fields", () => {
+    const shape = signalSchema.shape as Record<string, { _def?: { typeName?: string } }>;
+    expectLang(Object.keys(shape).sort()).toEqual(["confidence", "decision_style", "emotions", "life_area", "mood", "patterns", "roles", "skills", "stress", "themes"]);
+    expectLang(signalSchema.safeParse({ ...ev({}), patterns: ["met my friend Rahul"] }).success).toBe(false);
+  });
+  itLang("cleanSignal clamps numbers and caps lists", () => {
+    const c = cleanSignal({ ...ev({}), stress: 18, mood: -9, emotions: ["sad", "sad", "angry", "calm", "happy"], skills: { confidence: 7 } });
+    expectLang(c.stress).toBe(10);
+    expectLang(c.mood).toBe(-2);
+    expectLang(c.emotions).toEqual(["sad", "angry", "calm"]);
+    expectLang(c.skills.confidence).toBe(2);
+  });
+  itLang("needs 5 entries before naming a type, then finds the overthinker", () => {
+    const four = buildProfile([ev({}), ev({}), ev({}), ev({})], { decision_making: 30 }, [], NOW);
+    expectLang(four.archetype).toBeNull();
+    const five = buildProfile([ev({}), ev({}), ev({}), ev({}), ev({ patterns: ["catastrophising"] })], { decision_making: 30 }, [], NOW);
+    expectLang(five.archetype).toBe("overthinker");
+    expectLang(five.decision_style).toBe("avoidant");
+  });
+  itLang("recent entries count more than old ones", () => {
+    const p = buildProfile([ev({ stress: 2 }, 0), ev({ stress: 10 }, 60)], {}, [], NOW);
+    expectLang(p.stress!).toBeLessThan(4);
+  });
+  itLang("levels and decision level come from scores", () => {
+    expectLang(levelOf(0)).toBe(1);
+    expectLang(levelOf(55)).toBe(3);
+    expectLang(levelOf(100)).toBe(5);
+    expectLang(buildProfile([], { confidence: 81 }, [62, 70], NOW).levels.confidence).toBe(5);
+    expectLang(buildProfile([], {}, [62, 70], NOW).decision_level).toBe(4);
+  });
+  itLang("the AI summary contains only abstract labels", () => {
+    const s = profileForAI(buildProfile([ev({}), ev({}), ev({}), ev({}), ev({})], {}, [], NOW));
+    expectLang(s).toContain("overthinking");
+    expectLang(s).toContain("parent");
+  });
+});

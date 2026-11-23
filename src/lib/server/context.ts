@@ -6,6 +6,8 @@ import { DIMENSION_META } from "@/lib/domain/dimensions";
 import { PHASES } from "@/lib/domain/programme";
 import { todaysFocus, type UserState } from "./state";
 import type { CheckinRow, DecisionLogRow } from "./types";
+import { getProfile } from "./signals";
+import { profileForAI } from "@/lib/domain/signals";
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
@@ -58,6 +60,7 @@ export async function buildAIContext(
 
   const focus = todaysFocus(state);
   const lines: string[] = [];
+  const persona = await getProfile(uid).catch(() => null);
 
   const life = lifeContextLine(state.profile.life_stage, state.profile.life_areas ?? []);
   if (life) lines.push(`## Life context\n${life}\n`);
@@ -88,6 +91,8 @@ export async function buildAIContext(
     );
   }
 
+  if (persona?.events) lines.push(`\n## Persona signals (private, derived; no personal details)\n${profileForAI(persona)}`);
+
   const checkins = (checkinsRes.data ?? []) as Pick<CheckinRow, "checkin_date" | "day_number" | "questions" | "answers" | "analysis">[];
   if (checkins.length > 0 && opts.abstract) {
     // Patterns and mood only: what to train, not what happened.
@@ -110,11 +115,11 @@ export async function buildAIContext(
         .filter(Boolean)
         .join("\n");
       lines.push(`### Day ${c.day_number} (${c.checkin_date})`);
-      lines.push(userData("check-in answers", qa));
+      if (qa) lines.push(userData("check-in answers", qa));
       const note = (c as { today_note?: string | null }).today_note;
       if (note) lines.push(userData("what happened that day (shared by the user)", clip(note, opts.lean ? 300 : 800)));
       if (c.analysis) {
-        lines.push(`Analysis: ${c.analysis.summary}`);
+        if (c.analysis.summary) lines.push(`Analysis: ${c.analysis.summary}`);
         if (c.analysis.patterns.length) lines.push(`Patterns noted: ${c.analysis.patterns.join("; ")}`);
       }
     }

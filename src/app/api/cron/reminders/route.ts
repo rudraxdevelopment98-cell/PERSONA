@@ -2,6 +2,7 @@ import { checkCostAlert, sendDailyReminders } from "@/lib/server/reminders";
 import { sendCircleRecaps, sendStreakNudges } from "@/lib/server/streaks";
 import { sendPollResults } from "@/lib/server/poll";
 import { checkErrorSpike } from "@/lib/server/errors";
+import { runSignalsJob } from "@/lib/server/signals";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -20,5 +21,7 @@ export async function GET(request: Request) {
   const polls = await sendPollResults().catch((e) => ({ error: (e as Error).message }));
   const errors = await checkErrorSpike().catch((e) => ({ error: (e as Error).message }));
   const cost = await checkCostAlert().catch((e) => ({ error: (e as Error).message }));
-  return Response.json({ ...result, streaks, recaps, polls, errors, cost });
+  // Own words -> private signals, then wipe words past the window.
+  const signals = await runSignalsJob().catch((e) => ({ error: (e as Error).message }));
+  return Response.json({ ...result, streaks, recaps, polls, errors, cost, signals });
 }

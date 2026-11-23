@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShareProgress } from "@/components/share-progress";
 import { InstallApp } from "@/components/install-app";
-import { ChevronRight, ClipboardList, Gem, LineChart, LogOut, Map, NotebookPen, Settings, ShieldCheck, Trophy } from "lucide-react";
+import { ChevronRight, ClipboardList, Fingerprint, Gem, LineChart, LogOut, Map, NotebookPen, Settings, ShieldCheck, Trophy } from "lucide-react";
 import { isAdmin } from "@/lib/server/admin";
 import { Card, IconTile, ProgressBar } from "@/components/ui";
 import { getGamification } from "@/lib/server/gamification";
@@ -14,6 +14,7 @@ import { getT } from "@/lib/i18n/server";
 export const metadata = { title: "Me" };
 
 const LINKS = [
+  { href: "/me/persona", label: "My persona (private)", icon: Fingerprint, tone: "primary" as const },
   { href: "/progress", label: "Progress", icon: LineChart, tone: "accent" as const },
   { href: "/achievements", label: "Achievements", icon: Trophy, tone: "sun" as const },
   { href: "/journal", label: "Journal", icon: NotebookPen, tone: "sky" as const },

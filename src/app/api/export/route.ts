@@ -18,6 +18,8 @@ const TABLES = [
   "achievements",
   "journal_entries",
   "coach_messages",
+  "signal_events",
+  "persona_profiles",
   "share_settings",
   "share_snapshots",
   "circle_members",

@@ -101,6 +101,15 @@ export default async function PrivacyPage() {
 
       <h2>6. How long we keep it</h2>
       <p>
+        <strong>Your own words are kept only briefly.</strong> What you write or say in check-ins, reflections, story lines, the Decision and
+        Communication Labs, the AI coach and the &ldquo;held back&rdquo; part of the assessment is turned into private persona signals: a few
+        tags from a fixed list (for example a feeling, a type of situation, a thinking pattern, the role of the other person such as
+        &ldquo;parent&rdquo;) and numbers (stress, confidence, mood, skill evidence). The signals cannot contain names, places or quotes. Your own
+        words are then deleted after 48 hours, and after 7 days at the latest; coach conversations are deleted after 48 hours. The signals build a
+        persona profile (a type, levels and tags) that personalises your programme. You can see it and delete it at any time in Me &rarr; My
+        persona. Your journal is your diary: it is kept until you delete it and is never turned into signals.
+      </p>
+      <p>
         We keep your data while your account is active. If you delete your account, your data is removed from our live database straight away and from
         backups when they expire. We may keep payment records for as long as tax law requires. Accounts that stay inactive for a long period may be deleted
         after we notify you, as the law requires.
