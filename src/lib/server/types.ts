@@ -25,6 +25,8 @@ export type ProfileRow = {
   next_world?: string | null;
   suspended_at?: string | null;
   reminders_enabled?: boolean;
+  life_stage?: string | null;
+  life_areas?: string[] | null;
   created_at: string;
 };
 

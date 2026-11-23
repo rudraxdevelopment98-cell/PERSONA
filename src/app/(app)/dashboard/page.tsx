@@ -14,6 +14,7 @@ import { pickSponsor } from "@/lib/server/sponsors";
 import { SponsorCard } from "@/components/sponsor-card";
 import { InstallApp } from "@/components/install-app";
 import { DailyPoll } from "@/components/daily-poll";
+import { LifePicker } from "@/components/life-picker";
 import { todayPoll } from "@/lib/server/poll";
 import { recoveryStatus } from "@/lib/server/recovery";
 import type { CheckinRow, SessionRow } from "@/lib/server/types";
@@ -181,6 +182,8 @@ export default async function Dashboard() {
           <p className="text-sm leading-relaxed">{c.analysis.suggestion_for_today}</p>
         </div>
       )}
+
+      {!state.profile.life_stage && <LifePicker />}
 
       <DailyPoll initial={await todayPoll(user.id)} />
 

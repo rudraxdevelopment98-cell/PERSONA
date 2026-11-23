@@ -1,12 +1,12 @@
 import type { Dimension } from "./dimensions";
 
 export const DECISION_CATEGORIES = [
-  { id: "career", label: "Career & work" },
-  { id: "relationships", label: "Relationships" },
-  { id: "money", label: "Money & resources" },
-  { id: "team", label: "Team & leadership" },
-  { id: "ethics", label: "Ethics & integrity" },
   { id: "personal", label: "Personal life" },
+  { id: "relationships", label: "Family & relationships" },
+  { id: "money", label: "Money & resources" },
+  { id: "career", label: "Studies, work & career" },
+  { id: "team", label: "Groups & leadership" },
+  { id: "ethics", label: "Ethics & integrity" },
 ] as const;
 
 export const DECISION_DIFFICULTIES = [

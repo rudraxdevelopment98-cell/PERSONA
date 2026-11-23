@@ -1,5 +1,6 @@
 import { assertWithinLimit } from "@/lib/server/plan";
 import { ARENAS, TWISTS } from "@/lib/domain/variety";
+import { arenasFor } from "@/lib/domain/life";
 import { z } from "zod";
 import { generateStructured } from "@/lib/ai/client";
 import { COMMUNICATION_PROMPT_SYSTEM } from "@/lib/ai/prompts";
@@ -12,7 +13,10 @@ export const maxDuration = 300;
 
 const schema = z.object({ exercise_type: z.enum(COMMUNICATION_EXERCISES.map((e) => e.id) as [string, ...string[]]) });
 
-const pickArena = () => ARENAS[Math.floor(Math.random() * ARENAS.length)];
+const pickArena = (allowed: string[]) => {
+  const pool = ARENAS.filter((a) => allowed.includes(a.id));
+  return pool[Math.floor(Math.random() * pool.length)];
+};
 
 export const POST = apiRoute(schema, async ({ exercise_type }, { db, user, state }) => {
   await assertWithinLimit(user.id, "communication");
@@ -30,7 +34,7 @@ export const POST = apiRoute(schema, async ({ exercise_type }, { db, user, state
   const context = await buildAIContext(db, state, { checkins: 2, lean: true, abstract: true });
   const twist = TWISTS[Math.floor(Math.random() * TWISTS.length)];
 
-  const arena = pickArena();
+  const arena = pickArena(arenasFor(state.profile.life_areas ?? [], state.profile.life_stage));
   const prompt = await generateStructured({
     language: state.profile.language,
     system: COMMUNICATION_PROMPT_SYSTEM,

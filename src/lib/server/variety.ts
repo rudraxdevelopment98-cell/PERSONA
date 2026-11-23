@@ -34,7 +34,7 @@ export type SessionVariety = SeasonRecipe &
 type PastSession = { day_number: number; variety: SessionVariety | null; challenge: { title?: string } | null; scenarios: { title?: string }[] | null };
 
 /** Plans today's recipe from the user's recent history. */
-export async function planDay(db: Db, userId: string, day: number, preferredWorld: string | null) {
+export async function planDay(db: Db, userId: string, day: number, preferredWorld: string | null, allowedArenas: readonly string[] = []) {
   const { data } = await db
     .from("daily_sessions")
     .select("day_number, variety, challenge, scenarios")
@@ -62,7 +62,7 @@ export async function planDay(db: Db, userId: string, day: number, preferredWorl
     arenas: last(2, (v) => v.arenas),
     challenges: last(5, (v) => v.challenge),
     reflections: last(3, (v) => v.reflection),
-  });
+  }, allowedArenas);
 
   const variety: SessionVariety = {
     ...seasonRecipe,

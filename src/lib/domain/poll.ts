@@ -14,8 +14,8 @@ export const POLLS: Poll[] = [
   {
     id: "credit",
     skill: "Assertiveness",
-    en: { q: "In a meeting, a teammate presents your idea as theirs. You…", o: ["Let it go this time", "Add calmly: \"Glad you liked the idea I shared yesterday\"", "Talk to them privately afterwards"], tip: "Claiming credit calmly in the moment, without blaming, is seen as confident, not rude." },
-    hi: { q: "Meeting mein teammate tumhara idea apna bata ke present karta hai. Tum…", o: ["Is baar jaane do", "Shaanti se bolo: \"Achha laga kal wala mera idea pasand aaya\"", "Baad mein akele mein baat karo"], tip: "Usi waqt shaanti se, bina blame ke credit lena confident lagta hai, rude nahi." },
+    en: { q: "Planning a trip with friends, someone presents your idea as theirs. You…", o: ["Let it go this time", "Add calmly: \"Glad you liked the idea I shared yesterday\"", "Talk to them privately afterwards"], tip: "Claiming credit calmly in the moment, without blaming, is seen as confident, not rude." },
+    hi: { q: "Doston ke saath trip plan ho raha hai, koi tumhara idea apna bata deta hai. Tum…", o: ["Is baar jaane do", "Shaanti se bolo: \"Achha laga kal wala mera idea pasand aaya\"", "Baad mein akele mein baat karo"], tip: "Usi waqt shaanti se, bina blame ke credit lena confident lagta hai, rude nahi." },
   },
   {
     id: "no-plan",
@@ -38,8 +38,8 @@ export const POLLS: Poll[] = [
   {
     id: "criticism",
     skill: "Emotional intelligence",
-    en: { q: "Your boss or teacher criticises your work in front of others. You…", o: ["Defend yourself right away", "Say \"Noted, can we discuss details after?\"", "Stay quiet and feel bad all day"], tip: "Buying time politely protects your dignity and gets you better feedback later." },
-    hi: { q: "Boss ya teacher sabke saamne tumhare kaam ki burai karte hain. Tum…", o: ["Turant apna bachav karo", "Bolo \"Noted, details baad mein discuss karein?\"", "Chup raho aur din bhar bura feel karo"], tip: "Shaanti se waqt lena izzat bhi bachata hai aur baad mein behtar feedback milta hai." },
+    en: { q: "Someone (a relative, a teacher or a boss) criticises you in front of others. You…", o: ["Defend yourself right away", "Say \"Noted, can we discuss details after?\"", "Stay quiet and feel bad all day"], tip: "Buying time politely protects your dignity and gets you better feedback later." },
+    hi: { q: "Koi (rishtedaar, teacher ya boss) sabke saamne tumhari burai karta hai. Tum…", o: ["Turant apna bachav karo", "Bolo \"Noted, details baad mein discuss karein?\"", "Chup raho aur din bhar bura feel karo"], tip: "Shaanti se waqt lena izzat bhi bachata hai aur baad mein behtar feedback milta hai." },
   },
   {
     id: "late-reply",
@@ -134,8 +134,8 @@ export const POLLS: Poll[] = [
   {
     id: "lead-group",
     skill: "Leadership",
-    en: { q: "Group project, nobody is taking charge. You…", o: ["Wait, someone will", "Suggest a plan and ask who takes what", "Do everything yourself"], tip: "Leading often just means proposing the first plan and sharing the work." },
-    hi: { q: "Group project, koi aage nahi aa raha. Tum…", o: ["Ruko, koi na koi karega", "Plan suggest karo aur pucho kaun kya lega", "Sab kuch khud kar lo"], tip: "Leadership aksar bas pehla plan rakhna aur kaam baantna hota hai." },
+    en: { q: "A group plan (a trip, a function or a project), nobody is taking charge. You…", o: ["Wait, someone will", "Suggest a plan and ask who takes what", "Do everything yourself"], tip: "Leading often just means proposing the first plan and sharing the work." },
+    hi: { q: "Group plan (trip, function ya project), koi aage nahi aa raha. Tum…", o: ["Ruko, koi na koi karega", "Plan suggest karo aur pucho kaun kya lega", "Sab kuch khud kar lo"], tip: "Leadership aksar bas pehla plan rakhna aur kaam baantna hota hai." },
   },
   {
     id: "said-yes",
@@ -182,14 +182,38 @@ export const POLLS: Poll[] = [
   {
     id: "teammate-slack",
     skill: "Leadership",
-    en: { q: "A teammate keeps missing their part. You…", o: ["Do it for them quietly", "Ask what's blocking them and agree a date", "Report them straight away"], tip: "Asking what's blocking someone often fixes the problem and the relationship." },
-    hi: { q: "Ek teammate baar baar apna hissa miss karta hai. Tum…", o: ["Chupchaap uska kaam kar do", "Pucho kya rok raha hai aur date tay karo", "Seedha shikayat kar do"], tip: "Pucho kya rok raha hai; aksar problem bhi sulajhti hai aur rishta bhi." },
+    en: { q: "Your flatmate or sibling keeps skipping their share of the housework. You…", o: ["Do it for them quietly", "Ask what's getting in the way and agree a plan", "Complain to someone else straight away"], tip: "Asking what's blocking someone often fixes the problem and the relationship." },
+    hi: { q: "Flatmate ya bhai/behen ghar ke kaam mein apna hissa baar baar chhod dete hain. Tum…", o: ["Chupchaap unka kaam kar do", "Pucho kya dikkat hai aur saath mein plan tay karo", "Turant kisi aur se shikayat kar do"], tip: "Pucho kya rok raha hai; aksar problem bhi sulajhti hai aur rishta bhi." },
   },
   {
     id: "compliment",
     skill: "Confidence",
     en: { q: "Someone compliments your work. You…", o: ["\"Arre nahi, kuch khaas nahi\"", "\"Thank you, I worked hard on it\"", "Change the subject"], tip: "Accepting a compliment simply shows confidence and makes the other person feel heard." },
     hi: { q: "Koi tumhare kaam ki taareef karta hai. Tum…", o: ["\"Arre nahi, kuch khaas nahi\"", "\"Thank you, maine mehnat ki thi\"", "Baat badal do"], tip: "Taareef ko seedha accept karna confidence dikhata hai aur saamne wale ko achha lagta hai." },
+  },
+  {
+    id: "partner-cancel",
+    skill: "Communication",
+    en: { q: "Your partner or close friend cancels plans last minute, for the third time. You…", o: ["Say \"It's fine\" and stay upset", "Say how it felt and ask what's going on", "Cancel on them next time"], tip: "Naming the feeling and asking a real question works better than quiet resentment or payback." },
+    hi: { q: "Partner ya kareebi dost teesri baar last minute plan cancel karta hai. Tum…", o: ["\"Koi baat nahi\" bolo aur andar se naraz raho", "Batao kaisa laga aur pucho sab theek hai?", "Agli baar tum bhi cancel kar do"], tip: "Feeling batana aur sachcha sawaal puchna chup-chaap naraazgi ya badle se behtar kaam karta hai." },
+  },
+  {
+    id: "relatives-compare",
+    skill: "Self-belief",
+    en: { q: "At a family function, a relative compares you with a cousin. You…", o: ["Laugh it off but feel small", "Smile and say \"We're on different paths, I'm happy with mine\"", "Argue back in front of everyone"], tip: "A calm, short line protects your self-respect without spoiling the day." },
+    hi: { q: "Family function mein koi rishtedaar tumhe cousin se compare karta hai. Tum…", o: ["Hans ke taal do par andar se chhota feel karo", "Muskura ke bolo \"Sabke raaste alag hain, main apne se khush hoon\"", "Sabke saamne behas karo"], tip: "Shaant, chhoti si line izzat bhi bachati hai aur din bhi kharab nahi hota." },
+  },
+  {
+    id: "sleep-scroll",
+    skill: "Self-discipline",
+    en: { q: "It's 1am, you're tired but still scrolling. You…", o: ["Just five more minutes", "Put the phone across the room and sleep", "Switch to another app"], tip: "Moving the phone out of reach beats willpower at 1am." },
+    hi: { q: "Raat ke 1 baje hain, neend aa rahi hai par scroll chal raha hai. Tum…", o: ["Bas 5 minute aur", "Phone door rakho aur so jao", "Dusra app khol lo"], tip: "Raat 1 baje will-power se zyada kaam aata hai phone ko haath ki pahunch se door rakhna." },
+  },
+  {
+    id: "self-talk",
+    skill: "Self-belief",
+    en: { q: "You mess something up and your inner voice says \"I always fail\". You…", o: ["Believe it", "Ask: \"What would I tell a friend right now?\"", "Distract yourself and avoid thinking"], tip: "Talking to yourself like you'd talk to a friend makes it easier to try again." },
+    hi: { q: "Kuch gadbad ho gayi aur andar se awaaz aati hai \"Main hamesha fail hota/hoti hoon\". Tum…", o: ["Maan lo", "Khud se pucho: \"Kisi dost ko abhi kya kehta/kehti?\"", "Dhyaan bhatka lo aur socho hi mat"], tip: "Khud se waise baat karo jaise kisi dost se karte; dobara try karna aasaan ho jaata hai." },
   },
 ];
 

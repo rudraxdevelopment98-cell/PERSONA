@@ -87,6 +87,7 @@ export default async function Landing() {
   ];
   const faqs = [
     { q: "Kya ye free hai?", a: "Haan. Free plan mein roz check-in, streak, poll aur quick cards; pehle hafte roz poora episode, phir hafte mein 3. Pro mein roz naya episode aur AI narrator. Card ke bina 7 din Pro try kar sakte ho." },
+    { q: "Kya ye sirf job walon ke liye hai?", a: "Nahi. Student, job, apna business, ghar sambhalne wale ya kaam dhoondhne wale, sab ke liye. Tum batate ho ki life ke kaun se hisse (family, dost, rishte, padhai, kaam, health, paisa) mein grow karna hai, aur kahaniyan wahi se aati hain." },
     { q: "Roz kitna time chahiye?", a: "Poora session ~30 minute. Busy din par sirf 2 minute ka check-in bhi streak bachata hai." },
     { q: "Hindi ya Hinglish mein milega?", a: "Haan: English, Hinglish ya हिन्दी. Kahaniyan, sawaal aur awaaz tumhari bhasha mein." },
     { q: "Mera data safe hai?", a: "Journal, jawab aur coach chats sirf tumhare hain. Dost sirf wahi dekhte hain jo tum share karo. Data kabhi bhi download ya delete kar sakte ho." },
@@ -118,7 +119,7 @@ export default async function Landing() {
               <span className="text-accent">Faisla</span> tumhara.
             </h1>
             <p className="mt-5 max-w-md text-lg text-muted">
-              Confidence, baat-cheet aur faisle lene ki skill, interactive kahaniyon aur roz ki chhoti practice se. English, Hinglish ya हिन्दी.
+              Confidence, baat-cheet aur faisle lene ki skill: ghar, dost, padhai, kaam aur rishton mein. Interactive kahaniyon aur roz ki chhoti practice se. English, Hinglish ya हिन्दी.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/signup" className="h-12 px-6 text-base">

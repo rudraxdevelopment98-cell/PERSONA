@@ -1,4 +1,5 @@
 import "server-only";
+import { lifeContextLine } from "@/lib/domain/life";
 import type { Db } from "@/lib/db/server";
 import { userData } from "@/lib/ai/prompts";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
@@ -58,6 +59,8 @@ export async function buildAIContext(
   const focus = todaysFocus(state);
   const lines: string[] = [];
 
+  const life = lifeContextLine(state.profile.life_stage, state.profile.life_areas ?? []);
+  if (life) lines.push(`## Life context\n${life}\n`);
   lines.push(`## Programme`);
   lines.push(
     state.day === 0

@@ -152,7 +152,7 @@ function MomentCard({ note, tags, onNote, onTags }: { note: string; tags: string
         rows={4}
         maxLength={2000}
         className="mt-4"
-        placeholder="Jaise: meeting mein sabke saamne tok diya gaya, aur main kuch bol nahi paaya…"
+        placeholder="Jaise: ghar par sabke saamne tok diya gaya, aur main kuch bol nahi paaya…"
         value={note}
         onChange={(e) => onNote(e.target.value)}
       />

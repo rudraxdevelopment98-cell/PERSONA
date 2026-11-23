@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { arenasFor } from "@/lib/domain/life";
 import { AIError, generateStructured } from "@/lib/ai/client";
 import { SESSION_SYSTEM, STORY_EXPANSION_SYSTEM, STORY_PART1_SYSTEM } from "@/lib/ai/prompts";
 import { dailySessionSchema, storyExpansionSchema, storyPart1Schema } from "@/lib/ai/schemas";
@@ -50,7 +51,7 @@ export const POST = apiRoute(z.object({}), async (_body, { db, user, state }) =>
   // Most days train the skill in fresh situations; one Mirror day a week speaks to the user's own life.
   const mirror = isMirrorDay(state.day);
   const context = await buildAIContext(db, state, { checkins: 3, abstract: true, ownWords: mirror });
-  const plan = await planDay(db, user.id, state.day, state.profile.next_world ?? null);
+  const plan = await planDay(db, user.id, state.day, state.profile.next_world ?? null, arenasFor(state.profile.life_areas ?? [], state.profile.life_stage));
   const v = plan.variety;
   // Today's moment (optional, shared in the check-in) shapes today only.
   const todayNote = (checkin.today_note as string | null) ?? null;

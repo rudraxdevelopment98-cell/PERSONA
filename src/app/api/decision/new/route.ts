@@ -7,6 +7,7 @@ import { DECISION_CATEGORIES, DECISION_DIFFICULTIES } from "@/lib/domain/labs";
 import { apiRoute, dbError, enforceHourlyLimit, HttpError, requireBaseline } from "@/lib/server/api";
 import { buildAIContext } from "@/lib/server/context";
 import { ARENAS, TWISTS } from "@/lib/domain/variety";
+import { arenasFor } from "@/lib/domain/life";
 
 const any = <T,>(a: readonly T[]) => a[Math.floor(Math.random() * a.length)];
 
@@ -25,7 +26,8 @@ export const POST = apiRoute(schema, async ({ category, difficulty }, { db, user
   const { data: recent } = await db.from("decision_logs").select("scenario").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
   const used = (recent ?? []).map((r) => `- ${r.scenario?.title}`).join("\n");
   const context = await buildAIContext(db, state, { checkins: 2, lean: true, abstract: true });
-  const arena = any(ARENAS);
+  const fit = arenasFor(state.profile.life_areas ?? [], state.profile.life_stage);
+  const arena = any(ARENAS.filter((a) => fit.includes(a.id)));
   const twist = any(TWISTS);
   const cat = DECISION_CATEGORIES.find((c) => c.id === category)!.label;
   const diff = DECISION_DIFFICULTIES.find((d) => d.id === difficulty)!.label;

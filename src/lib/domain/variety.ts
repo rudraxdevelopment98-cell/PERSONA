@@ -71,7 +71,11 @@ export const SCENARIO_FORMATS = [
 ] as const satisfies readonly Pick[];
 
 export const ARENAS = [
-  { id: "work", label: "Work or study", detail: "at work, college or in class" },
+  { id: "work", label: "Work", detail: "at work, in a shop or in their own business" },
+  { id: "study", label: "Studies", detail: "at college, school, coaching or while preparing for an exam" },
+  { id: "partner", label: "Love life", detail: "with a partner, spouse or someone they like" },
+  { id: "health", label: "Health & habits", detail: "about sleep, food, fitness, screen time or a doctor's advice" },
+  { id: "self", label: "Inner voice", detail: "alone, with their own thoughts, fears and self-talk" },
   { id: "family", label: "Family", detail: "with parents, siblings or relatives" },
   { id: "friends", label: "Friends", detail: "with close friends" },
   { id: "strangers", label: "Strangers", detail: "with a stranger in public (shop, train, queue, event)" },
@@ -187,11 +191,17 @@ export function newSeason(userId: string, season: number, recent: Pick2<Recent, 
 
 type Pick2<T, K extends keyof T> = { [P in K]: T[P] };
 
-export function dayRecipe(userId: string, day: number, recent: Pick2<Recent, "formats" | "arenas" | "challenges" | "reflections">): DayRecipe {
+export function dayRecipe(
+  userId: string,
+  day: number,
+  recent: Pick2<Recent, "formats" | "arenas" | "challenges" | "reflections">,
+  /** Arena ids that fit this person's life (from their life areas); empty = all. */
+  allowedArenas: readonly string[] = [],
+): DayRecipe {
   const seed = `${userId}:day:${day}`;
   return {
     formats: pickDistinct(SCENARIO_FORMATS, `${seed}:f`, recent.formats, 3).map((p) => p.id),
-    arenas: pickDistinct(ARENAS, `${seed}:a`, recent.arenas, 3).map((p) => p.id),
+    arenas: pickDistinct(allowedArenas.length ? ARENAS.filter((x) => allowedArenas.includes(x.id)) : ARENAS, `${seed}:a`, recent.arenas, 3).map((p) => p.id),
     challenge: pickDistinct(CHALLENGE_TYPES, `${seed}:c`, recent.challenges)[0].id,
     reflection: pickDistinct(REFLECTION_STYLES, `${seed}:r`, recent.reflections)[0].id,
   };

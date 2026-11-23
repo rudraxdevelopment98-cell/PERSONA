@@ -59,11 +59,11 @@ const hinglish: Pack = {
     welcomeBack: (n) => `Welcome back - aapke pehle ke ${n} jawab saved hain. Wahin se continue karo.`,
   },
   items: {
-    conf_1: { text: "Jab meeting ya group mein mere paas koi idea hota hai, toh main kisi aur ke pehle bolne ka wait kiye bina use share karta/karti hoon." },
+    conf_1: { text: "Jab kisi group mein (dost, family, class ya kaam) mere paas koi idea hota hai, toh main kisi aur ke pehle bolne ka wait kiye bina use share karta/karti hoon." },
     conf_2: { text: "Baat-cheet ke baad main use dimaag mein baar-baar replay karta/karti hoon, ye soch kar ki maine kaisa impression diya." },
     conf_3: { text: "Main naye kaam try karta/karti hoon, chahe sabke saamne fail hone ka risk ho." },
     conf_sj: {
-      text: "Aapka manager team ke saamne aapke kaam ki tareef karta hai. Aapka pehla reaction kya hota hai?",
+      text: "Koi sabke saamne aapke kiye kisi kaam ki tareef karta hai. Aapka pehla reaction kya hota hai?",
       options: [
         "Taal deta/deti hoon - kehta/kehti hoon ki ye luck tha ya kisi aur ki help thi",
         "Ajeeb lagta hai aur jaldi se topic badal deta/deti hoon",
@@ -75,11 +75,11 @@ const hinglish: Pack = {
     comm_2: { text: "Bolte waqt main apna point bhool jaata/jaati hoon ya ghuma-phira kar bolta/bolti hoon." },
     comm_3: { text: "Jawab dene se pehle main check karta/karti hoon ki maine saamne wale ko sahi samjha ya nahi." },
     comm_sj: {
-      text: "Aapko ek colleague ko batana hai ki shared project mein unka part late hai aur aapka kaam ruka hua hai. Aap sabse zyada kya karoge?",
+      text: "Koi dost ya ghar ka insaan baar-baar kuch aisa karta hai jo aapko pareshan karta hai (hamesha late aana, bina pooche cheezein le jaana). Aap sabse zyada kya karoge?",
       options: [
-        "Kuch nahi bolunga/bolungi aur khud hi manage kar lunga/lungi",
+        "Kuch nahi bolunga/bolungi aur khud hi adjust kar lunga/lungi",
         "Ishaaron mein bolunga/bolungi aur ummeed karunga/karungi ki wo samajh jayein",
-        "Message bhejunga/bhejungi jisme delay, uska impact aur kab tak ho payega, ye poochunga/poochungi",
+        "Shaanti se bataunga/bataungi ki kya ho raha hai, mujh par kya asar hai, aur kya karne se madad milegi",
         "Kisi aur se unki shikayat karunga/karungi",
       ],
     },
@@ -87,19 +87,19 @@ const hinglish: Pack = {
     dec_2: { text: "Galat choice ke darr se main important decisions ko taal deta/deti hoon." },
     dec_3: { text: "Bade decision se pehle main kam se kam do realistic options par sochta/sochti hoon." },
     dec_sj: {
-      text: "Aapko do job offers mile hain aur 48 ghante mein jawab dena hai. Aapka tarika kaunsa hai?",
+      text: "48 ghante mein do achhe options mein se ek chunna hai (koi course, shehar, job ya badi khareed). Aapka tarika kaunsa hai?",
       options: [
         "Kai logon se poochta/poochti hoon aur majority ki baat maan leta/leti hoon",
-        "Mere liye kya sabse zaroori hai uski list banata/banati hoon, dono offers compare karke decide karta/karti hoon",
+        "Mere liye kya sabse zaroori hai uski list banata/banati hoon, dono options compare karke decide karta/karti hoon",
         "Last moment tak wait karta/karti hoon ki jawab apne aap clear ho jaye",
-        "Bina zyada soche zyada salary wala chun leta/leti hoon",
+        "Bina zyada soche sasta ya zyada popular wala chun leta/leti hoon",
       ],
     },
     ei_1: { text: "Main apni exact feeling ka naam le sakta/sakti hoon (jaise 'disappointed', na ki bas 'bura lag raha hai')." },
     ei_2: { text: "Pareshan hone par main aisi baatein bol ya kar deta/deti hoon jinka baad mein pachtawa hota hai." },
     ei_3: { text: "Mujhe pata chalta hai ki mera mood doosron ke saath mere behaviour ko kaise affect kar raha hai." },
     ei_sj: {
-      text: "Raat ko aapko ek rude, critical email aata hai. Aap aam taur par kya karte ho?",
+      text: "Raat ko aapko ek rude, critical message aata hai (ghar, dost, teacher ya kaam se). Aap aam taur par kya karte ho?",
       options: [
         "Gussa taaza rehte hi turant reply kar deta/deti hoon",
         "Reply nahi karta/karti, poori raat usi ke baare mein sochta/sochti rehta/rehti hoon",
@@ -123,19 +123,19 @@ const hinglish: Pack = {
     asr_2: { text: "Jhagde se bachne ke liye main cheezon ke liye haan bol deta/deti hoon." },
     asr_3: { text: "Mujhe lagta hai log disagree karenge, phir bhi main apni raay rakhta/rakhti hoon." },
     asr_sj: {
-      text: "Ek colleague meetings mein baar-baar aapke ideas ka credit le leta hai. Aap:",
+      text: "Jab bhi aapka group kuch plan karta hai, ek dost aapke ideas ko apna bata deta hai. Aap:",
       options: [
         "Jaane dete ho - tension lene layak nahi",
         "Bina wajah bataye unse rookha behave karne lagte ho",
         "Akele mein baat karte ho, kya hua wo batate ho, aur agli baar kya expect karte ho wo bolte ho",
-        "Agli meeting mein gusse se sabke saamne unhe tok dete ho",
+        "Agli baar gusse se sabke saamne unhe tok dete ho",
       ],
     },
     ind_1: { text: "Doosre kya sochte hain ye jaanne se pehle main apni khud ki raay banata/banati hoon." },
     ind_2: { text: "Main apni raay zyada tar isliye badal deta/deti hoon kyunki aas-paas ke log disagree karte hain." },
     ind_3: { text: "Dost ya family se alag raay rakhne mein mujhe koi dikkat nahi hoti." },
     ind_sj: {
-      text: "Poori team ek plan ko support kar rahi hai, par aapko usme ek badi kami dikh rahi hai. Aap:",
+      text: "Aapka poora group (dost, family ya team) ek plan ko support kar raha hai, par aapko usme ek badi kami dikh rahi hai. Aap:",
       options: [
         "Maan lete ho ki sab sahi honge kyunki sab agree kar rahe hain",
         "Chup rehte ho par andar se bechaini hoti hai",
@@ -159,12 +159,12 @@ const hinglish: Pack = {
     lead_2: { text: "Jo kaam maine lead kiya ho, usme gadbad hone par main sabke saamne zimmedari leta/leti hoon." },
     lead_3: { text: "Main khud organise kar sakta/sakti hoon, phir bhi wait karta/karti hoon ki koi aur kare." },
     lead_sj: {
-      text: "Aap jis project mein ho, uska koi clear owner nahi hai aur kaam bhatak raha hai. Aap:",
+      text: "Group ka koi plan (trip, ghar ka function, college ya kaam ka project) bina kisi organiser ke bhatak raha hai. Aap:",
       options: [
         "Apna hissa karte rehte ho aur wait karte ho",
         "Shikayat karte ho ki koi organise nahi kar raha",
         "Ek simple plan propose karte ho aur coordinate karne ki offer dete ho",
-        "Manager se kehte ho ki kisi ko assign kare",
+        "Kisi bade ya senior se kehte ho ki wo zimmedari le",
       ],
     },
     disc_1: { text: "Mann na ho tab bhi main din ke liye jo plan kiya wo karta/karti hoon." },
@@ -212,7 +212,7 @@ const hi: Pack = {
     welcomeBack: (n) => `वापसी पर स्वागत है - आपके पहले के ${n} जवाब सेव हैं। वहीं से आगे बढ़ें।`,
   },
   items: {
-    conf_1: { text: "मीटिंग या ग्रुप में कोई विचार आने पर मैं किसी और के पहले बोलने का इंतज़ार किए बिना उसे साझा करता/करती हूँ।" },
+    conf_1: { text: "किसी ग्रुप में (दोस्त, परिवार, क्लास या काम) कोई विचार आने पर मैं किसी और के पहले बोलने का इंतज़ार किए बिना उसे साझा करता/करती हूँ।" },
     conf_2: { text: "बातचीत के बाद मैं उसे बार-बार मन में दोहराता/दोहराती हूँ और सोचता/सोचती हूँ कि मैं कैसा लगा/लगी।" },
     conf_3: { text: "मैं नए काम आज़माता/आज़माती हूँ, भले ही सबके सामने असफल होने का डर हो।" },
     conf_sj: {
@@ -228,11 +228,11 @@ const hi: Pack = {
     comm_2: { text: "बोलते समय मैं अपनी बात भूल जाता/जाती हूँ या घुमा-फिराकर बोलता/बोलती हूँ।" },
     comm_3: { text: "जवाब देने से पहले मैं जाँचता/जाँचती हूँ कि मैंने सामने वाले को सही समझा या नहीं।" },
     comm_sj: {
-      text: "आपको एक सहकर्मी को बताना है कि साझा प्रोजेक्ट में उनका हिस्सा देर से है और आपका काम रुका है। आप सबसे अधिक क्या करेंगे?",
+      text: "कोई दोस्त या घर का सदस्य बार-बार ऐसा कुछ करता है जो आपको परेशान करता है (हमेशा देर से आना, बिना पूछे चीज़ें ले जाना)। आप सबसे अधिक क्या करेंगे?",
       options: [
-        "कुछ नहीं कहूँगा/कहूँगी और ख़ुद ही संभाल लूँगा/लूँगी",
+        "कुछ नहीं कहूँगा/कहूँगी और ख़ुद ही एडजस्ट कर लूँगा/लूँगी",
         "इशारों में कहूँगा/कहूँगी और उम्मीद करूँगा/करूँगी कि वे समझ जाएँ",
-        "संदेश भेजूँगा/भेजूँगी जिसमें देरी, उसका असर बताऊँगा/बताऊँगी और पूछूँगा/पूछूँगी कि कब तक हो पाएगा",
+        "शांति से बताऊँगा/बताऊँगी कि क्या हो रहा है, मुझ पर क्या असर है, और क्या करने से मदद मिलेगी",
         "किसी और से उनकी शिकायत करूँगा/करूँगी",
       ],
     },
@@ -240,19 +240,19 @@ const hi: Pack = {
     dec_2: { text: "गलत चुनाव के डर से मैं ज़रूरी फ़ैसलों को टालता/टालती हूँ।" },
     dec_3: { text: "बड़े फ़ैसले से पहले मैं कम से कम दो वास्तविक विकल्पों पर विचार करता/करती हूँ।" },
     dec_sj: {
-      text: "आपको दो नौकरी के ऑफ़र मिले हैं और 48 घंटे में जवाब देना है। आपका तरीका कौन-सा है?",
+      text: "48 घंटे में दो अच्छे विकल्पों में से एक चुनना है (कोई कोर्स, शहर, नौकरी या बड़ी ख़रीद)। आपका तरीका कौन-सा है?",
       options: [
         "कई लोगों से पूछता/पूछती हूँ और बहुमत की बात मान लेता/लेती हूँ",
-        "मेरे लिए क्या सबसे ज़रूरी है उसकी सूची बनाता/बनाती हूँ, दोनों ऑफ़र की तुलना करके फ़ैसला करता/करती हूँ",
+        "मेरे लिए क्या सबसे ज़रूरी है उसकी सूची बनाता/बनाती हूँ, दोनों विकल्पों की तुलना करके फ़ैसला करता/करती हूँ",
         "आख़िरी पल तक इंतज़ार करता/करती हूँ कि जवाब अपने आप साफ़ हो जाए",
-        "बिना ज़्यादा सोचे ज़्यादा वेतन वाला चुन लेता/लेती हूँ",
+        "बिना ज़्यादा सोचे सस्ता या ज़्यादा लोकप्रिय वाला चुन लेता/लेती हूँ",
       ],
     },
     ei_1: { text: "मैं अपनी सटीक भावना का नाम ले सकता/सकती हूँ (जैसे 'निराश', न कि सिर्फ़ 'बुरा लग रहा है')।" },
     ei_2: { text: "परेशान होने पर मैं ऐसी बातें कह या कर देता/देती हूँ जिनका बाद में पछतावा होता है।" },
     ei_3: { text: "मुझे पता चलता है कि मेरा मूड दूसरों के साथ मेरे व्यवहार को कैसे प्रभावित कर रहा है।" },
     ei_sj: {
-      text: "शाम को देर से आपको एक रूखा, आलोचनात्मक ईमेल मिलता है। आप आमतौर पर क्या करते हैं?",
+      text: "शाम को देर से आपको एक रूखा, आलोचनात्मक संदेश मिलता है (घर, दोस्त, टीचर या काम से)। आप आमतौर पर क्या करते हैं?",
       options: [
         "ग़ुस्सा ताज़ा रहते ही तुरंत जवाब दे देता/देती हूँ",
         "जवाब नहीं देता/देती, पूरी रात उसी के बारे में सोचता/सोचती रहता/रहती हूँ",
@@ -276,19 +276,19 @@ const hi: Pack = {
     asr_2: { text: "टकराव से बचने के लिए मैं चीज़ों के लिए हाँ कह देता/देती हूँ।" },
     asr_3: { text: "मुझे लगे कि लोग असहमत होंगे, तब भी मैं अपनी राय रखता/रखती हूँ।" },
     asr_sj: {
-      text: "एक सहकर्मी मीटिंग में बार-बार आपके विचारों का श्रेय ले लेता है। आप:",
+      text: "जब भी आपका ग्रुप कुछ प्लान करता है, एक दोस्त आपके विचारों को अपना बता देता है। आप:",
       options: [
         "जाने देते हैं - तनाव लेने लायक नहीं",
         "बिना कारण बताए उनसे रूखा व्यवहार करने लगते हैं",
         "अकेले में बात करते हैं, जो हुआ वह बताते हैं और अगली बार क्या चाहते हैं वह कहते हैं",
-        "अगली मीटिंग में ग़ुस्से से सबके सामने उन्हें टोकते हैं",
+        "अगली बार ग़ुस्से से सबके सामने उन्हें टोकते हैं",
       ],
     },
     ind_1: { text: "दूसरे क्या सोचते हैं यह जानने से पहले मैं अपनी राय बनाता/बनाती हूँ।" },
     ind_2: { text: "मैं अपनी राय ज़्यादातर इसलिए बदलता/बदलती हूँ क्योंकि आसपास के लोग असहमत होते हैं।" },
     ind_3: { text: "दोस्तों या परिवार से अलग राय रखने में मुझे कोई परेशानी नहीं होती।" },
     ind_sj: {
-      text: "पूरी टीम एक योजना का समर्थन कर रही है, पर आपको उसमें एक बड़ी कमी दिख रही है। आप:",
+      text: "आपका पूरा ग्रुप (दोस्त, परिवार या टीम) एक योजना का समर्थन कर रहा है, पर आपको उसमें एक बड़ी कमी दिख रही है। आप:",
       options: [
         "मान लेते हैं कि सब सही होंगे क्योंकि सब सहमत हैं",
         "चुप रहते हैं पर मन में बेचैनी रहती है",
@@ -312,12 +312,12 @@ const hi: Pack = {
     lead_2: { text: "जिस काम का नेतृत्व मैंने किया, उसमें गड़बड़ होने पर मैं सबके सामने ज़िम्मेदारी लेता/लेती हूँ।" },
     lead_3: { text: "मैं ख़ुद व्यवस्था कर सकता/सकती हूँ, फिर भी इंतज़ार करता/करती हूँ कि कोई और करे।" },
     lead_sj: {
-      text: "जिस प्रोजेक्ट में आप हैं, उसका कोई साफ़ ज़िम्मेदार नहीं है और काम भटक रहा है। आप:",
+      text: "ग्रुप की कोई योजना (यात्रा, घर का समारोह, कॉलेज या काम का प्रोजेक्ट) बिना किसी आयोजक के भटक रही है। आप:",
       options: [
         "अपना हिस्सा करते रहते हैं और इंतज़ार करते हैं",
         "शिकायत करते हैं कि कोई व्यवस्था नहीं कर रहा",
         "एक सरल योजना प्रस्तावित करते हैं और समन्वय करने की पेशकश करते हैं",
-        "मैनेजर से किसी को ज़िम्मेदारी देने को कहते हैं",
+        "किसी बड़े या वरिष्ठ से ज़िम्मेदारी लेने को कहते हैं",
       ],
     },
     disc_1: { text: "मन न हो तब भी मैं दिन के लिए जो योजना बनाई वह करता/करती हूँ।" },

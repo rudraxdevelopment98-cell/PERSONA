@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/ui";
+import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { appProvider } from "@/lib/ai/client";
 import { getConnectionSummary } from "@/lib/server/ai-connection";
 import { recoveryStatus, securityQuestionsSet } from "@/lib/server/recovery";
@@ -8,6 +8,7 @@ import { SecuritySettings } from "./security";
 import { YourAI } from "./your-ai";
 import { ThemeSetting } from "@/components/theme-toggle";
 import { HelpContact } from "./help-contact";
+import { LifePicker } from "@/components/life-picker";
 
 export const metadata = { title: "Settings" };
 
@@ -25,6 +26,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader title="Settings" description="Your profile, AI, privacy and data." />
       <ThemeSetting />
+      <Card className="mb-6">
+        <CardHeader title="Tumhari life" description="Kahaniyan, scenarios aur labs inhi areas se aate hain." />
+        <div className="px-5 pb-5">
+          <LifePicker variant="plain" initialStage={state.profile.life_stage ?? null} initialAreas={state.profile.life_areas ?? []} />
+        </div>
+      </Card>
       <YourAI
         connection={connection}
         appProviderName={APP_PROVIDER_NAMES[app.kind] ?? app.kind}

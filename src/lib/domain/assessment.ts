@@ -52,14 +52,14 @@ const L = (id: string, dimension: Dimension, text: string, reverse = false): Lik
 
 export const ASSESSMENT_ITEMS: AssessmentItem[] = [
   // Self-confidence
-  L("conf_1", "confidence", "When I have an idea in a meeting or group, I share it without waiting for someone else to go first."),
+  L("conf_1", "confidence", "When I have an idea in a group (friends, family, class or work), I share it without waiting for someone else to go first."),
   L("conf_2", "confidence", "I replay conversations afterwards, worrying about how I came across.", true),
   L("conf_3", "confidence", "I attempt tasks I have not done before, even when I might fail in front of others."),
   {
     id: "conf_sj",
     dimension: "confidence",
     kind: "situational",
-    text: "Your manager praises a piece of work you did in front of the team. What is closest to your first reaction?",
+    text: "Someone praises something you did, in front of other people. What is closest to your first reaction?",
     options: [
       { label: "Deflect it - say it was mostly luck or someone else's help", value: 1 },
       { label: "Feel uncomfortable and quickly change the subject", value: 2 },
@@ -76,11 +76,11 @@ export const ASSESSMENT_ITEMS: AssessmentItem[] = [
     id: "comm_sj",
     dimension: "communication",
     kind: "situational",
-    text: "You need to tell a colleague that their part of a shared project is late and is blocking you. You would most likely:",
+    text: "A friend or family member keeps doing something that affects you (always late, borrowing things without asking). You would most likely:",
     options: [
-      { label: "Say nothing and work around it", value: 1 },
+      { label: "Say nothing and adjust around it", value: 1 },
       { label: "Drop vague hints and hope they notice", value: 2 },
-      { label: "Send a message describing the delay, its impact, and ask when it can be done", value: 5 },
+      { label: "Tell them calmly what happens, how it affects you, and what would help", value: 5 },
       { label: "Complain to someone else about it", value: 1 },
     ],
   },
@@ -93,12 +93,12 @@ export const ASSESSMENT_ITEMS: AssessmentItem[] = [
     id: "dec_sj",
     dimension: "decision_making",
     kind: "situational",
-    text: "You receive two job offers with a 48-hour deadline. Which approach is closest to yours?",
+    text: "You must choose between two good options within 48 hours (a course, a city, a job or a big purchase). Which approach is closest to yours?",
     options: [
       { label: "Ask several people what they would do and go with the majority", value: 2 },
-      { label: "List what matters most to you, compare both offers against it, then decide", value: 5 },
+      { label: "List what matters most to you, compare both options against it, then decide", value: 5 },
       { label: "Wait until the last moment hoping the answer becomes obvious", value: 1 },
-      { label: "Pick the one with the higher salary without looking further", value: 3 },
+      { label: "Pick the cheaper or more popular one without looking further", value: 3 },
     ],
   },
 
@@ -110,7 +110,7 @@ export const ASSESSMENT_ITEMS: AssessmentItem[] = [
     id: "ei_sj",
     dimension: "emotional_intelligence",
     kind: "situational",
-    text: "You receive a blunt, critical email late in the evening. What do you usually do?",
+    text: "Late in the evening you get a blunt, critical message (from family, a friend, a teacher or at work). What do you usually do?",
     options: [
       { label: "Reply immediately while the frustration is fresh", value: 1 },
       { label: "Stew on it all night without replying", value: 2 },
@@ -144,12 +144,12 @@ export const ASSESSMENT_ITEMS: AssessmentItem[] = [
     id: "asr_sj",
     dimension: "assertiveness",
     kind: "situational",
-    text: "A colleague repeatedly takes credit for your ideas in meetings. You:",
+    text: "Whenever your group plans something, one friend presents your ideas as their own. You:",
     options: [
       { label: "Let it go - it is not worth the tension", value: 1 },
       { label: "Become cold towards them without explaining why", value: 2 },
       { label: "Speak to them privately, describe what happened, and say what you expect next time", value: 5 },
-      { label: "Call them out angrily in the next meeting", value: 2 },
+      { label: "Call them out angrily next time, in front of everyone", value: 2 },
     ],
   },
 
@@ -161,7 +161,7 @@ export const ASSESSMENT_ITEMS: AssessmentItem[] = [
     id: "ind_sj",
     dimension: "independent_thinking",
     kind: "situational",
-    text: "Everyone in your team supports a plan you think has a serious flaw. You:",
+    text: "Your whole group (friends, family or team) supports a plan you think has a serious flaw. You:",
     options: [
       { label: "Assume they must be right since they all agree", value: 1 },
       { label: "Keep quiet but feel uneasy", value: 2 },
@@ -195,12 +195,12 @@ export const ASSESSMENT_ITEMS: AssessmentItem[] = [
     id: "lead_sj",
     dimension: "leadership",
     kind: "situational",
-    text: "A project you are part of has no clear owner and is drifting. You:",
+    text: "A group plan you are part of (a trip, a family function, a college or work project) has no clear organiser and is drifting. You:",
     options: [
       { label: "Keep doing your part and wait", value: 1 },
       { label: "Complain that nobody is organising it", value: 1 },
       { label: "Propose a simple plan and offer to coordinate it", value: 5 },
-      { label: "Ask a manager to assign someone", value: 3 },
+      { label: "Ask someone older or senior to take charge", value: 3 },
     ],
   },
 

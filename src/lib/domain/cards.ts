@@ -14,8 +14,8 @@ export const cardSchema = z.object({
 export const deckSchema = z.object({ cards: z.array(cardSchema).length(CARDS_PER_DAY) });
 export type QuickCard = z.infer<typeof cardSchema>;
 
-export const CARDS_SYSTEM = `You write "Quick cards" for PERSONA 90, a self-development app for students and young professionals in India.
-Each card is a short, real, everyday situation (college, hostel, office, family, friends, online) with two plausible reactions.
+export const CARDS_SYSTEM = `You write "Quick cards" for PERSONA 90, a self-development app for adults of every walk of life (students, people with jobs, home-makers, business owners, job seekers).
+Each card is a short, real, everyday situation with two plausible reactions. Spread the five cards across different parts of life: family, friends, love and partners, studies, health and habits, money, strangers in public, online, and at most ONE about work. Write for anyone 18+ (students, people with jobs, home-makers, business owners), not only office workers.
 One reaction is clearly the healthier, more confident or more skilful move; the other is a common habit that feels natural but works worse.
 Mix which letter is better. Vary settings and skills across the five cards. No names of real people or brands. Nothing about self-harm, medical or legal advice.
 Keep every field short so it fits on a phone card.`;
@@ -23,10 +23,10 @@ Keep every field short so it fits on a phone card.`;
 /** Used when AI is unavailable: a varied built-in set, rotated by date. */
 export const FALLBACK_CARDS: Record<"en" | "hi", QuickCard[]> = {
   en: [
-    { skill: "Confidence", situation: "Your manager asks the team for ideas. You have one but you're not sure it's good.", a: "Share it as \"One rough idea…\"", b: "Wait to see if someone says it first", better: "a", why: "Framing it as rough lowers the pressure and still gets you heard." },
+    { skill: "Communication", situation: "Your partner keeps checking their phone while you talk about something important.", a: "\"Can we talk for 10 minutes without phones?\"", b: "Stop talking and sulk", better: "a", why: "A clear, small request works better than going silent and hoping they notice." },
     { skill: "Boundaries", situation: "A classmate asks to copy your assignment again.", a: "Say yes to avoid awkwardness", b: "\"I can explain how I did it, but not share the file\"", better: "b", why: "Offering help on your terms keeps the friendship without risking your work." },
     { skill: "Communication", situation: "You need to tell your roommate the kitchen mess bothers you.", a: "\"Can we agree who cleans what?\"", b: "Leave a passive-aggressive note", better: "a", why: "A request about the future fixes the problem without blame." },
-    { skill: "Decisions", situation: "Two internships, deadline tomorrow, both seem fine.", a: "Pick the one with the better learning and people", b: "Ask everyone and decide at midnight", better: "a", why: "Choosing by one or two clear criteria beats collecting opinions." },
+    { skill: "Self-discipline", situation: "The doctor said walk 30 minutes a day. You've skipped three days.", a: "Start properly from Monday", b: "Walk just 10 minutes today", better: "b", why: "A small start today beats a perfect plan for later." },
     { skill: "Emotional intelligence", situation: "You get a harsh comment on a project you worked hard on.", a: "Reply immediately to defend it", b: "Wait an hour, then ask what would make it better", better: "b", why: "A pause turns criticism into useful feedback instead of a fight." },
     { skill: "Assertiveness", situation: "A shop gives you the wrong change, short by ₹100.", a: "Calmly point it out and ask for the difference", b: "Let it go, it's awkward", better: "a", why: "A calm, factual ask is normal and usually fixed in seconds." },
     { skill: "Leadership", situation: "Your group's presentation is tomorrow and nobody has started.", a: "Split the slides and set a 9pm check-in", b: "Do it all yourself tonight", better: "a", why: "Dividing the work with a check-in gets it done and keeps everyone involved." },
@@ -35,10 +35,10 @@ export const FALLBACK_CARDS: Record<"en" | "hi", QuickCard[]> = {
     { skill: "Communication", situation: "Your parent keeps asking about your marks during dinner.", a: "\"Can we talk about it after dinner, just us?\"", b: "Get annoyed and leave the table", better: "a", why: "Moving the talk to a better time respects both of you." },
   ],
   hi: [
-    { skill: "Confidence", situation: "Manager team se ideas maangta hai. Tumhare paas ek hai par pakka nahi ki achha hai.", a: "\"Ek rough idea hai…\" bol ke share karo", b: "Ruko, shayad koi aur bol de", better: "a", why: "'Rough idea' bolne se pressure kam hota hai aur tumhari baat bhi sun li jaati hai." },
+    { skill: "Communication", situation: "Zaroori baat karte waqt partner baar baar phone dekhta hai.", a: "\"10 minute bina phone ke baat karein?\"", b: "Baat band karke muh phula lo", better: "a", why: "Chhoti, saaf request chup ho jaane se behtar kaam karti hai." },
     { skill: "Boundaries", situation: "Classmate phir se tumhara assignment copy karne ko maangta hai.", a: "Awkwardness se bachne ke liye de do", b: "\"Kaise kiya samjha deta hoon, file nahi\"", better: "b", why: "Apni shart par madad karne se dosti bhi bachti hai aur tumhara kaam bhi." },
     { skill: "Communication", situation: "Roommate ko batana hai ki kitchen ki gandagi pareshan karti hai.", a: "\"Tay kar lein kaun kya saaf karega?\"", b: "Taana maarta hua note chhod do", better: "a", why: "Aage ke liye request karna bina blame ke problem sulajh deta hai." },
-    { skill: "Decisions", situation: "Do internships, kal deadline, dono theek lagti hain.", a: "Jisme seekhna aur log behtar, wo chuno", b: "Sabse pucho aur raat 12 baje decide karo", better: "a", why: "Ek-do saaf criteria se chunna sabki raay ikattha karne se behtar hai." },
+    { skill: "Self-discipline", situation: "Doctor ne roz 30 minute walk bola. Teen din se skip ho raha hai.", a: "Monday se pakka shuru", b: "Aaj sirf 10 minute chalo", better: "b", why: "Aaj ki chhoti shuruaat baad ke perfect plan se behtar hai." },
     { skill: "Emotional intelligence", situation: "Mehnat wale project par kisi ka kadwa comment aata hai.", a: "Turant reply karke bachav karo", b: "Ek ghanta ruko, phir pucho kya behtar ho sakta hai", better: "b", why: "Rukne se criticism jhagda nahi, kaam ka feedback ban jaata hai." },
     { skill: "Assertiveness", situation: "Dukaan wala ₹100 kam change deta hai.", a: "Shaanti se batao aur baaki paise maango", b: "Jaane do, awkward lagta hai", better: "a", why: "Shaant, seedhi baat normal hai aur second mein theek ho jaati hai." },
     { skill: "Leadership", situation: "Kal group presentation hai aur kisi ne shuru nahi kiya.", a: "Slides baanto aur raat 9 baje check-in rakho", b: "Aaj raat sab khud kar lo", better: "a", why: "Kaam baant ke check-in rakhne se kaam bhi hota hai aur sab jude rehte hain." },
