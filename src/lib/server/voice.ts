@@ -70,11 +70,12 @@ export async function narratePart(userId: string, sessionId: string, part: numbe
   if (n >= MAX_PER_PART) throw new VoiceLimit("This part was already generated. Try again later.");
 
   const choice = voiceChoice(cfg.model)!;
-  const hindi = /[ऀ-ॿ]/.test(text);
+  // The story's script decides the narration language (Gujarati, Hindi, else English/Hinglish).
+  const language = /[\u0A80-\u0AFF]/.test(text) ? "gu" : /[\u0900-\u097F]/.test(text) ? "hi" : "en";
   const body: Record<string, unknown> = {
     text,
     outputFormat: "mp3",
-    language: hindi ? "hi" : "en",
+    language,
     instructions: "Narrate like a warm, calm audiobook narrator. Natural pace, gentle pauses between sentences.",
   };
   if (choice.voice) body.voice = choice.voice;
@@ -96,6 +97,11 @@ export async function narratePart(userId: string, sessionId: string, part: numbe
   // Voice names differ per provider: retry once with the provider's default voice.
   if (res.status === 400 && body.voice) {
     delete body.voice;
+    res = await call(body);
+  }
+  // Some voices don't list Gujarati: let the model pick the language from the text.
+  if (res.status === 400 && body.language === "gu") {
+    delete body.language;
     res = await call(body);
   }
   const ok = res.ok;

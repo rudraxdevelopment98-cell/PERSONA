@@ -1,9 +1,10 @@
 import "server-only";
+import { msg } from "@/lib/domain/messages";
 import { getPool } from "@/lib/db/pool";
 import { todayIn } from "@/lib/domain/programme";
 import { duoStreak } from "@/lib/domain/moments";
 import { liveStreak } from "@/lib/domain/social";
-import { SocialError, areFriends, isBlocked, itemsVisibleTo, loadSnapshots, nameOf, notify } from "./social";
+import { SocialError, areFriends, isBlocked, itemsVisibleTo, loadSnapshots, nameOf, notify, notifyIn, userLanguage } from "./social";
 
 /**
  * Friend-streak nudges and weekly circle highlights. Only people who share their
@@ -52,9 +53,9 @@ export async function sendNudge(from: string, to: string) {
   );
   if (ins.length === 0) throw new SocialError("You've already nudged them today.", 429);
   const who = await nameOf(from);
-  await notify(to, "streak_nudge", {
-    title: duo.streak > 0 ? `⏳ ${who} is waiting for you` : `👋 ${who} nudged you`,
-    body: duo.streak > 0 ? `Check in today to keep your 🔥${duo.streak} friend streak alive.` : `${who} already checked in. Join them today and start a friend streak 🔥`,
+  await notifyIn(to, "streak_nudge", {
+    title: duo.streak > 0 ? ["nudge.waiting", who] : ["nudge.nudged", who],
+    body: duo.streak > 0 ? ["nudge.keep", duo.streak] : ["nudge.start", who],
     url: "/today",
   });
   return { streak: duo.streak };
@@ -98,9 +99,9 @@ export async function sendStreakNudges(now = new Date()) {
       );
       if (ins.length === 0) continue;
       const who = await nameOf(done);
-      await notify(missing, "streak_risk", {
-        title: `🔥 Your ${duo.streak}-day streak with ${who} ends tonight`,
-        body: `${who} already checked in. A 2-minute check-in keeps it alive.`,
+      await notifyIn(missing, "streak_risk", {
+        title: ["risk.title", duo.streak, who],
+        body: ["risk.body", who],
         url: "/today",
       });
       sent++;
@@ -191,13 +192,14 @@ export async function sendCircleRecaps(now = new Date()) {
       if (dup.length) continue;
       const w = await circleWeek(m.user_id, c.id).catch(() => null);
       if (!w || w.checkins + w.sessions === 0) continue;
-      const bits = [`${w.checkins} check-ins`, `${w.sessions} episodes`];
-      if (w.fullHouse) bits.push(`${w.fullHouse} full-house day${w.fullHouse > 1 ? "s" : ""}`);
-      if (w.topStreak) bits.push(`${w.topStreak.name === "You" ? "your" : `${w.topStreak.name}'s`} 🔥${w.topStreak.streak} streak leads`);
+      const lang = await userLanguage(m.user_id);
+      const bits = [msg(lang, "recap.checkins", w.checkins), msg(lang, "recap.episodes", w.sessions)];
+      if (w.fullHouse) bits.push(msg(lang, "recap.fullHouse", w.fullHouse));
+      if (w.topStreak) bits.push(w.topStreak.name === "You" ? msg(lang, "recap.yourStreak", w.topStreak.streak) : msg(lang, "recap.theirStreak", w.topStreak.name, w.topStreak.streak));
       await notify(
         m.user_id,
         "circle_recap",
-        { title: `📊 ${c.emoji ?? "👥"} ${c.name}: last week`, body: bits.join(" · "), url: `/circles/${c.id}`, circle: c.id },
+        { title: msg(lang, "recap.title", c.emoji ?? "👥", c.name), body: bits.join(" · "), url: `/circles/${c.id}`, circle: c.id },
         { push: m.reminders },
       );
       sent++;

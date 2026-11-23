@@ -76,7 +76,7 @@ export async function votePoll(userId: string, choice: number) {
  * once a day, between 16:00 and 22:00 local time.
  */
 export async function sendPollResults(now = new Date()) {
-  const { notify } = await import("./social");
+  const { notifyIn } = await import("./social");
   const rows = await q<{ user_id: string; timezone: string; poll_date: string; poll_id: string; choice: number }>(
     `select v.user_id, p.timezone, v.poll_date::text, v.poll_id, v.choice
        from public.poll_votes v join public.profiles p on p.id = v.user_id
@@ -103,9 +103,9 @@ export async function sendPollResults(now = new Date()) {
     const total = counts.reduce((a, c) => a + c.n, 0);
     if (total < 3) continue;
     const same = Math.round(((counts.find((c) => c.choice === r.choice)?.n ?? 0) / total) * 100);
-    await notify(r.user_id, "poll_result", {
-      title: `🗳️ Aaj ka result: ${same}% ne tumhare jaisa chuna`,
-      body: `${total} logon ne vote kiya. Kal subah naya sawaal aur 5 naye quick cards.`,
+    await notifyIn(r.user_id, "poll_result", {
+      title: ["poll.title", same],
+      body: ["poll.body", total],
       url: "/dashboard",
       date: r.poll_date,
     });

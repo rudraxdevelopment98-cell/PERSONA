@@ -9,13 +9,20 @@ pg.types.setTypeParser(1184, (v) => (v == null ? null : new Date(v).toISOString(
 pg.types.setTypeParser(1114, (v) => (v == null ? null : new Date(`${v}Z`).toISOString()));
 pg.types.setTypeParser(1082, (v) => v);
 
+/**
+ * pg already treats sslmode=require as verify-full; saying so explicitly keeps the
+ * same (strict) behaviour and stops the warning printed on every request.
+ */
+export const withVerifiedSsl = (url: string | undefined) =>
+  url ? url.replace(/([?&]sslmode=)(require|prefer|verify-ca)\b/, "$1verify-full") : url;
+
 const globalForPool = globalThis as unknown as { __personaPool?: pg.Pool };
 
 /** One shared connection pool per server instance (pooled Neon URL at runtime). */
 export function getPool(): pg.Pool {
   if (!globalForPool.__personaPool) {
     globalForPool.__personaPool = new pg.Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: withVerifiedSsl(process.env.DATABASE_URL),
       max: 5,
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 10_000,

@@ -11,7 +11,7 @@ if (!url) {
 }
 
 const dir = path.join(process.cwd(), "db", "migrations");
-const client = new pg.Client({ connectionString: url });
+const client = new pg.Client({ connectionString: url.replace(/([?&]sslmode=)(require|prefer|verify-ca)\b/, "$1verify-full") });
 await client.connect();
 try {
   await client.query("select pg_advisory_lock(907090)");

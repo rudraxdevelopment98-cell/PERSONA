@@ -1,4 +1,7 @@
 import "server-only";
+import { msg, type MessageKey } from "@/lib/domain/messages";
+import { makeT } from "@/lib/i18n/core";
+import { dictFor } from "@/lib/i18n/dicts";
 import { createHash, randomBytes } from "node:crypto";
 import { getPool } from "@/lib/db/pool";
 import { dbForUser } from "@/lib/db/server";
@@ -274,6 +277,30 @@ export async function weekStats(ids: string[]): Promise<Map<string, WeekStats>> 
 // Notifications
 // ---------------------------------------------------------------------------
 
+/** The recipient's app language (for notifications). */
+export async function userLanguage(userId: string): Promise<string> {
+  const [r] = await q<{ language: string | null }>("select language from public.profiles where id = $1", [userId]);
+  return r?.language ?? "en";
+}
+
+type MsgRef = [MessageKey, ...(string | number)[]];
+/**
+ * Like notify(), but the title and body are message keys rendered in the recipient's
+ * own language. A plain string body (for example a friend's note) is kept as written,
+ * apart from built-in texts which are translated.
+ */
+export async function notifyIn(
+  userId: string,
+  type: string,
+  payload: { title: MsgRef; body: MsgRef | string; url: string } & Record<string, unknown>,
+  opts: { push?: boolean } = {},
+) {
+  const lang = await userLanguage(userId);
+  const [tk, ...ta] = payload.title;
+  const body = typeof payload.body === "string" ? makeT(dictFor(lang))(payload.body) : msg(lang, payload.body[0], ...payload.body.slice(1));
+  await notify(userId, type, { ...payload, title: msg(lang, tk, ...ta), body }, opts);
+}
+
 export async function notify(
   userId: string,
   type: string,
@@ -398,9 +425,9 @@ export async function redeemInvite(userId: string, token: string): Promise<{ fri
     [userId, inv.created_by],
   ).catch(() => {});
   const who = await nameOf(userId);
-  await notify(inv.created_by, "invite_accepted", {
-    title: inv.circle_id ? `${who} joined ${info.circleName}` : `${who} accepted your invite`,
-    body: "You're now connected on PERSONA 90.",
+  await notifyIn(inv.created_by, "invite_accepted", {
+    title: inv.circle_id ? ["invite.joinedCircle", who, info.circleName ?? ""] : ["invite.accepted", who],
+    body: ["invite.body"],
     url: inv.circle_id ? `/circles/${inv.circle_id}` : "/friends",
   });
   return { friendId: inv.created_by, circleId: inv.circle_id };
@@ -500,7 +527,7 @@ export async function sendCheer(from: string, to: string, kind: string, note: st
   await q("insert into public.cheers (from_user, to_user, circle_id, kind, note) values ($1, $2, $3, $4, $5)", [from, to, circleId, kind, text]);
   const who = await nameOf(from);
   const c = CHEERS[kind];
-  await notify(to, "cheer", { title: `${c.emoji} ${who} cheered you`, body: text ?? c.text, url: circleId ? `/circles/${circleId}` : "/friends" });
+  await notifyIn(to, "cheer", { title: ["cheer.title", c.emoji, who], body: text ?? c.text, url: circleId ? `/circles/${circleId}` : "/friends" });
   await awardSocial(from);
 }
 
@@ -670,7 +697,11 @@ export async function createRace(
     ? (await q<{ user_id: string }>("select user_id from public.circle_members where circle_id = $1 and user_id <> $2", [input.circleId, userId])).map((r) => r.user_id)
     : [input.friendId!];
   await Promise.all(
-    recipients.map((r) => notify(r, "race_invite", { title: `🏁 ${who} started a race: ${title}`, body: `${kind.description} Join before it ends!`, url: `/races/${race.id}` })),
+    recipients.map(async (r) => {
+      const lang = await userLanguage(r);
+      const tr = makeT(dictFor(lang));
+      return notifyIn(r, "race_invite", { title: ["race.title", who, tr(title)], body: ["race.body", tr(kind.description)], url: `/races/${race.id}` });
+    }),
   );
   return race.id;
 }

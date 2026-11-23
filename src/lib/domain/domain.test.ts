@@ -369,3 +369,21 @@ describeLang("Gujarati content", () => {
     }
   });
 });
+
+import { MESSAGES, msg } from "./messages";
+describeLang("notification messages", () => {
+  itLang("every message exists in all four languages with the same placeholders", () => {
+    for (const [key, m] of Object.entries(MESSAGES)) {
+      const ph = (s: string) => (s.match(/\{\d\}/g) ?? []).sort().join();
+      for (const l of ["en", "hinglish", "hi", "gu"] as const) {
+        expectLang(m[l], `${key}.${l}`).toBeTruthy();
+        expectLang(ph(m[l]), `${key}.${l}`).toBe(ph(m.en));
+      }
+    }
+  });
+  itLang("fills the recipient's language", () => {
+    expectLang(msg("gu", "risk.title", 5, "Asha")).toBe("🔥 Asha સાથેની 5 દિવસની સ્ટ્રીક આજે રાત્રે પૂરી");
+    expectLang(msg("en", "poll.title", 62)).toBe("🗳️ Today's result: 62% chose like you");
+    expectLang(msg("xx", "reminder.ready")).toBe("🌱 Your session is ready");
+  });
+});

@@ -1,4 +1,6 @@
 import "server-only";
+import { msg } from "@/lib/domain/messages";
+import { userLanguage } from "./social";
 import { getPool } from "@/lib/db/pool";
 import { todayIn } from "@/lib/domain/programme";
 import { sendPush } from "./push";
@@ -49,10 +51,11 @@ export async function sendDailyReminders(now = new Date()) {
     );
     if (!claim.rowCount) continue;
     const streakAlive = u.streak && u.last_active_date && (Date.parse(today) - Date.parse(u.last_active_date)) / 86_400_000 <= 2 ? u.streak : 0;
-    const title = v && !v.finale ? `🎬 Episode ${v.episode + 1} is waiting` : v?.finale ? "🎬 A new season starts today" : "🌱 Your session is ready";
+    const lang = await userLanguage(u.id);
+    const title = v && !v.finale ? msg(lang, "reminder.episode", v.episode + 1) : v?.finale ? msg(lang, "reminder.season") : msg(lang, "reminder.ready");
     const body = [
-      v && !v.finale && v.teaser ? v.teaser : "30 minutes: a new story, three scenarios and today's mission.",
-      streakAlive >= 2 ? `Keep your ${streakAlive}-day streak going 🔥` : "",
+      v && !v.finale && v.teaser ? v.teaser : msg(lang, "reminder.body"),
+      streakAlive >= 2 ? msg(lang, "reminder.streak", streakAlive) : "",
     ]
       .filter(Boolean)
       .join(" ");

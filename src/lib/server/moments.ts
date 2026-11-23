@@ -18,7 +18,7 @@ import {
 } from "@/lib/domain/moments";
 import { ACHIEVEMENTS } from "./gamification";
 import { showUpDates } from "./streaks";
-import { SocialError, itemsVisibleTo, loadSnapshots, notify, refreshSnapshot, refreshSnapshotSafe } from "./social";
+import { SocialError, itemsVisibleTo, loadSnapshots, notifyIn, refreshSnapshot, refreshSnapshotSafe } from "./social";
 
 /**
  * Moments: 24-hour progress cards friends can tap through, plus friend streaks and
@@ -220,7 +220,7 @@ export async function viewMoment(viewer: string, momentId: string, reaction?: st
   if (r && prev?.reaction !== r) {
     const [{ name }] = await q<{ name: string }>("select coalesce(nullif(display_name, ''), 'Someone') as name from public.profiles where id = $1", [viewer]);
     const emoji = REACTIONS.find((x) => x.id === r)!.emoji;
-    await notify(m.user_id, "moment_reaction", { title: `${emoji} ${name} reacted to your moment`, body: "Tap to see who else viewed it.", url: "/friends" });
+    await notifyIn(m.user_id, "moment_reaction", { title: ["moment.title", emoji, name], body: ["moment.body"], url: "/friends" });
   }
 }
 

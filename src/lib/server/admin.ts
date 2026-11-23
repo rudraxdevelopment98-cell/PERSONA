@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { getPool } from "@/lib/db/pool";
-import { notify } from "./social";
+import { notify, notifyIn } from "./social";
 
 /**
  * Admin tools. Admins are recorded in public.admins (server-only). The first
@@ -456,7 +456,7 @@ export async function grantProByEmail(actor: string, email: string, days: number
   if (!u) throw new AdminError("No account with that email.");
   const { grantPro } = await import("./plan");
   await grantPro(u.id, days, "admin");
-  await notify(u.id, "gift", { title: "🎁 You've got PERSONA 90 Pro", body: `${days} days of Pro have been added to your account. Enjoy unlimited practice!`, url: "/pricing" }).catch(() => {});
+  await notifyIn(u.id, "gift", { title: ["gift.title"], body: ["gift.body", days], url: "/pricing" }).catch(() => {});
   await audit(actor, "plan.grant", { user: u.id, label: await labelFor(u.id) }, `${days} days`);
 }
 
