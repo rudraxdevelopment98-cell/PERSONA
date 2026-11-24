@@ -167,9 +167,12 @@ export function PricingClient({
           <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">{t("Most popular")}</span>
           <p className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-primary">
             <Sparkles className="size-4" />{" "}{t("Pro")}</p>
-          <p className="mt-2 text-4xl font-extrabold">
+          <p className="mt-2 flex flex-wrap items-baseline gap-2 text-4xl font-extrabold">
             {t(priceLabel)}
             <span className="text-base font-semibold text-muted">/{cycle === "month" ? t("month") : t("year")}</span>
+            {cycle === "year" && saving > 0 && (
+              <span className="self-center rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-accent">{t("Save {0}% vs monthly", saving)}</span>
+            )}
           </p>
           <p className="text-sm text-muted">{cycle === "year" ? t("billed yearly{0}", perMonth) : t("billed monthly")}{" "}{t("· local currency and taxes at checkout")}</p>
           <p className="mt-4 text-sm">{t("A new episode every day, the AI narrator, unlimited Decision Lab, Communication Lab and AI coaching, more circles and races, and full control of your story seasons.")}</p>

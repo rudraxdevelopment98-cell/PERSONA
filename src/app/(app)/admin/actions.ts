@@ -122,9 +122,9 @@ export async function grantProAction(email: string, days: number) {
   return run((u) => admin.grantProByEmail(u, email, days));
 }
 
-export async function saveAiTiersAction(free: string, pro: string, light = "default", lightForPro = false) {
+export async function saveAiTiersAction(free: string, pro: string, light = "default", lightForPro = false, budgetUsd = 0) {
   if (typeof free !== "string" || typeof pro !== "string" || typeof light !== "string") return { error: "Pick a model for each plan." };
-  return run((u) => admin.saveAiTiers(u, free.slice(0, 80), pro.slice(0, 80), light.slice(0, 80), Boolean(lightForPro)));
+  return run((u) => admin.saveAiTiers(u, free.slice(0, 80), pro.slice(0, 80), light.slice(0, 80), Boolean(lightForPro), Number(budgetUsd) || 0));
 }
 
 export async function saveLegalAction(input: { business: string; email: string; grievanceName: string; city: string }) {

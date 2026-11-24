@@ -3,7 +3,7 @@
 export const FREE_LIMITS = {
   decisionsPerWeek: 3,
   communicationPerWeek: 3,
-  coachPerDay: 10,
+  coachPerDay: 6,
   circlesOwned: 1,
   activeRacesCreated: 2,
   /** Full daily episodes for everyone during the first week of the programme. */

@@ -49,7 +49,8 @@ function meter(model: string, input?: number, output?: number) {
 }
 
 type TierChoice = { provider: "default" | "gemini" | "gateway"; model: string };
-type TierConfig = { free?: TierChoice; pro?: TierChoice; light?: TierChoice; lightForPro?: boolean };
+/** budgetUsd: monthly hard cap on app-paid AI spend (0/undefined = no cap). */
+type TierConfig = { free?: TierChoice; pro?: TierChoice; light?: TierChoice; lightForPro?: boolean; budgetUsd?: number };
 let tierCache: { at: number; value: TierConfig } | null = null;
 
 /** Quick, structured tasks that a cheaper model handles well (feedback, check-ins, coach). */
@@ -85,6 +86,46 @@ async function tierConfig(): Promise<TierConfig> {
 
 export function clearTierCache() {
   tierCache = null;
+  budgetCache = null;
+}
+
+/**
+ * Monthly hard cap on app-paid AI. When set (admin → AI) and this month's
+ * app-paid spend has reached it, app-paid AI calls stop; users on their own
+ * key (BYO) are never affected. This protects the margin from an abuse spike
+ * or a scripted run of sign-ups. Separate from checkCostAlert, which only warns.
+ */
+let budgetCache: { at: number; spent: number } | null = null;
+
+/** App-paid spend so far this calendar month, cached briefly. */
+async function monthSpendUsd(): Promise<number> {
+  if (budgetCache && Date.now() - budgetCache.at < 60_000) return budgetCache.spent;
+  let spent = 0;
+  try {
+    const { getPool } = await import("@/lib/db/pool");
+    const { rows } = await getPool().query<{ c: number }>(
+      "select coalesce(sum(cost_usd), 0)::float8 as c from public.ai_usage where tier <> 'byo' and created_at >= date_trunc('month', now())",
+    );
+    spent = Number(rows[0]?.c ?? 0);
+  } catch {
+    spent = 0; // Never block AI because the budget check itself failed.
+  }
+  budgetCache = { at: Date.now(), spent };
+  return spent;
+}
+
+/**
+ * Throws BudgetError when the request would be app-paid and the monthly cap is
+ * reached. A BYO request (its own key) is always allowed. Call before any AI request.
+ */
+async function assertWithinBudget(): Promise<void> {
+  if (userAI.getStore()) return; // Paid by the user's own key.
+  const cap = (await tierConfig()).budgetUsd ?? 0;
+  if (!cap || cap <= 0) return;
+  if ((await monthSpendUsd()) >= cap) {
+    // "not_configured" so routes already treat it as a temporary "AI unavailable" (503) and fall back.
+    throw new AIError("The app's monthly AI budget has been reached. Connect your own AI key in Settings → Your AI to keep going, or try again next month.", "not_configured");
+  }
 }
 
 /** The provider for this request: the user's own key, else their plan's model, else the app default. */
@@ -669,6 +710,7 @@ export async function generateStructured<S extends z.ZodType>(opts: {
     }
   };
   if (opts.modelOverride) return parseAndValidate(await call({ kind: opts.modelOverride.kind, model: opts.modelOverride.model }), opts.schema);
+  await assertWithinBudget();
   const p = await resolveProvider();
   let text: string;
   try {
@@ -692,6 +734,7 @@ export async function* streamText(opts: {
   maxTokens?: number;
   language?: Language | null;
 }): AsyncGenerator<string> {
+  await assertWithinBudget();
   const p = await resolveProvider();
   const system = opts.system + languageInstruction(opts.language);
   const effort = opts.effort ?? "medium";

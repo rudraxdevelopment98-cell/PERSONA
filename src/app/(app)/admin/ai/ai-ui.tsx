@@ -9,12 +9,19 @@ import { saveAiTiersAction, saveVoiceAction, testModelAction } from "../actions"
 type Choice = { id: string; label: string; perSession: number | null };
 const money = (n: number) => (Math.abs(n) >= 100 ? `$${Math.round(n).toLocaleString()}` : `$${n.toFixed(2)}`);
 
-export function TierForm({ choices, current }: { choices: Choice[]; current: { free: string; pro: string; light: string; lightForPro: boolean } }) {
+export function TierForm({
+  choices,
+  current,
+}: {
+  choices: Choice[];
+  current: { free: string; pro: string; light: string; lightForPro: boolean; budgetUsd: number; spentUsd: number };
+}) {
   const router = useRouter();
   const [free, setFree] = useState(current.free);
   const [pro, setPro] = useState(current.pro);
   const [light, setLight] = useState(current.light);
   const [lightForPro, setLightForPro] = useState(current.lightForPro);
+  const [budget, setBudget] = useState(String(current.budgetUsd || ""));
   const [msg, setMsg] = useState<{ tone: "success" | "danger" | "warning"; text: string } | null>(null);
   const [pending, start] = useTransition();
   const label = (c: Choice) => `${c.label}${c.perSession != null ? ` · ~$${c.perSession.toFixed(3)}/session` : ""}`;
@@ -50,12 +57,32 @@ export function TierForm({ choices, current }: { choices: Choice[]; current: { f
           <input type="checkbox" className="mt-0.5 size-4 accent-[var(--color-primary)]" checked={lightForPro} onChange={(e) => setLightForPro(e.target.checked)} />
           <span>Use the everyday model for Pro users too <span className="block text-xs text-muted">Cheaper; Pro keeps its better model for stories.</span></span>
         </label>
+        <div className="md:col-span-2 space-y-1.5 rounded-xl border border-line bg-bg p-4">
+          <Label htmlFor="ai-budget">Monthly AI budget cap (USD)</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              id="ai-budget"
+              type="number"
+              min={0}
+              step="1"
+              inputMode="decimal"
+              placeholder="0 = no cap"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              className="h-9 w-40 rounded-lg border border-line bg-surface px-3 text-sm"
+            />
+            <span className="text-xs text-muted">
+              Spent this month on app-paid AI: <b className="text-ink">{money(current.spentUsd)}</b>
+              {current.budgetUsd > 0 ? ` of ${money(current.budgetUsd)}` : ""}. When the cap is hit, app-paid AI pauses until next month; users on their own key are never affected.
+            </span>
+          </div>
+        </div>
         <div className="md:col-span-2 flex flex-wrap items-center gap-3">
           <Button
             disabled={pending}
             onClick={() =>
               start(async () => {
-                const r = await saveAiTiersAction(free, pro, light, lightForPro);
+                const r = await saveAiTiersAction(free, pro, light, lightForPro, Number(budget) || 0);
                 setMsg(r.error ? { tone: "danger", text: r.error } : { tone: "success", text: "Saved. New requests use these models within a few seconds." });
                 router.refresh();
               })

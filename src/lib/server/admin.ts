@@ -464,11 +464,21 @@ export async function grantProByEmail(actor: string, email: string, days: number
 // AI models and costs
 // ---------------------------------------------------------------------------
 
-export async function aiTiers(): Promise<{ free: string; pro: string; light: string; lightForPro: boolean }> {
+export async function aiTiers(): Promise<{ free: string; pro: string; light: string; lightForPro: boolean; budgetUsd: number; spentUsd: number }> {
   type C = { provider: string; model: string };
-  const [r] = await q<{ value: { free?: C; pro?: C; light?: C; lightForPro?: boolean } }>("select value from public.app_settings where key = 'ai_tiers'");
+  const [r] = await q<{ value: { free?: C; pro?: C; light?: C; lightForPro?: boolean; budgetUsd?: number } }>("select value from public.app_settings where key = 'ai_tiers'");
   const id = (c?: C) => (!c || c.provider === "default" ? "default" : `${c.provider}:${c.model}`);
-  return { free: id(r?.value.free), pro: id(r?.value.pro), light: id(r?.value.light), lightForPro: Boolean(r?.value.lightForPro) };
+  const [spent] = await q<{ c: number }>(
+    "select coalesce(sum(cost_usd), 0)::float8 as c from public.ai_usage where tier <> 'byo' and created_at >= date_trunc('month', now())",
+  );
+  return {
+    free: id(r?.value.free),
+    pro: id(r?.value.pro),
+    light: id(r?.value.light),
+    lightForPro: Boolean(r?.value.lightForPro),
+    budgetUsd: Number(r?.value.budgetUsd ?? 0),
+    spentUsd: Number(spent?.c ?? 0),
+  };
 }
 
 /** Business name and grievance contact shown on /terms, /privacy and /refund. */
@@ -508,7 +518,7 @@ export async function saveVoice(actor: string, model: string, proPerMonth: numbe
   await audit(actor, "ai.voice", { label: `${saved.model} pro=${saved.proPerMonth}/mo free=${saved.freePerMonth}/mo` });
 }
 
-export async function saveAiTiers(actor: string, free: string, pro: string, light = "default", lightForPro = false) {
+export async function saveAiTiers(actor: string, free: string, pro: string, light = "default", lightForPro = false, budgetUsd = 0) {
   await requireAdmin(actor);
   const { TIER_CHOICES } = await import("@/lib/domain/ai-pricing");
   const pick = (id: string) => {
@@ -516,11 +526,12 @@ export async function saveAiTiers(actor: string, free: string, pro: string, ligh
     if (!c) throw new AdminError("Unknown model.");
     return { provider: c.provider, model: c.model };
   };
-  const value = { free: pick(free), pro: pick(pro), light: pick(light), lightForPro };
+  if (!Number.isFinite(budgetUsd) || budgetUsd < 0) throw new AdminError("Enter 0 (no cap) or a positive monthly budget.");
+  const value = { free: pick(free), pro: pick(pro), light: pick(light), lightForPro, budgetUsd: Math.round(budgetUsd * 100) / 100 };
   await q("insert into public.app_settings (key, value) values ('ai_tiers', $1) on conflict (key) do update set value = excluded.value", [JSON.stringify(value)]);
   const { clearTierCache } = await import("@/lib/ai/client");
   clearTierCache();
-  await audit(actor, "ai.tiers", { label: `free=${free} pro=${pro} light=${light}${lightForPro ? " (pro too)" : ""}` });
+  await audit(actor, "ai.tiers", { label: `free=${free} pro=${pro} light=${light}${lightForPro ? " (pro too)" : ""} budget=$${budgetUsd}/mo` });
 }
 
 export async function aiCosts() {
