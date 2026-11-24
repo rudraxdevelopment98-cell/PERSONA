@@ -23,6 +23,9 @@ export const MESSAGES = {
   "invite.accepted": { en: "{0} accepted your invite", hinglish: "{0} ne tumhara invite accept kiya", hi: "{0} ने आपका न्योता स्वीकार किया", gu: "{0} એ તમારું આમંત્રણ સ્વીકાર્યું" },
   "invite.body": { en: "You're now connected on PERSONA 90.", hinglish: "Ab tum PERSONA 90 par jude ho.", hi: "अब आप PERSONA 90 पर जुड़े हैं।", gu: "હવે તમે PERSONA 90 પર જોડાયેલા છો." },
 
+  "friend.request": { en: "👋 {0} wants to be friends", hinglish: "👋 {0} tumse dost banna chahte hain", hi: "👋 {0} आपसे दोस्त बनना चाहते हैं", gu: "👋 {0} તમારી સાથે મિત્ર બનવા માંગે છે" },
+  "friend.requestBody": { en: "Open your inbox to accept or decline.", hinglish: "Accept ya decline karne ke liye inbox kholo.", hi: "स्वीकार या अस्वीकार करने के लिए इनबॉक्स खोलें।", gu: "સ્વીકારવા કે નકારવા માટે ઇનબોક્સ ખોલો." },
+
   "cheer.title": { en: "{0} {1} cheered you", hinglish: "{0} {1} ne tumhe cheer kiya", hi: "{0} {1} ने आपको चीयर किया", gu: "{0} {1} એ તમને ચીયર કર્યા" },
   "race.title": { en: "🏁 {0} started a race: {1}", hinglish: "🏁 {0} ne race shuru ki: {1}", hi: "🏁 {0} ने रेस शुरू की: {1}", gu: "🏁 {0} એ રેસ શરૂ કરી: {1}" },
   "race.body": { en: "{0} Join before it ends!", hinglish: "{0} Khatam hone se pehle judo!", hi: "{0} ख़त्म होने से पहले जुड़ें!", gu: "{0} પૂરી થાય તે પહેલાં જોડાઓ!" },

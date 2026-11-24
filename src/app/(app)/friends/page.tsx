@@ -7,7 +7,10 @@ import { requireUser } from "@/lib/db/server";
 import { coverBg, streakMark } from "@/lib/domain/moments";
 import { RACE_KINDS } from "@/lib/domain/social";
 import { duoStreaks, doneToday, getProfileCard, momentFeed } from "@/lib/server/moments";
-import { getSharing, listFriends, loadSnapshots, myCircles, myRaces, nameOf, unreadCount } from "@/lib/server/social";
+import { getSharing, listFriends, loadSnapshots, myCircles, myRaces, nameOf, pendingIncoming, unreadCount } from "@/lib/server/social";
+import { suggestions } from "@/lib/server/discover";
+import { PersonRow, UserSearch } from "@/components/discover";
+import { PendingRequests } from "./requests";
 import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Friends" };
@@ -24,7 +27,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const { user } = await requireUser();
   const sp = await searchParams;
   const tab = TABS.find((it) => it.id === sp.tab)?.id ?? "friends";
-  const [friends, circles, races, sharing, unread, feed, card, name, mine] = await Promise.all([
+  const [friends, circles, races, sharing, unread, feed, card, name, mine, requests, suggested] = await Promise.all([
     listFriends(user.id),
     myCircles(user.id),
     myRaces(user.id),
@@ -34,6 +37,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     getProfileCard(user.id),
     nameOf(user.id),
     loadSnapshots([user.id]),
+    pendingIncoming(user.id),
+    suggestions(user.id),
   ]);
   const ids = friends.map((f) => f.id);
   const [duos, today] = await Promise.all([duoStreaks(user.id, ids), doneToday(ids)]);
@@ -114,6 +119,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
 
       {tab === "friends" && (
         <div className="space-y-4">
+          <UserSearch />
+          {requests.length > 0 && <PendingRequests requests={requests} />}
           {activeFriends.length > 0 && (
             <p className="text-sm text-muted">
               <b className="text-ink">{showedUp}</b> of {activeFriends.length}{" "}{t("friends showed up today")}</p>
@@ -166,6 +173,14 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
             </Card>
           )}
           <p className="px-1 text-xs text-muted">{t("🔥 Friend streak = days in a row you both checked in. ⏳ means one of you hasn't shown up today - tap it to nudge them.")}</p>
+          {suggested.length > 0 && (
+            <Card className="p-4">
+              <p className="mb-1 flex items-center gap-1.5 text-sm font-bold"><UserPlus className="size-4 text-primary" /> {t("People you may know")}</p>
+              <div className="divide-y divide-line">
+                {suggested.map((p) => <PersonRow key={p.id} p={p} />)}
+              </div>
+            </Card>
+          )}
           <div id="invite" className="scroll-mt-20">
             <InviteBox title={t("Add a friend · dono ko 7 din Pro")} text={t("Jab dost apna pehla episode poora karega, tum dono ko 7 din Pro free milega. Private link ya QR.")} />
           </div>

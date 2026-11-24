@@ -28,7 +28,7 @@ export function ProBanner({ trialAvailable }: { trialAvailable: boolean }) {
     }
   }, []);
 
-  if (!show || pathname?.startsWith("/pricing")) return null;
+  if (!show || pathname?.startsWith("/pricing") || pathname?.startsWith("/welcome")) return null;
 
   const dismiss = () => {
     setShow(false);

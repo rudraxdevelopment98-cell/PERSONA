@@ -18,10 +18,9 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
-    // Fail closed in production: an unset secret must never leave this open to the public.
-    if (process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production") {
-      return new Response("Cron is not configured.", { status: 503 });
-    }
+    // Fail closed on any Vercel deployment (VERCEL=1): a public URL with no secret
+    // must never be openly triggerable. Local/self-hosted runs stay open for testing.
+    if (process.env.VERCEL) return new Response("Cron is not configured.", { status: 503 });
   } else if (request.headers.get("authorization") !== `Bearer ${secret}`) {
     return new Response("Unauthorized", { status: 401 });
   }

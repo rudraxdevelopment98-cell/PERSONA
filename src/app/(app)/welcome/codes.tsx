@@ -33,7 +33,7 @@ export function WelcomeCodes({ email }: { email: string }) {
         )}
       </div>
       <p className="mt-4 text-sm text-muted">{t("Tip: also set two backup security questions in")}{" "}<span className="font-semibold text-ink">{t("Settings → Backup security questions")}</span>{t(", in case you lose these codes.")}</p>
-      <ButtonLink href="/dashboard" className="mt-6">{t("I've saved them - continue")}{" "}<ArrowRight className="size-4" />
+      <ButtonLink href="/welcome/profile" className="mt-6">{t("I've saved them - continue")}{" "}<ArrowRight className="size-4" />
       </ButtonLink>
     </>
   );

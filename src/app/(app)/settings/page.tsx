@@ -4,6 +4,8 @@ import { getConnectionSummary } from "@/lib/server/ai-connection";
 import { recoveryStatus, securityQuestionsSet } from "@/lib/server/recovery";
 import { getUserState } from "@/lib/server/state";
 import { SettingsForm } from "./form";
+import { ProfilePrivacy } from "./profile-privacy";
+import { getDiscovery } from "@/lib/server/discover";
 import { SecuritySettings } from "./security";
 import { YourAI } from "./your-ai";
 import { ThemeSetting } from "@/components/theme-toggle";
@@ -22,7 +24,12 @@ const APP_PROVIDER_NAMES: Record<string, string> = {
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ ai?: string; ai_error?: string }> }) {
   const t = await getT();
   const [{ db, user, state }, params] = await Promise.all([getUserState(), searchParams]);
-  const [connection, recovery, questions] = await Promise.all([getConnectionSummary(db, user.id), recoveryStatus(db, user.id), securityQuestionsSet(db, user.id)]);
+  const [connection, recovery, questions, discovery] = await Promise.all([
+    getConnectionSummary(db, user.id),
+    recoveryStatus(db, user.id),
+    securityQuestionsSet(db, user.id),
+    getDiscovery(user.id),
+  ]);
   const app = appProvider();
   return (
     <>
@@ -42,6 +49,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         notice={params.ai === "connected" ? t("OpenRouter connected. Your sessions now use your own AI.") : null}
         error={params.ai_error ?? null}
       />
+      <ProfilePrivacy current={discovery} />
       <div className="mb-6">
         <SecuritySettings remaining={recovery.remaining} email={state.email ?? ""} questions={questions} />
       </div>

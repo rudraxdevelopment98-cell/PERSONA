@@ -862,3 +862,79 @@ export async function socialStats(userId: string) {
   return r;
 }
 
+
+// ---------------------------------------------------------------------------
+// Friend requests (discovery): pending → accepted
+// ---------------------------------------------------------------------------
+
+export type FriendState = "self" | "friends" | "pending_out" | "pending_in" | "blocked" | "none";
+
+/** The relationship between the viewer and another person, for rendering a connect button. */
+export async function friendState(viewer: string, other: string): Promise<FriendState> {
+  if (viewer === other) return "self";
+  const [lo, hi] = pair(viewer, other);
+  const [r] = await q<{ status: string; requested_by: string | null; blocked_by: string | null }>(
+    "select status, requested_by, blocked_by from public.friendships where user_low = $1 and user_high = $2",
+    [lo, hi],
+  );
+  if (!r) return "none";
+  if (r.status === "accepted") return "friends";
+  if (r.status === "blocked") return "blocked";
+  if (r.status === "pending") return r.requested_by === viewer ? "pending_out" : "pending_in";
+  return "none";
+}
+
+/** Sends a friend request (or accepts instantly if the other person already requested you). */
+export async function sendFriendRequest(from: string, to: string): Promise<{ state: FriendState }> {
+  if (from === to) throw new SocialError("You can't add yourself.");
+  const [lo, hi] = pair(from, to);
+  const [existing] = await q<{ status: string; requested_by: string | null }>(
+    "select status, requested_by from public.friendships where user_low = $1 and user_high = $2",
+    [lo, hi],
+  );
+  if (existing?.status === "accepted") return { state: "friends" };
+  if (existing?.status === "blocked") throw new SocialError("You can't send a request to this person.");
+  if (existing?.status === "pending") {
+    if (existing.requested_by === from) return { state: "pending_out" };
+    // They already requested you → accept it.
+    await q("update public.friendships set status = 'accepted', requested_by = null, updated_at = now() where user_low = $1 and user_high = $2", [lo, hi]);
+    await notifyIn(to, "friend_accepted", { title: ["invite.accepted", await nameOf(from)], body: ["invite.body"], url: "/friends" });
+    return { state: "friends" };
+  }
+  await q("insert into public.friendships (user_low, user_high, status, requested_by) values ($1, $2, 'pending', $3)", [lo, hi, from]);
+  await notifyIn(to, "friend_request", { title: ["friend.request", await nameOf(from)], body: ["friend.requestBody"], url: "/inbox" });
+  return { state: "pending_out" };
+}
+
+/** Accepts or declines an incoming request from `other`. */
+export async function respondRequest(userId: string, other: string, accept: boolean): Promise<void> {
+  const [lo, hi] = pair(userId, other);
+  const [r] = await q<{ status: string; requested_by: string | null }>(
+    "select status, requested_by from public.friendships where user_low = $1 and user_high = $2",
+    [lo, hi],
+  );
+  if (!r || r.status !== "pending" || r.requested_by !== other) throw new SocialError("That request is no longer available.");
+  if (accept) {
+    await q("update public.friendships set status = 'accepted', requested_by = null, updated_at = now() where user_low = $1 and user_high = $2", [lo, hi]);
+    await notifyIn(other, "friend_accepted", { title: ["invite.accepted", await nameOf(userId)], body: ["invite.body"], url: "/friends" });
+  } else {
+    await q("delete from public.friendships where user_low = $1 and user_high = $2 and status = 'pending'", [lo, hi]);
+  }
+}
+
+/** Cancels a request the viewer sent. */
+export async function cancelRequest(userId: string, other: string): Promise<void> {
+  const [lo, hi] = pair(userId, other);
+  await q("delete from public.friendships where user_low = $1 and user_high = $2 and status = 'pending' and requested_by = $3", [lo, hi, userId]);
+}
+
+/** Incoming friend requests waiting for the user. */
+export async function pendingIncoming(userId: string) {
+  return q<{ id: string; name: string; avatar_emoji: string | null; cover: string | null; since: string }>(
+    `select f.requested_by as id, coalesce(nullif(p.display_name, ''), 'Member') as name, p.avatar_emoji, p.cover, f.created_at as since
+       from public.friendships f join public.profiles p on p.id = f.requested_by
+      where (f.user_low = $1 or f.user_high = $1) and f.status = 'pending' and f.requested_by <> $1
+      order by f.created_at desc`,
+    [userId],
+  );
+}
