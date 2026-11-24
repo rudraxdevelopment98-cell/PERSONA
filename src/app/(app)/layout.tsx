@@ -7,6 +7,7 @@ import { getPlan } from "@/lib/server/plan";
 import { getUserState } from "@/lib/server/state";
 import { InviteBanner } from "./invite-banner";
 import { ConsentBanner } from "./consent-banner";
+import { ProBanner } from "./pro-banner";
 import { VoiceLangProvider } from "@/components/voice-input";
 import { hasAcceptedLegal } from "@/lib/server/legal";
 import { getT } from "@/lib/i18n/server";
@@ -51,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               text={invite.info.kind === "circle" ? t("{0} invited you to join {1}", invite.info.inviterName ?? "", invite.info.circleName ?? "") : t("{0} invited you to be friends", invite.info.inviterName ?? "")}
             />
           )}
+          {agreed && !invite && plan?.plan === "free" && <ProBanner trialAvailable={Boolean(plan.trialAvailable)} />}
           {children}
         </div>
       </main>
