@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   // Relative redirects keep the user on the host they came from.
   const go = (path: string) => new Response(null, { status: 303, headers: { Location: path } });
-  const done = (query: string) => go(`/settings?${query}#your-ai`);
+  const done = (query: string) => go(`/settings/ai?${query}#your-ai`);
 
   const user = await getSessionUser();
   if (!user) return go("/login");

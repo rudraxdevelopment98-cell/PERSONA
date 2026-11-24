@@ -38,6 +38,14 @@ export async function updateSettings(input: z.infer<typeof schema>): Promise<{ e
   return {};
 }
 
+export async function setCoachJournal(allowed: boolean): Promise<{ error?: string }> {
+  const { db, user } = await requireUser();
+  const { error } = await db.from("profiles").update({ coach_journal_access: Boolean(allowed) }).eq("id", user.id);
+  if (error) return { error: "Could not save settings." };
+  revalidatePath("/coach");
+  return {};
+}
+
 export async function setLanguage(language: string): Promise<{ error?: string }> {
   const parsed = z.enum(LANGUAGE_IDS).safeParse(language);
   if (!parsed.success) return { error: "Unknown language." };

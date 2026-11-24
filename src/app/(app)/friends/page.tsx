@@ -172,7 +172,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
               })}
             </Card>
           )}
-          <p className="px-1 text-xs text-muted">{t("🔥 Friend streak = days in a row you both checked in. ⏳ means one of you hasn't shown up today - tap it to nudge them.")}</p>
+          {friends.length > 0 && <p className="px-1 text-xs text-muted">{t("🔥 Friend streak = days in a row you both checked in. ⏳ means one of you hasn't shown up today - tap it to nudge them.")}</p>}
           {suggested.length > 0 && (
             <Card className="p-4">
               <p className="mb-1 flex items-center gap-1.5 text-sm font-bold"><UserPlus className="size-4 text-primary" /> {t("People you may know")}</p>
