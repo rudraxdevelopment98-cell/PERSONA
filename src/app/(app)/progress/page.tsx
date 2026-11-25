@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AnimatedNumber } from "@/components/motion";
 import { BaselineGate } from "@/components/baseline-gate";
 import { ScoreBars } from "@/components/score-bars";
 import { Card, CardHeader, Delta, PageHeader, Stat, cx } from "@/components/ui";
@@ -50,10 +51,10 @@ export default async function ProgressPage() {
       {header}
       <div className="space-y-6">
         <Card className="grid grid-cols-2 gap-6 p-5 sm:grid-cols-4">
-          <Stat label={t("Overall score")} value={overall} hint={<>{t("Baseline")}{" "}{baselineOverall} · <Delta value={overall - baselineOverall} /></>} />
-          <Stat label={t("Sessions completed")} value={completedSessions} hint={t("{0} day{1} into the programme", state.day, state.day === 1 ? "" : "s")} />
-          <Stat label={t("Challenges done")} value={challenges} hint={t("real-world")} />
-          <Stat label={t("Consistency")} value={consistency == null ? "–" : `${Math.round(consistency)}%`} hint={t("completion since day 1")} />
+          <Stat label={t("Overall score")} value={<AnimatedNumber value={overall} />} hint={<>{t("Baseline")}{" "}{baselineOverall} · <Delta value={overall - baselineOverall} /></>} />
+          <Stat label={t("Sessions completed")} value={<AnimatedNumber value={completedSessions} />} hint={t("{0} day{1} into the programme", state.day, state.day === 1 ? "" : "s")} />
+          <Stat label={t("Challenges done")} value={<AnimatedNumber value={challenges} />} hint={t("real-world")} />
+          <Stat label={t("Consistency")} value={consistency == null ? "–" : <AnimatedNumber value={Math.round(consistency)} suffix="%" />} hint={t("completion since day 1")} />
         </Card>
 
         <Card className="space-y-3 p-5">

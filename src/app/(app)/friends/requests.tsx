@@ -5,6 +5,7 @@ import { Check, X } from "lucide-react";
 import { FaceAvatar } from "@/components/moments";
 import { Button, Card, Spinner } from "@/components/ui";
 import { useT } from "@/lib/i18n/client";
+import { haptic } from "@/components/motion";
 import { respondRequestAction } from "../discover-actions";
 
 type Req = { id: string; name: string; avatar_emoji: string | null; cover: string | null; since: string };
@@ -15,6 +16,7 @@ export function PendingRequests({ requests }: { requests: Req[] }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [, start] = useTransition();
   const respond = (id: string, accept: boolean) => {
+    haptic();
     setBusy(id);
     start(async () => {
       await respondRequestAction(id, accept);

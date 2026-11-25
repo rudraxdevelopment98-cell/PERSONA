@@ -9,6 +9,7 @@ import { Alert, Button, Input, cx } from "./ui";
 import { COVERS, CAPTION_MAX, MOMENT_LABEL, REACTIONS, coverBg, momentFace, reactionEmoji, type MomentData, type MomentKind } from "@/lib/domain/moments";
 import { cheerAction, nudgeAction, deleteMomentAction, momentOptionsAction, momentViewersAction, postMomentAction, viewMomentAction } from "@/app/(app)/friends/actions";
 import { useT } from "@/lib/i18n/client";
+import { haptic } from "./motion";
 
 const initials = (name: string) =>
   name
@@ -535,7 +536,8 @@ export function QuickCheer({ to, name, circleId = null }: { to: string; name: st
   const [sent, setSent] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const send = (kind: string, emoji: string) =>
+  const send = (kind: string, emoji: string) => {
+    haptic();
     start(async () => {
       const r = await cheerAction({ to, kind, circleId });
       setOpen(false);
@@ -544,6 +546,7 @@ export function QuickCheer({ to, name, circleId = null }: { to: string; name: st
         setTimeout(() => setErr(null), 2500);
       } else setSent(emoji);
     });
+  };
   return (
     <div className="relative shrink-0">
       <button

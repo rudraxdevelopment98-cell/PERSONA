@@ -10,6 +10,7 @@ import { duoStreaks, doneToday, getProfileCard, momentFeed } from "@/lib/server/
 import { getSharing, listFriends, loadSnapshots, myCircles, myRaces, nameOf, pendingIncoming, unreadCount } from "@/lib/server/social";
 import { suggestions } from "@/lib/server/discover";
 import { PersonRow, UserSearch } from "@/components/discover";
+import { Reveal } from "@/components/motion";
 import { PendingRequests } from "./requests";
 import { getT } from "@/lib/i18n/server";
 
@@ -177,7 +178,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
             <Card className="p-4">
               <p className="mb-1 flex items-center gap-1.5 text-sm font-bold"><UserPlus className="size-4 text-primary" /> {t("People you may know")}</p>
               <div className="divide-y divide-line">
-                {suggested.map((p) => <PersonRow key={p.id} p={p} />)}
+                {suggested.map((p, i) => <Reveal key={p.id} delay={i * 50}><PersonRow p={p} /></Reveal>)}
               </div>
             </Card>
           )}

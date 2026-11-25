@@ -6,6 +6,7 @@ import { FaceAvatar } from "./moments";
 import { cx } from "./ui";
 import type { PollView } from "@/lib/server/poll";
 import { useT } from "@/lib/i18n/client";
+import { haptic } from "@/components/motion";
 
 const LETTERS = ["A", "B", "C"];
 
@@ -19,6 +20,7 @@ export function DailyPoll({ initial }: { initial: PollView }) {
 
   const vote = async (i: number) => {
     if (voted || busy !== null) return;
+    haptic();
     setBusy(i);
     setError(null);
     try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatedNumber } from "@/components/motion";
 import { enablePush, pushState } from "@/lib/client/push";
 import { Flame, Sparkles, Trophy, X, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
@@ -32,6 +33,7 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     closeRef.current?.focus();
+    try { navigator.vibrate?.([18, 40, 18, 40, 30]); } catch { /* ignore */ }
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
@@ -59,7 +61,7 @@ export function CelebrationOverlay({ data, onClose }: { data: Celebration; onClo
           <div className="mt-5 grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-white/10 py-3">
               <Zap className="mx-auto size-5 text-teal-300" />
-              <p className="mt-1 text-xl font-extrabold tabular-nums">+{data.xpGained}</p>
+              <p className="mt-1 text-xl font-extrabold tabular-nums"><AnimatedNumber value={data.xpGained} prefix="+" /></p>
               <p className="text-[11px] text-white/70">{t("XP today")}</p>
             </div>
             <div className="rounded-2xl bg-white/10 py-3">

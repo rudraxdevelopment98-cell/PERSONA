@@ -9,6 +9,7 @@ import { getUserState } from "@/lib/server/state";
 import { getProfileCard } from "@/lib/server/moments";
 import { FaceAvatar } from "@/components/moments";
 import { coverBg } from "@/lib/domain/moments";
+import { AnimatedNumber } from "@/components/motion";
 import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Me" };
@@ -49,12 +50,15 @@ export default async function MePage() {
           {card.bio && <p className="mt-3 text-sm">{card.bio}</p>}
           <div className="mt-5 grid grid-cols-3 text-center">
             {[
-              { v: stats.xp, l: "XP" },
-              { v: stats.streak, l: "Day streak" },
-              { v: stats.sessionsCompleted, l: "Sessions" },
+              { v: stats.xp, l: "XP", flame: false },
+              { v: stats.streak, l: "Day streak", flame: stats.streak > 0 },
+              { v: stats.sessionsCompleted, l: "Sessions", flame: false },
             ].map((s) => (
               <div key={s.l}>
-                <p className="text-xl font-extrabold tabular-nums">{s.v}</p>
+                <p className="text-xl font-extrabold tabular-nums">
+                  {s.flame && <span className="flame mr-0.5 inline-block">🔥</span>}
+                  <AnimatedNumber value={s.v} />
+                </p>
                 <p className="text-xs text-muted">{t(s.l)}</p>
               </div>
             ))}

@@ -151,7 +151,7 @@ export function AppNav({
             </span>
             <span className="flex items-center gap-2 text-xs text-muted">
               <span className="inline-flex items-center gap-0.5 font-semibold text-sun">
-                <Flame className="size-3.5" />
+                <Flame className={`size-3.5 ${stats.streak > 0 ? "flame" : ""}`} />
                 {stats.streak}
               </span>
               {day > 0 ? t("Day {0}/90", day) : ""}
@@ -180,7 +180,7 @@ export function AppNav({
         </Link>
         <div className="flex items-center gap-0.5">
           <Link href="/achievements" aria-label={t("{0}-day streak", stats.streak)} className="mr-1 inline-flex items-center gap-1 rounded-full bg-sun-soft px-2.5 py-1 text-xs font-bold text-warning">
-            <Flame className="size-3.5" /> {stats.streak}
+            <Flame className={`size-3.5 ${stats.streak > 0 ? "flame" : ""}`} /> {stats.streak}
           </Link>
           <LanguageMenu value={language} />
           <BellLink unread={unread} />

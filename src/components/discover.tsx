@@ -6,6 +6,7 @@ import { Check, Search, UserPlus, X } from "lucide-react";
 import { FaceAvatar } from "./moments";
 import { Button, Spinner, cx } from "./ui";
 import { useT } from "@/lib/i18n/client";
+import { haptic } from "./motion";
 import type { PersonResult } from "@/lib/server/discover";
 import type { FriendState } from "@/lib/server/social";
 import { cancelRequestAction, respondRequestAction, searchUsersAction, sendRequestAction } from "@/app/(app)/discover-actions";
@@ -15,11 +16,13 @@ export function ConnectButton({ otherId, state: initial, compact }: { otherId: s
   const t = useT();
   const [state, setState] = useState<FriendState>(initial);
   const [pending, start] = useTransition();
-  const act = (fn: () => Promise<{ error?: string }>, next: FriendState) =>
+  const act = (fn: () => Promise<{ error?: string }>, next: FriendState) => {
+    haptic();
     start(async () => {
       const r = await fn();
       if (!r?.error) setState(next);
     });
+  };
 
   if (state === "self" || state === "blocked") return null;
   if (state === "friends") return <span className="inline-flex items-center gap-1 text-sm font-semibold text-accent"><Check className="size-4" /> {t("Friends")}</span>;

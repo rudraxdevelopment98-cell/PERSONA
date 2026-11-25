@@ -64,7 +64,7 @@ export default async function AchievementsPage() {
           {ACHIEVEMENTS.map((a) => {
             const got = earned.has(a.code);
             return (
-              <div key={a.code} title={t(a.description)} className={cx("rounded-2xl border p-4 text-center transition", got ? "border-sun/40 bg-sun-soft/60" : "border-line bg-bg/60")}>
+              <div key={a.code} title={t(a.description)} className={cx("press rounded-2xl border p-4 text-center transition hover:-translate-y-0.5", got ? "border-sun/40 bg-sun-soft/60" : "border-line bg-bg/60")}>
                 <span
                   className={cx(
                     "mx-auto flex size-12 items-center justify-center rounded-full",

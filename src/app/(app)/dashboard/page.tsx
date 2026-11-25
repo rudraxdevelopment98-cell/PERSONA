@@ -150,7 +150,8 @@ export default async function Dashboard() {
       {/* Today's episode: the one thing to do */}
       <Link href="/today" className="group block">
         <section className="bg-brand relative overflow-hidden rounded-[28px] p-5 text-white shadow-raised transition-transform group-active:scale-[0.99] sm:p-7">
-          <div className="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full bg-white/10 blur-2xl" />
+          <div className="float-y pointer-events-none absolute -right-10 -top-16 size-48 rounded-full bg-white/10 blur-2xl" />
+          <div className="float-y pointer-events-none absolute -bottom-20 -left-12 size-40 rounded-full bg-accent/20 blur-2xl" style={{ animationDelay: "1.4s" }} />
           <p className="text-xs font-bold uppercase tracking-wider text-white/70">
             {series ? t(series.label) : t("Phase {0} · {1}", focus.phase.number, t(focus.phase.name))}
           </p>

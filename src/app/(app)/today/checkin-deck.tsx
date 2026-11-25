@@ -6,6 +6,7 @@ import { Alert, Button, Spinner, cx } from "@/components/ui";
 import type { CheckinQuestion } from "@/lib/ai/schemas";
 import { MOMENT_TAGS } from "@/lib/domain/moment";
 import { VoiceTextarea } from "@/components/voice-input";
+import { haptic } from "@/components/motion";
 import { useT } from "@/lib/i18n/client";
 
 type Answers = Record<string, string | number>;
@@ -202,6 +203,7 @@ export function CheckinDeck({
   const allDone = questions.every(answered);
   const set = (v: string | number) => setAnswers((a) => ({ ...a, [q.id]: v }));
   const pick = (o: string) => {
+    haptic();
     set(o);
     if (advance.current) clearTimeout(advance.current);
     const from = i;
