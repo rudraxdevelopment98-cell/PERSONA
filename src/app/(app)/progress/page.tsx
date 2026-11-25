@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AnimatedNumber } from "@/components/motion";
 import { BaselineGate } from "@/components/baseline-gate";
-import { ScoreBars } from "@/components/score-bars";
+import { SkillsDial } from "@/components/skills-dial";
 import { Card, CardHeader, Delta, PageHeader, Stat, cx } from "@/components/ui";
 import { DIMENSION_META, type Dimension } from "@/lib/domain/dimensions";
 import { PROGRAMME_LENGTH } from "@/lib/domain/programme";
@@ -79,19 +79,17 @@ export default async function ProgressPage() {
           </Card>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader title={t("Your 10 skills")} description={t("Scroll the list — the ring follows each skill.")} />
+          <div className="px-5 py-5">
+            <SkillsDial rows={state.skills} />
+          </div>
+        </Card>
+        {history.length >= 2 && (
           <Card>
-            <CardHeader title={t("Your 10 skills")} description={t("Bar = now · line = where you started")} />
-            <div className="px-5 py-5">
-              <ScoreBars rows={state.skills} />
-            </div>
+            <SkillTrend history={history} baselines={baselines} />
           </Card>
-          {history.length >= 2 && (
-            <Card>
-              <SkillTrend history={history} baselines={baselines} />
-            </Card>
-          )}
-        </div>
+        )}
 
         <Card>
           <details className="group">
