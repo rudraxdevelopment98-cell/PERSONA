@@ -31,7 +31,7 @@ export function ScoreBars({ rows }: { rows: Row[] }) {
           </div>
           <div className="relative h-2.5 rounded-full bg-primary-soft">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-[width] duration-[900ms] ease-out"
+              className="h-full rounded-full bg-accent transition-[width] duration-[900ms] ease-out"
               style={{ width: `${grown ? r.current : 0}%`, transitionDelay: `${Math.min(i * 60, 480)}ms` }}
             />
             {r.baseline != null && (
