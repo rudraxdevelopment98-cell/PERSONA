@@ -302,3 +302,7 @@ input[type="range"] {
   .animate-shimmer, .flame, .pop-in, .float-y { animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
 }
+
+/* Hide scrollbars on flick-pickers while keeping them scrollable. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

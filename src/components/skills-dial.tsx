@@ -7,37 +7,31 @@ import { useT } from "@/lib/i18n/client";
 
 type Row = { dimension: Dimension; current: number; baseline?: number };
 
+const H = 240; // picker height
+const ITEM = 48; // row height / scroll step
+const PAD = (H - ITEM) / 2;
+const ANGLE = 18; // degrees between items on the cylinder
+const RADIUS = 168; // cylinder radius (px)
+
 /**
- * A rotary skills dial. A big wheel sits anchored off the left edge — only its
- * right rim shows. Scrolling through the section spins the wheel: the skill at
- * the centre-right is active (big, dark, with its score), the others curve up
- * and down the rim, greyed and fading. Reduced-motion safe (it is scroll-driven).
+ * Skills wheel: a value ring on the left + an iOS-style 3-D picker on the right.
+ * Flick the wheel to turn it — the skill in the centre band is active (crisp, in
+ * the ring); the others tilt back and fade on the cylinder. Snaps to each skill.
  */
 export function SkillsDial({ rows }: { rows: Row[] }) {
   const t = useT();
   const sorted = [...rows].sort((a, b) => DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension));
   const n = sorted.length;
 
-  const DIAL_H = 290; // visible dial height
-  const STEP_PX = 66; // scroll distance per skill
-  const R = 360; // wheel radius
-  const STEP_DEG = 17; // angle between skills on the rim
-  const MAX_DEG = 52; // past this the label is hidden
-  const cxp = -R * 0.76; // wheel centre, pushed well off the left edge so labels have room
-  const cyp = DIAL_H / 2;
-
-  const outerRef = useRef<HTMLDivElement>(null);
-  const [af, setAf] = useState(0); // active position, fractional
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [af, setAf] = useState(0);
 
   useEffect(() => {
-    const el = outerRef.current;
+    const el = scrollRef.current;
     if (!el) return;
     let ticking = false;
     const run = () => {
-      const top = el.getBoundingClientRect().top;
-      const total = el.offsetHeight - DIAL_H;
-      const p = Math.max(0, Math.min(1, -top / Math.max(1, total)));
-      setAf(p * (n - 1));
+      setAf(el.scrollTop / ITEM);
       ticking = false;
     };
     const onScroll = () => {
@@ -45,55 +39,78 @@ export function SkillsDial({ rows }: { rows: Row[] }) {
       ticking = true;
       requestAnimationFrame(run);
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    run();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, [n]);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   const active = Math.max(0, Math.min(n - 1, Math.round(af)));
   const a = sorted[active];
+  const size = 120;
+  const stroke = 11;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
 
   return (
-    // Tall section: scrolling through it turns the dial.
-    <div ref={outerRef} className="relative" style={{ height: DIAL_H + (n - 1) * STEP_PX }}>
-      <div className="sticky top-16 overflow-hidden" style={{ height: DIAL_H }}>
-        {/* Wheel rim (the right edge of a big circle; the left half is clipped away) */}
-        <svg className="pointer-events-none absolute inset-0" width="100%" height={DIAL_H} aria-hidden>
-          <circle cx={cxp} cy={cyp} r={R} fill="none" stroke="var(--color-line)" strokeWidth={2} />
-          <circle cx={cxp} cy={cyp} r={R - 10} fill="none" stroke="var(--color-primary-soft)" strokeWidth={2} strokeDasharray="2 8" />
+    <div className="grid grid-cols-[120px_1fr] items-center gap-3 sm:gap-5">
+      {/* Value ring */}
+      <div className="relative justify-self-center" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-primary-soft)" strokeWidth={stroke} />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke="var(--color-accent)"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - a.current / 100)}
+            style={{ transition: "stroke-dashoffset 0.35s cubic-bezier(0.2,0.7,0.2,1)" }}
+          />
         </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[2rem] font-extrabold leading-none tabular-nums">{Math.round(a.current)}</span>
+          {a.baseline != null && <span className="mt-0.5"><Delta value={a.current - a.baseline} /></span>}
+        </div>
+      </div>
 
-        {/* Skill labels riding the rim */}
-        {sorted.map((row, i) => {
-          const deg = (i - af) * STEP_DEG;
-          if (Math.abs(deg) > MAX_DEG) return null;
-          const rad = (deg * Math.PI) / 180;
-          const x = cxp + R * Math.cos(rad);
-          const y = cyp + R * Math.sin(rad);
-          const far = Math.abs(deg) / MAX_DEG; // 0 centre … 1 edge
-          const isA = i === active && Math.abs(deg) < STEP_DEG / 2;
-          return (
-            <div
-              key={row.dimension}
-              className="absolute flex items-center gap-2 will-change-transform"
-              style={{ left: x, top: y, transform: `translateY(-50%) scale(${isA ? 1 : 1 - far * 0.25})`, opacity: isA ? 1 : Math.max(0.18, 0.85 - far * 0.8) }}
-            >
-              <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full border-2 border-surface", isA ? "bg-accent" : "bg-line")} />
-              <span className={cx("whitespace-nowrap font-semibold leading-tight", isA ? "text-base text-ink" : "text-sm text-muted")}>
-                {t(DIMENSION_META[row.dimension].label)}
-              </span>
-            </div>
-          );
-        })}
+      {/* 3-D flick wheel of skill names */}
+      <div className="relative overflow-hidden" style={{ height: H, perspective: 1000 }}>
+        {/* fade top & bottom */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-16 bg-gradient-to-b from-surface to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-surface to-transparent" />
+        {/* centre selection band */}
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 z-0 h-12 -translate-y-1/2 rounded-xl border-y border-line/70 bg-accent-soft/40" />
 
-        {/* Active skill's score, pinned at the dial's centre-right */}
-        <div className="absolute flex items-center gap-2" style={{ left: cxp + R + 14, top: cyp + 30, transform: "translateY(-50%)" }}>
-          <span key={active} className="animate-pop text-4xl font-extrabold tabular-nums text-accent">{Math.round(a.current)}</span>
-          {a.baseline != null && <Delta value={a.current - a.baseline} />}
+        {/* the rotating names */}
+        <div className="pointer-events-none absolute inset-0 z-10" style={{ transformStyle: "preserve-3d" }}>
+          {sorted.map((row, i) => {
+            const ang = (i - af) * ANGLE;
+            if (Math.abs(ang) > 84) return null;
+            const isA = i === active && Math.abs(ang) < ANGLE / 2;
+            const op = Math.max(0, Math.cos((ang * Math.PI) / 180));
+            return (
+              <div
+                key={row.dimension}
+                className="absolute inset-x-0 top-1/2 flex h-12 -translate-y-1/2 items-center px-3"
+                style={{ transform: `rotateX(${ang}deg) translateZ(${RADIUS}px)`, opacity: isA ? 1 : op * 0.8, backfaceVisibility: "hidden" }}
+              >
+                <span className={cx("whitespace-nowrap font-bold leading-tight", isA ? "text-lg text-ink" : "text-base font-semibold text-muted")}>
+                  {t(DIMENSION_META[row.dimension].label)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* transparent scroll surface that drives the wheel (flick to turn) */}
+        <div ref={scrollRef} className="no-scrollbar absolute inset-0 z-30 snap-y snap-mandatory overflow-y-scroll overscroll-contain" aria-label={t("Your 10 skills")}>
+          <div style={{ paddingTop: PAD, paddingBottom: PAD }}>
+            {sorted.map((row) => (
+              <div key={row.dimension} className="snap-center" style={{ height: ITEM }} aria-label={t(DIMENSION_META[row.dimension].label)} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
