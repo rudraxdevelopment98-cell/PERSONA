@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n/client";
 
 type Row = { dimension: Dimension; current: number; baseline?: number };
 
-const ARC = 0.74; // fraction of the circle that is drawn (the rest is the open gap at the bottom)
+const ARC = 0.5; // half ring: the left semicircle, open toward the list on the right
 
 /**
  * Interactive skills dial: an open "C" gauge on the side + a wheel-style list.
@@ -60,23 +60,22 @@ export function SkillsDial({ rows }: { rows: Row[] }) {
     };
   }, [n]);
 
-  const size = 180;
+  const size = 140;
   const stroke = 13;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const a = sorted[active];
   const cur = a?.current ?? 0;
   const ease = "cubic-bezier(0.2, 0.7, 0.2, 1)";
-  // Dots sit along the drawn arc. With the svg rotated 135°, the arc runs from
-  // the bottom-left, over the top, to the bottom-right (gap centred at the bottom).
-  const dotAngle = (i: number) => 135 + (i / (n - 1)) * (ARC * 360);
+  // Dots sit along the left semicircle: bottom → left → top (screen angles).
+  const dotAngle = (i: number) => 90 + (i / (n - 1)) * 180;
 
   return (
-    <div className="grid gap-6 sm:grid-cols-[200px_1fr]">
-      {/* Open gauge */}
-      <div className="sticky top-20 z-10 self-start justify-self-center py-1">
+    <div className="grid grid-cols-[108px_1fr] gap-2 sm:grid-cols-[132px_1fr] sm:gap-5">
+      {/* Left half-ring gauge, open towards the list */}
+      <div className="sticky top-24 z-10 -ml-1 self-start">
         <div ref={ringRef} className="relative" style={{ width: size, height: size }}>
-          <svg width={size} height={size} style={{ transform: "rotate(135deg)" }}>
+          <svg width={size} height={size} style={{ transform: "rotate(90deg)" }}>
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-primary-soft)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${ARC * c} ${c}`} />
             <circle
               cx={size / 2}
@@ -104,8 +103,8 @@ export function SkillsDial({ rows }: { rows: Row[] }) {
             );
           })}
           {/* Centre: score, delta, name */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
-            <span key={active} className="animate-pop text-[2.6rem] font-extrabold leading-none tabular-nums">{Math.round(cur)}</span>
+          <div className="absolute inset-y-0 left-0 flex w-[70%] flex-col items-center justify-center text-center">
+            <span key={active} className="animate-pop text-[2rem] font-extrabold leading-none tabular-nums">{Math.round(cur)}</span>
             {a?.baseline != null && <span className="mt-0.5"><Delta value={cur - a.baseline} /></span>}
             <span className="mt-1 text-[11px] font-bold uppercase leading-tight tracking-wide text-muted">{t(DIMENSION_META[a.dimension].label)}</span>
           </div>
