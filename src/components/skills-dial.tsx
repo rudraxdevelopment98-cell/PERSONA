@@ -7,138 +7,94 @@ import { useT } from "@/lib/i18n/client";
 
 type Row = { dimension: Dimension; current: number; baseline?: number };
 
-const ARC = 0.5; // half ring: the left semicircle, open toward the list on the right
-
 /**
- * Interactive skills dial: an open "C" gauge on the side + a wheel-style list.
- * The item nearest the gauge's centre is the active one — the gauge fills to its
- * value, its dot lights up, and the list items fade and shrink away from the centre
- * like a scroll wheel. Reduced-motion safe.
+ * A rotary skills dial. A big wheel sits anchored off the left edge — only its
+ * right rim shows. Scrolling through the section spins the wheel: the skill at
+ * the centre-right is active (big, dark, with its score), the others curve up
+ * and down the rim, greyed and fading. Reduced-motion safe (it is scroll-driven).
  */
 export function SkillsDial({ rows }: { rows: Row[] }) {
   const t = useT();
   const sorted = [...rows].sort((a, b) => DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension));
   const n = sorted.length;
-  const [active, setActive] = useState(0);
-  const ringRef = useRef<HTMLDivElement>(null);
-  const items = useRef<(HTMLDivElement | null)[]>([]);
+
+  const DIAL_H = 290; // visible dial height
+  const STEP_PX = 66; // scroll distance per skill
+  const R = 360; // wheel radius
+  const STEP_DEG = 17; // angle between skills on the rim
+  const MAX_DEG = 52; // past this the label is hidden
+  const cxp = -R * 0.76; // wheel centre, pushed well off the left edge so labels have room
+  const cyp = DIAL_H / 2;
+
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [af, setAf] = useState(0); // active position, fractional
 
   useEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
     let ticking = false;
-    const measure = () => {
-      const ring = ringRef.current;
-      if (!ring) return;
-      const box = ring.getBoundingClientRect();
-      const cy = box.top + box.height / 2;
-      let best = 0;
-      let bestD = Infinity;
-      items.current.forEach((el, i) => {
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        const d = Math.abs(r.top + r.height / 2 - cy);
-        if (d < bestD) {
-          bestD = d;
-          best = i;
-        }
-      });
-      setActive(best);
+    const run = () => {
+      const top = el.getBoundingClientRect().top;
+      const total = el.offsetHeight - DIAL_H;
+      const p = Math.max(0, Math.min(1, -top / Math.max(1, total)));
+      setAf(p * (n - 1));
+      ticking = false;
     };
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
-      requestAnimationFrame(() => {
-        measure();
-        ticking = false;
-      });
+      requestAnimationFrame(run);
     };
-    measure();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+    run();
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
   }, [n]);
 
-  const size = 140;
-  const stroke = 13;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
+  const active = Math.max(0, Math.min(n - 1, Math.round(af)));
   const a = sorted[active];
-  const cur = a?.current ?? 0;
-  const ease = "cubic-bezier(0.2, 0.7, 0.2, 1)";
-  // Dots sit along the left semicircle: bottom → left → top (screen angles).
-  const dotAngle = (i: number) => 90 + (i / (n - 1)) * 180;
 
   return (
-    <div className="grid grid-cols-[108px_1fr] gap-2 sm:grid-cols-[132px_1fr] sm:gap-5">
-      {/* Left half-ring gauge, open towards the list */}
-      <div className="sticky top-24 z-10 -ml-1 self-start">
-        <div ref={ringRef} className="relative" style={{ width: size, height: size }}>
-          <svg width={size} height={size} style={{ transform: "rotate(90deg)" }}>
-            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-primary-soft)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${ARC * c} ${c}`} />
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              fill="none"
-              stroke="var(--color-accent)"
-              strokeWidth={stroke}
-              strokeLinecap="round"
-              strokeDasharray={`${(cur / 100) * ARC * c} ${c}`}
-              style={{ transition: `stroke-dasharray 0.6s ${ease}` }}
-            />
-          </svg>
-          {/* Skill dots along the arc; the active one lights up */}
-          {sorted.map((row, i) => {
-            const rad = (dotAngle(i) * Math.PI) / 180;
-            const x = size / 2 + r * Math.cos(rad);
-            const y = size / 2 + r * Math.sin(rad);
-            return (
-              <span
-                key={row.dimension}
-                className={cx("absolute block rounded-full border-2 border-surface transition-all duration-300", i === active ? "size-3.5 bg-accent" : "size-2 bg-line")}
-                style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
-              />
-            );
-          })}
-          {/* Centre: score, delta, name */}
-          <div className="absolute inset-y-0 left-0 flex w-[70%] flex-col items-center justify-center text-center">
-            <span key={active} className="animate-pop text-[2rem] font-extrabold leading-none tabular-nums">{Math.round(cur)}</span>
-            {a?.baseline != null && <span className="mt-0.5"><Delta value={cur - a.baseline} /></span>}
-            <span className="mt-1 text-[11px] font-bold uppercase leading-tight tracking-wide text-muted">{t(DIMENSION_META[a.dimension].label)}</span>
-          </div>
-        </div>
-      </div>
+    // Tall section: scrolling through it turns the dial.
+    <div ref={outerRef} className="relative" style={{ height: DIAL_H + (n - 1) * STEP_PX }}>
+      <div className="sticky top-16 overflow-hidden" style={{ height: DIAL_H }}>
+        {/* Wheel rim (the right edge of a big circle; the left half is clipped away) */}
+        <svg className="pointer-events-none absolute inset-0" width="100%" height={DIAL_H} aria-hidden>
+          <circle cx={cxp} cy={cyp} r={R} fill="none" stroke="var(--color-line)" strokeWidth={2} />
+          <circle cx={cxp} cy={cyp} r={R - 10} fill="none" stroke="var(--color-primary-soft)" strokeWidth={2} strokeDasharray="2 8" />
+        </svg>
 
-      {/* Wheel-style list: the centred skill is large and active, neighbours fade away */}
-      <div className="py-6">
+        {/* Skill labels riding the rim */}
         {sorted.map((row, i) => {
-          const dist = Math.abs(i - active);
-          const opacity = i === active ? 1 : dist === 1 ? 0.7 : dist === 2 ? 0.45 : 0.3;
-          const scale = i === active ? 1 : dist === 1 ? 0.97 : 0.94;
+          const deg = (i - af) * STEP_DEG;
+          if (Math.abs(deg) > MAX_DEG) return null;
+          const rad = (deg * Math.PI) / 180;
+          const x = cxp + R * Math.cos(rad);
+          const y = cyp + R * Math.sin(rad);
+          const far = Math.abs(deg) / MAX_DEG; // 0 centre … 1 edge
+          const isA = i === active && Math.abs(deg) < STEP_DEG / 2;
           return (
             <div
               key={row.dimension}
-              ref={(el) => {
-                items.current[i] = el;
-              }}
-              className={cx("scroll-mt-24 rounded-2xl px-3 py-3 transition-all duration-300 motion-reduce:!opacity-100 motion-reduce:!scale-100", i === active && "bg-accent-soft")}
-              style={{ opacity, transform: `scale(${scale})` }}
+              className="absolute flex items-center gap-2 will-change-transform"
+              style={{ left: x, top: y, transform: `translateY(-50%) scale(${isA ? 1 : 1 - far * 0.25})`, opacity: isA ? 1 : Math.max(0.18, 0.85 - far * 0.8) }}
             >
-              <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                <span className={cx("font-semibold transition-colors", i === active ? "text-base text-accent" : "text-sm text-ink")}>{t(DIMENSION_META[row.dimension].label)}</span>
-                <span className="flex items-baseline gap-2">
-                  {row.baseline != null && <Delta value={row.current - row.baseline} />}
-                  <span className="w-9 text-right text-sm font-extrabold tabular-nums">{Math.round(row.current)}</span>
-                </span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-primary-soft">
-                <div className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out" style={{ width: `${row.current}%` }} />
-              </div>
+              <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full border-2 border-surface", isA ? "bg-accent" : "bg-line")} />
+              <span className={cx("whitespace-nowrap font-semibold leading-tight", isA ? "text-base text-ink" : "text-sm text-muted")}>
+                {t(DIMENSION_META[row.dimension].label)}
+              </span>
             </div>
           );
         })}
+
+        {/* Active skill's score, pinned at the dial's centre-right */}
+        <div className="absolute flex items-center gap-2" style={{ left: cxp + R + 14, top: cyp + 30, transform: "translateY(-50%)" }}>
+          <span key={active} className="animate-pop text-4xl font-extrabold tabular-nums text-accent">{Math.round(a.current)}</span>
+          {a.baseline != null && <Delta value={a.current - a.baseline} />}
+        </div>
       </div>
     </div>
   );
