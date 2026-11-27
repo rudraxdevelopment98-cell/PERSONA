@@ -19,7 +19,9 @@ export async function saveTargets(input: { targets: Record<string, number> | nul
     if (!Object.keys(targets).length) targets = null;
   }
 
-  const preset = input.preset && (input.preset === "custom" || targetPreset(input.preset)) ? input.preset : null;
+  // Keep the chosen profile label (any lowercase slug, e.g. a preset id or "custom"/"strategic").
+  const slug = typeof input.preset === "string" ? input.preset.toLowerCase().replace(/[^a-z_]/g, "").slice(0, 32) : "";
+  const preset = slug && (slug === "custom" || targetPreset(slug) || slug.length >= 3) ? slug : null;
 
   const { error } = await db.from("profiles").update({ skill_targets: sanitizeTargets(targets), target_preset: targets ? preset : null }).eq("id", user.id);
   if (error) return { error: "Could not save your targets." };
