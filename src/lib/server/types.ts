@@ -30,6 +30,8 @@ export type ProfileRow = {
   reminders_enabled?: boolean;
   life_stage?: string | null;
   life_areas?: string[] | null;
+  skill_targets?: Record<string, number> | null;
+  target_preset?: string | null;
   created_at: string;
 };
 

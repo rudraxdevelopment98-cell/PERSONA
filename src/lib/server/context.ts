@@ -3,6 +3,7 @@ import { lifeContextLine } from "@/lib/domain/life";
 import type { Db } from "@/lib/db/server";
 import { userData } from "@/lib/ai/prompts";
 import { DIMENSION_META } from "@/lib/domain/dimensions";
+import { focusRanking, sanitizeTargets } from "@/lib/domain/targets";
 import { PHASES } from "@/lib/domain/programme";
 import { todaysFocus, type UserState } from "./state";
 import type { CheckinRow, DecisionLogRow } from "./types";
@@ -75,6 +76,20 @@ export async function buildAIContext(
     lines.push(`\n## Current scores (0-100 development indicators; baseline -> current)`);
     for (const s of state.skills) lines.push(`- ${DIMENSION_META[s.dimension].label}: ${s.baseline} -> ${s.current}`);
     lines.push(`Weakest areas: ${state.weakest.map((d) => DIMENSION_META[d].label).join(", ")}`);
+  }
+
+  // Development targets the user set for themselves (manual knobs / preset). These are a
+  // deliberate choice about which traits to build, so bias generation toward the biggest gaps.
+  const targets = sanitizeTargets(state.profile.skill_targets);
+  if (targets) {
+    const current = Object.fromEntries(state.skills.map((s) => [s.dimension, s.current]));
+    const ranked = focusRanking(targets, current).filter((r) => r.gap > 0);
+    lines.push(`\n## Development targets the user chose (how strong they want each trait; bias stories, scenarios, challenges and assessment toward the biggest gaps first)`);
+    if (state.profile.target_preset && state.profile.target_preset !== "custom") lines.push(`Chosen focus profile: ${state.profile.target_preset}.`);
+    for (const r of (ranked.length ? ranked : focusRanking(targets, current)).slice(0, 10)) {
+      const pri = r.gap >= 25 ? "HIGH" : r.gap >= 10 ? "medium" : "low";
+      lines.push(`- ${DIMENSION_META[r.dimension].label}: current ${r.current} -> wants ${r.target} (focus ${pri})`);
+    }
   }
 
   const dp = state.profile.development_profile;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Check, ChevronRight, ClipboardCheck, GitBranch, Layers, Lightbulb, Mic, Leaf, PenLine, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
 import { BadgeIcon } from "@/components/badge-icon";
 import { BaselineGate } from "@/components/baseline-gate";
-import { ScoreBars } from "@/components/score-bars";
+import { SkillsDial } from "@/components/skills-dial";
 import { Card, PageHeader, ProgressRing, cx } from "@/components/ui";
 import { PROGRAMME_LENGTH } from "@/lib/domain/programme";
 import { overallScore } from "@/lib/domain/scoring";
@@ -204,29 +204,34 @@ export default async function Dashboard() {
       {sponsor && <SponsorCard s={sponsor} />}
 
       {/* Score + skills */}
-      <Link href="/progress" className="group block">
-        <Card className="p-5 transition group-hover:border-line-strong">
-          <div className="flex items-center gap-4">
-            <ProgressRing value={overall} size={72} stroke={7} label={t("Overall score {0}", overall)}>
-              <span className="text-xl font-extrabold tabular-nums">{Math.round(overall)}</span>
-            </ProgressRing>
-            <div className="min-w-0 flex-1">
-              <p className="font-bold">{t("Your skills")}</p>
-              <p className="text-sm">
-                <span className={cx("font-bold", delta >= 0 ? "text-success" : "text-danger")}>
-                  {delta >= 0 ? "+" : ""}
-                  {delta}
-                </span>{" "}
-                <span className="text-muted">{t("since day 1")}</span>
-              </p>
-            </div>
-            <ChevronRight className="size-5 text-muted transition group-hover:translate-x-0.5" />
+      <Card className="p-5">
+        <Link href="/progress" className="group flex items-center gap-4">
+          <ProgressRing value={overall} size={72} stroke={7} label={t("Overall score {0}", overall)}>
+            <span className="text-xl font-extrabold tabular-nums">{Math.round(overall)}</span>
+          </ProgressRing>
+          <div className="min-w-0 flex-1">
+            <p className="font-bold">{t("Your skills")}</p>
+            <p className="text-sm">
+              <span className={cx("font-bold", delta >= 0 ? "text-success" : "text-danger")}>
+                {delta >= 0 ? "+" : ""}
+                {delta}
+              </span>{" "}
+              <span className="text-muted">{t("since day 1")}</span>
+            </p>
           </div>
-          <div className="mt-4">
-            <ScoreBars rows={state.skills} />
-          </div>
-        </Card>
-      </Link>
+          <ChevronRight className="size-5 text-muted transition group-hover:translate-x-0.5" />
+        </Link>
+        <div className="mt-5 border-t border-line pt-5">
+          <SkillsDial rows={state.skills} />
+        </div>
+        <Link href="/goals" className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-primary-soft/50 px-4 py-3 transition hover:bg-primary-soft">
+          <span className="flex items-center gap-2.5">
+            <Target className="size-5 text-accent" />
+            <span className="text-sm font-bold text-ink">{t("Set your growth targets")}</span>
+          </span>
+          <ChevronRight className="size-5 text-muted" />
+        </Link>
+      </Card>
 
       {(achievements ?? []).length > 0 && (
         <section>
