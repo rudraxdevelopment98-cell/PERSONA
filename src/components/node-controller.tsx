@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
-import { Check, Compass, Flag, GitBranch, Heart, Megaphone, MessageCircle, Minus, Plus, RotateCcw, Scale, Search, Sparkles, Target, type LucideIcon } from "lucide-react";
+import { Briefcase, Check, Compass, Crosshair, Flag, GitBranch, Heart, Landmark, Megaphone, MessageCircle, Minus, Plus, RotateCcw, Rocket, Scale, Search, SlidersHorizontal, Sparkles, Target, type LucideIcon } from "lucide-react";
 import { DIMENSION_META, DIMENSIONS, type Dimension } from "@/lib/domain/dimensions";
 import { TARGET_MAX, TARGET_MIN, TARGET_PRESETS, clampTarget, targetPreset } from "@/lib/domain/targets";
 import { saveTargets } from "@/app/(app)/goals-actions";
@@ -44,6 +44,14 @@ const COCKPIT_PRESETS: { id: string; name: string; targets: Record<Dimension, nu
   { id: "custom", name: "Custom", targets: null },
 ];
 
+const PRESET_ICON: Record<string, LucideIcon> = {
+  businessman: Briefcase,
+  entrepreneur: Rocket,
+  politician: Landmark,
+  strategic: Crosshair,
+  custom: SlidersHorizontal,
+};
+
 const NODE_R = 38; // ring radius, % of the square canvas
 
 /** A large neon rotary dial (270°) for the selected node. */
@@ -85,6 +93,14 @@ function NeonDial({ value, current, size = 190 }: { value: number; current: numb
           <circle cx={cx0} cy={cy0} r={r} fill="none" stroke="rgba(148,163,184,.22)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${arcLen} ${round(c)}`} />
           <circle cx={cx0} cy={cy0} r={r} fill="none" stroke="url(#nd-grad)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${fillLen} ${round(c)}`} filter="url(#nd-glow)" style={{ transition: "stroke-dasharray 0.22s ease-out" }} />
         </g>
+        {/* automotive tick marks */}
+        {Array.from({ length: 15 }, (_, i) => i).map((i) => {
+          const deg = -135 + (i / 14) * 270;
+          const lit = i / 14 <= frac;
+          const [x1, y1] = polar(cx0, cy0, r + stroke / 2 + 2, deg);
+          const [x2, y2] = polar(cx0, cy0, r + stroke / 2 + (i % 7 === 0 ? 8 : 5), deg);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={lit ? "#5eead4" : "rgba(148,163,184,.3)"} strokeWidth={i % 7 === 0 ? 2 : 1} strokeLinecap="round" />;
+        })}
         <circle cx={cxm} cy={cym} r={4} fill="#0a0f1e" stroke="#e2e8f0" strokeWidth={2} />
         <circle cx={hx} cy={hy} r={9} fill="#0a0f1e" stroke="#22d3ee" strokeWidth={4} filter="url(#nd-glow)" style={{ transition: "cx 0.22s ease-out, cy 0.22s ease-out" }} />
       </svg>
@@ -179,6 +195,7 @@ export function NodeController({ rows, initialTargets, initialPreset }: { rows: 
         <div className="relative mx-auto aspect-square w-full max-w-[360px]">
           {/* connecting lines */}
           <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" aria-hidden>
+            <circle cx={50} cy={50} r={NODE_R} fill="none" stroke="rgba(45,212,191,.12)" strokeWidth={0.4} strokeDasharray="0.6 2.4" />
             {nodes.map((n) => (
               <line key={n.dimension} x1={50} y1={50} x2={n.x} y2={n.y} stroke={active === n.dimension ? "rgba(34,211,238,.85)" : "rgba(45,212,191,.28)"} strokeWidth={active === n.dimension ? 0.8 : 0.4} className={active === n.dimension ? "node-line-flow" : undefined} strokeLinecap="round" />
             ))}
@@ -230,15 +247,19 @@ export function NodeController({ rows, initialTargets, initialPreset }: { rows: 
       </div>
 
       {/* presets */}
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
-        {COCKPIT_PRESETS.map((p) => {
-          const on = preset === p.id;
-          return (
-            <button key={p.id} type="button" onClick={() => applyPreset(p)} className={cx("shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition active:scale-95", on ? "border-cyan-400 bg-cyan-400/15 text-cyan-700 dark:text-cyan-300" : "border-line bg-surface text-muted hover:border-line-strong")}>
-              {t(p.name)}
-            </button>
-          );
-        })}
+      <div className="rounded-2xl border border-cyan-400/15 bg-[#070b17] p-3">
+        <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-300/60">{t("Quick profiles")}</p>
+        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+          {COCKPIT_PRESETS.map((p) => {
+            const on = preset === p.id;
+            const Icon = PRESET_ICON[p.id] ?? SlidersHorizontal;
+            return (
+              <button key={p.id} type="button" onClick={() => applyPreset(p)} className={cx("flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-bold transition active:scale-95", on ? "border-cyan-300 bg-cyan-400/15 text-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.35)]" : "border-slate-600/40 bg-[#0c1526] text-slate-300 hover:border-cyan-400/40 hover:text-white")}>
+                <Icon className="size-4" /> {t(p.name)}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* selected node panel */}
@@ -265,10 +286,10 @@ export function NodeController({ rows, initialTargets, initialPreset }: { rows: 
           <NeonDial value={av} current={ac} />
         </div>
 
-        <div className="mx-auto mt-3 flex max-w-xs items-center justify-center gap-4">
-          <button type="button" aria-label={t("Lower")} onClick={() => setOne(active, av - 1)} className="flex size-11 items-center justify-center rounded-full border border-cyan-400/30 bg-[#0c1526] text-cyan-300 transition active:scale-90 hover:border-cyan-300"><Minus className="size-5" /></button>
-          <span className="w-14 text-center text-2xl font-extrabold tabular-nums text-white">{av}</span>
-          <button type="button" aria-label={t("Raise")} onClick={() => setOne(active, av + 1)} className="flex size-11 items-center justify-center rounded-full border border-cyan-400/30 bg-[#0c1526] text-cyan-300 transition active:scale-90 hover:border-cyan-300"><Plus className="size-5" /></button>
+        <div className="mx-auto mt-3 flex max-w-[200px] items-center justify-center gap-3">
+          <button type="button" aria-label={t("Lower")} onClick={() => setOne(active, av - 1)} className="flex size-11 items-center justify-center rounded-full border border-cyan-400/30 bg-[#0c1526] text-cyan-300 transition active:scale-90 hover:border-cyan-300 hover:text-white"><Minus className="size-5" /></button>
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">{t("fine-tune")}</span>
+          <button type="button" aria-label={t("Raise")} onClick={() => setOne(active, av + 1)} className="flex size-11 items-center justify-center rounded-full border border-cyan-400/30 bg-[#0c1526] text-cyan-300 transition active:scale-90 hover:border-cyan-300 hover:text-white"><Plus className="size-5" /></button>
         </div>
       </div>
 
