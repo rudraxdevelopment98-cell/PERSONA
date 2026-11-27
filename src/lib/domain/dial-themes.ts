@@ -1,6 +1,8 @@
-/** Visual styles for the skills dial. The person picks one in Settings. */
+/** Visual styles for the skills dial — a dual automotive instrument cluster.
+ *  Left dial = score gauge, right dial = rotary skill selector. The person picks one in Settings.
+ *  Colours mirror the Persona90 Dual Dial spec (10 premium automotive styles). */
 
-export type Surface = "plain" | "flatGreen" | "glossy" | "glass" | "neumorph" | "neon" | "metal" | "soft";
+export type Surface = "plain" | "glossy" | "glass" | "neumorph" | "neon" | "metal" | "soft";
 
 export type DialTheme = {
   id: string;
@@ -8,7 +10,7 @@ export type DialTheme = {
   arc: number; // gauge span: 1 = full ring, 0.72 = 270° gauge
   ticks: "none" | "major" | "segments" | "dots";
   from: string; // fill gradient start
-  to: string; // fill gradient end
+  to: string; // fill gradient end / accent
   track: string; // gauge track colour
   glow: boolean; // neon glow on the fill
   valueSurface: Surface;
@@ -16,19 +18,29 @@ export type DialTheme = {
 };
 
 /** Dark surfaces show light text/icon. */
-export const isDarkSurface = (s: Surface) => s === "glossy" || s === "neon" || s === "metal" || s === "flatGreen";
+export const isDarkSurface = (s: Surface) => s === "glossy" || s === "neon" || s === "metal";
 
 export const DIAL_THEMES: DialTheme[] = [
-  { id: "classic", name: "Classic Car", arc: 0.72, ticks: "major", from: "#34d399", to: "#0e9f8a", track: "#e2e8f0", glow: false, valueSurface: "plain", knobSurface: "flatGreen" },
-  { id: "speedometer", name: "Dual Speedometer", arc: 0.72, ticks: "major", from: "#8be0c6", to: "#0e9f8a", track: "#e9eef3", glow: false, valueSurface: "plain", knobSurface: "metal" },
-  { id: "twin", name: "Twin Circular", arc: 1, ticks: "none", from: "#2dd4bf", to: "#0e7f6f", track: "#dce7e4", glow: false, valueSurface: "plain", knobSurface: "flatGreen" },
-  { id: "automotive", name: "Modern Automotive", arc: 1, ticks: "none", from: "#60a5fa", to: "#3b82f6", track: "#1f2937", glow: true, valueSurface: "glossy", knobSurface: "glossy" },
-  { id: "minimal", name: "Minimalist", arc: 0.72, ticks: "dots", from: "#9ae6c7", to: "#2dd4bf", track: "#eef2f5", glow: false, valueSurface: "plain", knobSurface: "soft" },
-  { id: "hud", name: "Futuristic HUD", arc: 1, ticks: "none", from: "#22d3ee", to: "#818cf8", track: "#1b2540", glow: true, valueSurface: "neon", knobSurface: "neon" },
-  { id: "soft", name: "Soft Material", arc: 1, ticks: "none", from: "#5eead4", to: "#38bdf8", track: "#e6ebf0", glow: false, valueSurface: "neumorph", knobSurface: "neumorph" },
-  { id: "dualknob", name: "Dual Knob Rings", arc: 1, ticks: "none", from: "#34d399", to: "#0e9f8a", track: "#d7dde4", glow: false, valueSurface: "metal", knobSurface: "metal" },
-  { id: "sporty", name: "Sporty Meter", arc: 0.72, ticks: "segments", from: "#34d399", to: "#0e7f6f", track: "#e2e8f0", glow: false, valueSurface: "plain", knobSurface: "glossy" },
-  { id: "glass", name: "Elegant Glass", arc: 1, ticks: "none", from: "#5eead4", to: "#0e9f8a", track: "rgba(148,163,184,.35)", glow: false, valueSurface: "glass", knobSurface: "glass" },
+  // 1 · Classic Car — luxury analog speedometer + chrome metallic knob
+  { id: "classic", name: "Classic Car", arc: 0.72, ticks: "major", from: "#34d399", to: "#087f70", track: "#e9edf2", glow: false, valueSurface: "plain", knobSurface: "metal" },
+  // 2 · Dual Digital Speedometer — gradient arc + glowing digital selector
+  { id: "speedometer", name: "Dual Speedometer", arc: 0.72, ticks: "major", from: "#60d8e8", to: "#18b99a", track: "#e9eef3", glow: true, valueSurface: "plain", knobSurface: "glossy" },
+  // 3 · Twin Circular Progress — minimal twin rings
+  { id: "twin", name: "Twin Circular", arc: 1, ticks: "none", from: "#2dd4bf", to: "#087f70", track: "#dce7e4", glow: false, valueSurface: "plain", knobSurface: "soft" },
+  // 4 · Modern Automotive — dark cockpit, neon blue/purple
+  { id: "automotive", name: "Modern Automotive", arc: 1, ticks: "none", from: "#00c8e8", to: "#7767ff", track: "#232a52", glow: true, valueSurface: "glossy", knobSurface: "glossy" },
+  // 5 · Minimalist — thin arc, dotted selector
+  { id: "minimal", name: "Minimalist", arc: 0.72, ticks: "dots", from: "#9ae6c7", to: "#159b75", track: "#eef2f5", glow: false, valueSurface: "plain", knobSurface: "soft" },
+  // 6 · Futuristic HUD — holographic cyan/violet
+  { id: "hud", name: "Futuristic HUD", arc: 1, ticks: "none", from: "#00d7c5", to: "#785bff", track: "#1b1f54", glow: true, valueSurface: "neon", knobSurface: "neon" },
+  // 7 · Soft Material — neumorphism, pastel
+  { id: "soft", name: "Soft Material", arc: 1, ticks: "none", from: "#20b99a", to: "#55b9f2", track: "#e6ebf0", glow: false, valueSurface: "neumorph", knobSurface: "neumorph" },
+  // 8 · Dual Knob Rings — precision metallic layers
+  { id: "dualknob", name: "Dual Knob Rings", arc: 1, ticks: "major", from: "#34d399", to: "#21b9a5", track: "#d7dde4", glow: false, valueSurface: "metal", knobSurface: "metal" },
+  // 9 · Sporty Meter — segmented racing gauge
+  { id: "sporty", name: "Sporty Meter", arc: 0.72, ticks: "segments", from: "#35d2bc", to: "#009c83", track: "#e2e8f0", glow: false, valueSurface: "plain", knobSurface: "glossy" },
+  // 10 · Elegant Glass — glassmorphism
+  { id: "glass", name: "Elegant Glass", arc: 1, ticks: "none", from: "#5eead4", to: "#18a987", track: "rgba(148,163,184,.35)", glow: false, valueSurface: "glass", knobSurface: "glass" },
 ];
 
 export const DEFAULT_DIAL = "classic";

@@ -80,7 +80,7 @@ export default async function ProgressPage() {
         )}
 
         <Card>
-          <CardHeader title={t("Your 10 skills")} description={t("Scroll to turn the dial — each skill comes into focus.")} />
+          <CardHeader title={t("Your 10 skills")} description={t("Turn the knob — each skill comes into focus.")} />
           <div className="px-5 py-5">
             <SkillsDial rows={state.skills} />
           </div>
